@@ -16,11 +16,27 @@ python3 -m http.server 8000
 
 也可以直接双击 `index.html`（`file://` 下同样能跑；请求 GitHub API 需要联网）。
 
-部署到 GitHub Pages：
+部署到 GitHub Pages（任选一种）：
 
-1. 把整个目录推到你的 GitHub 仓库；
-2. **Settings → Pages → Build and deployment → Deploy from a branch**；
-3. 选择 `main` 分支 + `/ (root)`，保存，稍等片刻即可访问。
+**方式 A · 命令行 / GitHub 连接器**
+
+本地仓库已准备好：`main` 分支、首次提交，`.gitignore` 已排除 `.workbuddy/` 与 `dist/`。在具备 GitHub 凭据的环境里：
+
+```bash
+git remote add origin https://github.com/<用户名>/open-shelf.git
+git push -u origin main
+```
+
+**方式 B · 浏览器已登录 GitHub 时，全程网页操作（不需要 git）**
+
+1. 打开 `https://github.com/new`，新建 public 仓库 `open-shelf`，**不要**勾选任何初始化文件；
+2. 在空仓库页点「uploading an existing file」，把 `dist/` **里面的全部内容**（14 个文件，保持 `assets/`、`data/` 目录结构）拖进上传区并提交。`dist/` 是已生成的干净发布目录，不含 `.git` 和 `.workbuddy/`；
+3. 仓库 **Settings → Pages → Build and deployment** 选 `Deploy from a branch`，分支 `main` + 目录 `/ (root)` → Save；
+4. 约 1 分钟后访问 `https://<用户名>.github.io/open-shelf/`（若仓库名就是 `<用户名>.github.io`，直接访问根域名）。
+
+站点全部使用相对路径，部署在子路径下也能正常工作。
+
+此外，本项目已通过 WorkBuddy 应用发布额外生成了一个即时在线链接（见应用发布面板），可在「设置—数据管理—应用」中管理或下线，与 GitHub Pages 互不影响。
 
 ## 个性化
 
