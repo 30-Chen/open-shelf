@@ -1,0 +1,137 @@
+# OPEN / SHELF
+
+一个简洁、带科技感的个人主页，用来收集自己常用的开源 App。纯静态、零依赖、零构建，直接托管到 GitHub Pages。
+
+**第一个功能已完成**：提交一个 GitHub 仓库（`owner/repo` 或完整链接），页面自动读取项目介绍、Star、语言、Topics，以及**最新 Release 的版本号与安装包下载地址**（文件名、大小、下载次数），并支持源码 `.zip` / `.tar.gz`、更新日志、一键刷新。内置**静态快照兜底**：API 限流或断网时依然显示内容。
+
+---
+
+## 快速开始
+
+```bash
+# 本地预览（推荐）
+python3 -m http.server 8000
+# 打开 http://localhost:8000
+```
+
+也可以直接双击 `index.html`（`file://` 下同样能跑；请求 GitHub API 需要联网）。
+
+部署到 GitHub Pages：
+
+1. 把整个目录推到你的 GitHub 仓库；
+2. **Settings → Pages → Build and deployment → Deploy from a branch**；
+3. 选择 `main` 分支 + `/ (root)`，保存，稍等片刻即可访问。
+
+## 个性化
+
+| 想改什么 | 改哪里 |
+| --- | --- |
+| 站名 / 副标题 / 右上角链接 | `index.html` 的 `<header>` |
+| 默认收藏的项目清单 | `assets/js/modules/repo-showcase/defaults.js` |
+| 配色 / 圆角 / 字体 | `assets/css/base.css` 顶部的 CSS 变量 |
+| 卡片样式 | `assets/css/module-repo-showcase.css` |
+| API 缓存时长 | `assets/js/core/app.js` 的 `cacheMs` |
+
+`defaults.js` 里的清单**提交到仓库后对所有访客生效**；访客自己在页面上添加/删除的项目只存在他浏览器的 `localStorage` 里，不会改动仓库，也不会影响别人。
+
+## 数据源与限流
+
+- 调用两个公开接口：`GET /repos/{owner}/{repo}` 与 `GET /repos/{owner}/{repo}/releases/latest`（自动排除草稿与预发布版本）。
+- 未认证时 GitHub 限制 **60 次/小时/IP**。页面内置 30 分钟快照缓存 + 请求缓存 + 并发上限 3，正常浏览几乎不会触发限流。
+- 点击右上角 **⚙ 设置** 可填：
+  - **GitHub Token**（可选）：限额提升到 5000 次/小时，填一个无权限的只读 Token 即可；
+  - **API 地址**（可选）：访问 `api.github.com` 不畅时填可用的镜像地址。
+- 设置只保存在当前浏览器，**不会写进仓库**。公开站点请勿填写带写权限的 Token。
+- 请求失败时会保留上一次缓存数据并提示重试；仓库从未发布 Release 时显示「暂无发布版本」。
+
+## 离线快照兜底（可选，建议保留）
+
+浏览器直连 API 可能遇到共享 IP 限流、公司网络拦截或离线。仓库里附带一份静态快照 `data/snapshot.json`：
+
+- 页面加载时**先读快照铺满首屏**，再用实时 API 覆盖（stale-while-revalidate），不会白屏等待；
+- API 失败时保留快照内容，卡片底部标注「离线快照」并给出重试入口；
+- 删除 `data/snapshot.json` 后功能完全正常，只是没有兜底。
+
+更新快照（在项目根目录执行）：
+
+```bash
+node tools/update-snapshot.mjs
+# 限流时可加 Token：GITHUB_TOKEN=ghp_xxx node tools/update-snapshot.mjs
+# 临时指定清单：SNAPSHOT_REPOS="owner/a,owner/b" node tools/update-snapshot.mjs
+```
+
+脚本按 `defaults.js` 的清单抓取仓库信息与最新 Release，裁剪后写入 `data/snapshot.json`，提交到仓库即可生效。也可以在 GitHub Actions 里定时运行它，让快照始终最新。
+
+## 目录结构与模块化约定
+
+```
+index.html                          页面骨架 + 脚本装配顺序
+data/snapshot.json                  可选的静态兜底快照
+tools/update-snapshot.mjs           一键生成 / 更新快照
+assets/css/
+  base.css                         全站设计系统（变量、布局、共享控件）
+  module-repo-showcase.css         模块私有样式（统一 .rs- 前缀）
+assets/js/core/                     内核：所有模块共用，不含业务逻辑
+  store.js                         命名空间隔离的 localStorage 封装
+  net.js                           GET JSON + TTL 缓存 + 错误归一化
+  kernel.js                        事件总线 / 注册表 / 启动沙箱
+  app.js                           全局配置 + 启动
+assets/js/modules/repo-showcase/    业务模块 01
+  defaults.js                      提交到仓库生效的默认清单
+  github.js                        数据适配层：输入解析 + API + 归一化
+  view.js                          纯渲染层：无状态、全量转义
+  index.js                         模块入口：注册、状态、交互
+```
+
+「互不影响」的四层保证：
+
+1. 每个模块由内核创建独立 `<section id="module-<id>">` 容器；
+2. 每个模块拿到的是**只属于自己的** `ctx.store`（key 前缀 `portal:v1:<id>:`）；
+3. 样式强制使用模块私有前缀，不写全局选择器；
+4. `mount()` 被独立 `try/catch` 包裹，某个模块报错只会显示自己的错误块，其它模块照常运行。
+
+模块之间不直接引用，需要通信时走 `ctx.bus.on/emit`（例如 `net:response` 事件）。
+
+## 新增第二个功能（示例）
+
+以后想加「书签」「常用链接」「博客列表」等模块，只需要三步，不需要碰现有代码：
+
+**1.** 新建 `assets/js/modules/links/index.js`：
+
+```js
+(function (global) {
+  var Portal = global.Portal = global.Portal || {};
+  Portal.registry.register({
+    id: 'links',                       // 唯一 id，决定 DOM 容器与存储命名空间
+    title: '常用链接',
+    mount: function (ctx) {
+      // ctx.root   独立容器
+      // ctx.store  私有存储
+      // ctx.net    请求层
+      // ctx.bus    事件总线
+      var list = ctx.store.get('list', []);
+      ctx.root.innerHTML = '<div class="lk"><h2>常用链接</h2></div>';
+    }
+  });
+})(window);
+```
+
+**2.** 新建 `assets/css/module-links.css`，类名统一用 `.lk-` 前缀。
+
+**3.** 在 `index.html` 里按依赖顺序加两个标签（模块脚本放在 `app.js` 之前）：
+
+```html
+<link rel="stylesheet" href="assets/css/module-links.css">
+<script defer src="assets/js/modules/links/index.js"></script>
+```
+
+内核会自动挂载它，顺序、故障、存储都与第一个模块隔离。
+
+## 后续可扩展的方向
+
+- GitHub Actions 定时运行 `tools/update-snapshot.mjs`，站点彻底不依赖浏览器侧的 API 限额；
+- 分类 / 标签 / 搜索 / 排序；
+- 明暗主题切换（改 `base.css` 的 CSS 变量即可）；
+- 多版本下载、平台筛选（按文件名识别 Windows / macOS / Linux / Android）。
+
+> 安全说明：GitHub 返回的项目描述、Release 名称与更新日志全部经过 HTML 转义后才渲染，外链只允许 `http/https`。

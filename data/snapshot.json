@@ -1,0 +1,797 @@
+{
+  "generatedAt": "2026-11-15T15:45:37.411Z",
+  "repos": {
+    "localsend/localsend": {
+      "repo": {
+        "full_name": "localsend/localsend",
+        "name": "localsend",
+        "html_url": "https://github.com/localsend/localsend",
+        "owner": {
+          "login": "localsend",
+          "avatar_url": "https://avatars.githubusercontent.com/u/120677616?v=4"
+        },
+        "description": "An open-source cross-platform alternative to AirDrop",
+        "homepage": "https://localsend.org",
+        "language": "Dart",
+        "stargazers_count": 99118,
+        "forks_count": 5678,
+        "license": {
+          "spdx_id": "Apache-2.0"
+        },
+        "topics": [
+          "dart",
+          "file-sharing",
+          "flutter",
+          "flutter-apps"
+        ],
+        "pushed_at": "2026-11-11T03:19:56Z"
+      },
+      "release": {
+        "tag_name": "v1.18.2",
+        "name": "v1.18.2",
+        "published_at": "2026-08-21T14:02:01Z",
+        "html_url": "https://github.com/localsend/localsend/releases/tag/v1.18.2",
+        "body": "This release fixes compatibility issues with 1.17.0 and earlier.\r\nNote: The Windows binaries have been updated to include a signature.\r\n\r\n- feat: drag and drop files into the \"Receive via link\" browser page\r\n- feat(desktop): allow customizing the web share pages by placing HTML files in a `web` folder next to the executable\r\n- feat(cli): add version info to the Windows executable\r\n- feat(linux): set actual version in the AppImage\r\n- security: do not follow HTTP redirects sent by peers\r\n- fix: restore compatibility with 1.17.0 and earlier versions on missing multicast networks\r\n- fix: devices running 1.17.0 and earlier could not add 1.18.0+ device as favorite\r\n- fix: ignore proxies, fixes \"TLS info not found\" when a system proxy (e.g. Shadowrocket) is enabled\r\n- fix: automatically restart the HTTP / multicast server when it dies or when the app resumes\r\n- fix: drag and drop with a mix of folders and files\r\n- fix: during transfer, add bottom padding when Advanced is open (@Chethan616)\r\n- fix: do not crash at startup when the executable path cannot be resolved (@Shlomo116)\r\n- fix(android): ignore unknown or invalid file modification times when reading files\r\n- i18n: add Armenian",
+        "prerelease": false,
+        "assets": [
+          {
+            "name": "LocalSend-1.18.2-android-arm32v7.apk",
+            "size": 39333444,
+            "download_count": 28964,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-android-arm32v7.apk",
+            "content_type": "application/vnd.android.package-archive"
+          },
+          {
+            "name": "LocalSend-1.18.2-android-arm64v8.apk",
+            "size": 46558706,
+            "download_count": 247269,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-android-arm64v8.apk",
+            "content_type": "application/vnd.android.package-archive"
+          },
+          {
+            "name": "LocalSend-1.18.2-android-google-play.apk",
+            "size": 128293112,
+            "download_count": 26374,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-android-google-play.apk",
+            "content_type": "application/vnd.android.package-archive"
+          },
+          {
+            "name": "LocalSend-1.18.2-android-x64.apk",
+            "size": 48939435,
+            "download_count": 11368,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-android-x64.apk",
+            "content_type": "application/vnd.android.package-archive"
+          },
+          {
+            "name": "LocalSend-1.18.2-linux-arm-64.deb",
+            "size": 24662482,
+            "download_count": 8884,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-linux-arm-64.deb",
+            "content_type": "application/vnd.debian.binary-package"
+          },
+          {
+            "name": "LocalSend-1.18.2-linux-arm-64.tar.gz",
+            "size": 32354331,
+            "download_count": 3773,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-linux-arm-64.tar.gz",
+            "content_type": "application/gzip"
+          },
+          {
+            "name": "LocalSend-1.18.2-linux-x86-64.AppImage",
+            "size": 66471104,
+            "download_count": 36155,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-linux-x86-64.AppImage",
+            "content_type": "application/x-appimage"
+          },
+          {
+            "name": "LocalSend-1.18.2-linux-x86-64.deb",
+            "size": 24665458,
+            "download_count": 124332,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-linux-x86-64.deb",
+            "content_type": "application/vnd.debian.binary-package"
+          },
+          {
+            "name": "LocalSend-1.18.2-linux-x86-64.tar.gz",
+            "size": 32011656,
+            "download_count": 22983,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-linux-x86-64.tar.gz",
+            "content_type": "application/gzip"
+          },
+          {
+            "name": "LocalSend-1.18.2-windows-arm-64.zip",
+            "size": 24414965,
+            "download_count": 10829,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-windows-arm-64.zip",
+            "content_type": "application/x-zip-compressed"
+          },
+          {
+            "name": "LocalSend-1.18.2-windows-x86-64-unsigned.exe",
+            "size": 18960550,
+            "download_count": 174553,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-windows-x86-64-unsigned.exe",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "LocalSend-1.18.2-windows-x86-64.exe",
+            "size": 19901144,
+            "download_count": 1132403,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-windows-x86-64.exe",
+            "content_type": "application/x-msdownload"
+          },
+          {
+            "name": "LocalSend-1.18.2-windows-x86-64.zip",
+            "size": 26113764,
+            "download_count": 207988,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2-windows-x86-64.zip",
+            "content_type": "application/x-zip-compressed"
+          },
+          {
+            "name": "LocalSend-1.18.2.dmg",
+            "size": 52700247,
+            "download_count": 797214,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-1.18.2.dmg",
+            "content_type": "application/x-diskcopy"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-linux-arm-64.tar.gz",
+            "size": 4639269,
+            "download_count": 1761,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-linux-arm-64.tar.gz",
+            "content_type": "application/gzip"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-linux-x86-64.tar.gz",
+            "size": 4762297,
+            "download_count": 4198,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-linux-x86-64.tar.gz",
+            "content_type": "application/gzip"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-macos-arm-64.tar.gz",
+            "size": 4105018,
+            "download_count": 2748,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-macos-arm-64.tar.gz",
+            "content_type": "application/x-gzip"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-macos-x86-64.tar.gz",
+            "size": 4397211,
+            "download_count": 1829,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-macos-x86-64.tar.gz",
+            "content_type": "application/x-gzip"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-windows-arm-64.exe",
+            "size": 8355328,
+            "download_count": 2172,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-windows-arm-64.exe",
+            "content_type": "application/x-msdownload"
+          },
+          {
+            "name": "LocalSend-CLI-1.18.2-windows-x86-64.exe",
+            "size": 9725952,
+            "download_count": 9302,
+            "browser_download_url": "https://github.com/localsend/localsend/releases/download/v1.18.2/LocalSend-CLI-1.18.2-windows-x86-64.exe",
+            "content_type": "application/x-msdownload"
+          }
+        ]
+      }
+    },
+    "flameshot-org/flameshot": {
+      "repo": {
+        "full_name": "flameshot-org/flameshot",
+        "name": "flameshot",
+        "html_url": "https://github.com/flameshot-org/flameshot",
+        "owner": {
+          "login": "flameshot-org",
+          "avatar_url": "https://avatars.githubusercontent.com/u/36951528?v=4"
+        },
+        "description": "Powerful yet simple to use screenshot software :desktop_computer: :camera_flash:",
+        "homepage": "https://flameshot.org",
+        "language": "C++",
+        "stargazers_count": 31553,
+        "forks_count": 2107,
+        "license": {
+          "spdx_id": "GPL-3.0"
+        },
+        "topics": [
+          "capture",
+          "cross-platform",
+          "free-software",
+          "gnu-linux",
+          "gui",
+          "hacktoberfest"
+        ],
+        "pushed_at": "2026-11-14T15:02:58Z"
+      },
+      "release": {
+        "tag_name": "v15.0.0",
+        "name": "v15.0.0",
+        "published_at": "2026-11-07T16:42:38Z",
+        "html_url": "https://github.com/flameshot-org/flameshot/releases/tag/v15.0.0",
+        "body": "# What's Changed\r\n## New Features\r\n* Let the GUI colors be choosen via hex values by @IndolikarQuantifier in https://github.com/flameshot-org/flameshot/pull/4738\r\n* Add arrow style selector by @serebryakov02 in https://github.com/flameshot-org/flameshot/pull/4769\r\n* Increment/decrement circle counter on mouse wheel by @milnadar in https://github.com/flameshot-org/flameshot/pull/4698\r\n* Add keyboard controls to monitor selector by @serebryakov02 in https://github.com/flameshot-org/flameshot/pull/4811\r\n* Fall back to native X11 capture when the portal is unavailable by @jmcarthur in https://github.com/flameshot-org/flameshot/pull/4827\r\n* Add option to disable the Circle Counter outline by @bekirsoylu in https://github.com/flameshot-org/flameshot/pull/4882\r\n* Removed the close on double click on pinned captures and moved it to shortcut which is configurable through config by @IndolikarQuantifier in https://github.com/flameshot-org/flameshot/pull/4993\r\n* add more desktop terminal emulators to TerminalLauncher by @anushTikoo in https://github.com/flameshot-org/flameshot/pull/5010\r\n* Make the UI language picker a filterable search box by @nicitaacom in https://github.com/flameshot-org/flameshot/pull/4891\r\n\r\n* ## Bug Fixes\r\n* Fix capture when logical min/max coordinates are not zero by @rs-pro0 in https://github.com/flameshot-org/flameshot/pull/4735\r\n* Fixing the currently broken macOS packaging for x64 (Intel) by @HackintoshHD in https://github.com/flameshot-org/flameshot/pull/4795\r\n* Commit text on Esc in text tool by @serebryakov02 in https://github.com/flameshot-org/flameshot/",
+        "prerelease": false,
+        "assets": [
+          {
+            "name": "Flameshot-15.0.0-macos-arm64.dmg",
+            "size": 38997972,
+            "download_count": 5020,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-macos-arm64.dmg",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "Flameshot-15.0.0-macos-arm64.dmg.sha256sum",
+            "size": 99,
+            "download_count": 684,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-macos-arm64.dmg.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "Flameshot-15.0.0-macos-intel.dmg",
+            "size": 43497495,
+            "download_count": 381,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-macos-intel.dmg",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "Flameshot-15.0.0-macos-intel.dmg.sha256sum",
+            "size": 99,
+            "download_count": 43,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-macos-intel.dmg.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "Flameshot-15.0.0-win64.msi",
+            "size": 19062784,
+            "download_count": 32234,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-win64.msi",
+            "content_type": "application/x-msi"
+          },
+          {
+            "name": "Flameshot-15.0.0-win64.msi.sha256sum",
+            "size": 93,
+            "download_count": 110,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/Flameshot-15.0.0-win64.msi.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-15.0.0-win64.zip",
+            "size": 55691917,
+            "download_count": 3424,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-15.0.0-win64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-15.0.0-win64.zip.sha256sum",
+            "size": 93,
+            "download_count": 129,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-15.0.0-win64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-appimage-x86_64.zip",
+            "size": 57698812,
+            "download_count": 762,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-appimage-x86_64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-appimage-x86_64.zip.sha256sum",
+            "size": 126,
+            "download_count": 109,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-appimage-x86_64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-amd64.zip",
+            "size": 869860,
+            "download_count": 314,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-amd64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-amd64.zip.sha256sum",
+            "size": 126,
+            "download_count": 45,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-amd64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-arm64.zip",
+            "size": 810888,
+            "download_count": 52,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-arm64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-arm64.zip.sha256sum",
+            "size": 126,
+            "download_count": 20,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-arm64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-armhf.zip",
+            "size": 789461,
+            "download_count": 36,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-armhf.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-debian-13-armhf.zip.sha256sum",
+            "size": 126,
+            "download_count": 22,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-debian-13-armhf.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-fedora-43-x86_64.zip",
+            "size": 829991,
+            "download_count": 57,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-fedora-43-x86_64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-fedora-43-x86_64.zip.sha256sum",
+            "size": 127,
+            "download_count": 25,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-fedora-43-x86_64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-fedora-44-x86_64.zip",
+            "size": 836056,
+            "download_count": 115,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-fedora-44-x86_64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-fedora-44-x86_64.zip.sha256sum",
+            "size": 127,
+            "download_count": 36,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-fedora-44-x86_64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-flatpak-x86_64.zip",
+            "size": 1626723,
+            "download_count": 93,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-flatpak-x86_64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-flatpak-x86_64.zip.sha256sum",
+            "size": 125,
+            "download_count": 32,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-flatpak-x86_64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-snap-x86_64.zip",
+            "size": 40969669,
+            "download_count": 65,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-snap-x86_64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-snap-x86_64.zip.sha256sum",
+            "size": 122,
+            "download_count": 24,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-snap-x86_64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-24.04-amd64.zip",
+            "size": 785753,
+            "download_count": 463,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-24.04-amd64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-24.04-amd64.zip.sha256sum",
+            "size": 129,
+            "download_count": 91,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-24.04-amd64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-24.04-arm64.zip",
+            "size": 765041,
+            "download_count": 64,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-24.04-arm64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-24.04-arm64.zip.sha256sum",
+            "size": 129,
+            "download_count": 30,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-24.04-arm64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-26.04-amd64.zip",
+            "size": 795773,
+            "download_count": 378,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-26.04-amd64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-26.04-amd64.zip.sha256sum",
+            "size": 129,
+            "download_count": 81,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-26.04-amd64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-26.04-arm64.zip",
+            "size": 768348,
+            "download_count": 57,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-26.04-arm64.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "flameshot-v15.0.0+git0.f4f2e4e-artifact-ubuntu-26.04-arm64.zip.sha256sum",
+            "size": 129,
+            "download_count": 28,
+            "browser_download_url": "https://github.com/flameshot-org/flameshot/releases/download/v15.0.0/flameshot-v15.0.0%2Bgit0.f4f2e4e-artifact-ubuntu-26.04-arm64.zip.sha256sum",
+            "content_type": "application/octet-stream"
+          }
+        ]
+      }
+    },
+    "ankitects/anki": {
+      "repo": {
+        "full_name": "ankitects/anki",
+        "name": "anki",
+        "html_url": "https://github.com/ankitects/anki",
+        "owner": {
+          "login": "ankitects",
+          "avatar_url": "https://avatars.githubusercontent.com/u/42564322?v=4"
+        },
+        "description": "Anki is a smart spaced repetition flashcard program",
+        "homepage": "https://apps.ankiweb.net",
+        "language": "Rust",
+        "stargazers_count": 32815,
+        "forks_count": 3424,
+        "license": {
+          "spdx_id": "NOASSERTION"
+        },
+        "topics": [],
+        "pushed_at": "2026-11-14T01:51:18Z"
+      },
+      "release": {
+        "tag_name": "26.09.4",
+        "name": "26.09.4",
+        "published_at": "2026-11-04T14:20:13Z",
+        "html_url": "https://github.com/ankitects/anki/releases/tag/26.09.4",
+        "body": "## What's Changed\r\n\r\n**⚠️ This update contains important security fixes. Please upgrade as soon as possible**.\r\n\r\n- Shared decks could execute arbitrary code via iframes when viewed in the editor ([GHSA-j9v5-m549-cg6c](https://github.com/ankitects/anki/security/advisories/GHSA-j9v5-m549-cg6c)). Thanks to @DePierre for the report.\r\n- On macOS, shared decks could execute arbitrary commands via specially crafted image filenames when the \"Show in Folder\" editor action is used ([GHSA-gfvm-4968-jp9m](https://github.com/ankitects/anki/security/advisories/GHSA-gfvm-4968-jp9m)). Thanks to @hyperreality and @Hama1cco for the reports.\r\n- Compromised eMudhra intermediate CA certificates are now disallowed. This is in response to a [widespread security incident](https://emudhra.we-have-a-problem.com/) affecting most systems and web browsers. **Updating Anki might not be enough. Please make sure your system is fully up to date.**\r\n\r\n**Full Changelog**: https://github.com/ankitects/anki/compare/26.09.3...26.09.4",
+        "prerelease": false,
+        "assets": [
+          {
+            "name": "anki-26.09.4-linux-aarch64.tar.zst",
+            "size": 185559361,
+            "download_count": 3574,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-linux-aarch64.tar.zst",
+            "content_type": "application/zstd"
+          },
+          {
+            "name": "anki-26.09.4-linux-x86_64.tar.zst",
+            "size": 194727701,
+            "download_count": 17082,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-linux-x86_64.tar.zst",
+            "content_type": "application/zstd"
+          },
+          {
+            "name": "anki-26.09.4-mac-apple.dmg",
+            "size": 228182839,
+            "download_count": 205655,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-mac-apple.dmg",
+            "content_type": "application/x-apple-diskimage"
+          },
+          {
+            "name": "anki-26.09.4-mac-intel.dmg",
+            "size": 247636698,
+            "download_count": 19807,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-mac-intel.dmg",
+            "content_type": "application/x-apple-diskimage"
+          },
+          {
+            "name": "anki-26.09.4-win-arm64.msi",
+            "size": 168210432,
+            "download_count": 34513,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-win-arm64.msi",
+            "content_type": "application/x-msi"
+          },
+          {
+            "name": "anki-26.09.4-win-x64.msi",
+            "size": 201621504,
+            "download_count": 261808,
+            "browser_download_url": "https://github.com/ankitects/anki/releases/download/26.09.4/anki-26.09.4-win-x64.msi",
+            "content_type": "application/x-msi"
+          }
+        ]
+      }
+    },
+    "Syncthing/syncthing": {
+      "repo": {
+        "full_name": "syncthing/syncthing",
+        "name": "syncthing",
+        "html_url": "https://github.com/syncthing/syncthing",
+        "owner": {
+          "login": "syncthing",
+          "avatar_url": "https://avatars.githubusercontent.com/u/7628018?v=4"
+        },
+        "description": "Open Source Continuous File Synchronization",
+        "homepage": "https://syncthing.net/",
+        "language": "Go",
+        "stargazers_count": 90458,
+        "forks_count": 5597,
+        "license": {
+          "spdx_id": "MPL-2.0"
+        },
+        "topics": [
+          "go",
+          "p2p",
+          "peer-to-peer",
+          "synchronization"
+        ],
+        "pushed_at": "2026-11-10T01:03:04Z"
+      },
+      "release": {
+        "tag_name": "v2.1.7",
+        "name": "v2.1.7",
+        "published_at": "2026-10-21T06:09:14Z",
+        "html_url": "https://github.com/syncthing/syncthing/releases/tag/v2.1.7",
+        "body": "## What's Changed\r\n\r\nBuilt with Go 1.27.3.\r\n\r\n### Fixes\r\n* fix: handle missing max-sequence file entries by @calmh in https://github.com/syncthing/syncthing/pull/10912\r\n* fix(sqlite): avoid early garbage collection of deleted recv-enc files by @calmh in https://github.com/syncthing/syncthing/pull/10916\r\n* fix(sqlite): do not generate unbounded prepared statements (ref #10913) by @calmh in https://github.com/syncthing/syncthing/pull/10915\r\n* fix(discover): skip unnecessary identical global announce updates; obey retry-after by @calmh in https://github.com/syncthing/syncthing/pull/10918\r\n* fix(protocol): convert panics on bad data to protocol errors by @calmh in https://github.com/syncthing/syncthing/pull/10923\r\n* fix(model): verify local change before applying metadata shortcut (fixes #10924) by @calmh in https://github.com/syncthing/syncthing/pull/10925\r\n* fix(model): ensure parent ownership is copied properly (fixes #8399) by @calmh in https://github.com/syncthing/syncthing/pull/10926\r\n* fix(model): properly compare blocks when reconciling receive-only (fixes #10928) by @calmh in https://github.com/syncthing/syncthing/pull/10929\r\n### Other\r\n* build(deps): update dependencies by @calmh in https://github.com/syncthing/syncthing/pull/10917\r\n* chore(protocol): add protovalidate validation of incoming messages, reasonable limits by @calmh in https://github.com/syncthing/syncthing/pull/10838\r\n\r\n**Full Changelog**: https://github.com/syncthing/syncthing/compare/v2.1.6...v2.1.7",
+        "prerelease": false,
+        "assets": [
+          {
+            "name": "compat.json",
+            "size": 112,
+            "download_count": 272,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/compat.json",
+            "content_type": "application/json"
+          },
+          {
+            "name": "sha1sum.txt.asc",
+            "size": 8797,
+            "download_count": 196,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/sha1sum.txt.asc",
+            "content_type": "text/plain; charset=utf-8"
+          },
+          {
+            "name": "sha256sum.txt.asc",
+            "size": 11029,
+            "download_count": 10676,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/sha256sum.txt.asc",
+            "content_type": "text/plain; charset=utf-8"
+          },
+          {
+            "name": "syncthing-freebsd-386-v2.1.7.tar.gz",
+            "size": 14815289,
+            "download_count": 275,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-freebsd-386-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-freebsd-amd64-v2.1.7.tar.gz",
+            "size": 15460437,
+            "download_count": 405,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-freebsd-amd64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-freebsd-arm-v2.1.7.tar.gz",
+            "size": 14712163,
+            "download_count": 238,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-freebsd-arm-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-freebsd-arm64-v2.1.7.tar.gz",
+            "size": 14273155,
+            "download_count": 253,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-freebsd-arm64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-illumos-amd64-v2.1.7.tar.gz",
+            "size": 17268391,
+            "download_count": 257,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-illumos-amd64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-386-v2.1.7.tar.gz",
+            "size": 13497205,
+            "download_count": 720,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-386-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-amd64-v2.1.7.tar.gz",
+            "size": 14046697,
+            "download_count": 21800,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-amd64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-arm-v2.1.7.tar.gz",
+            "size": 13374338,
+            "download_count": 1142,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-arm-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-arm64-v2.1.7.tar.gz",
+            "size": 12866755,
+            "download_count": 4214,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-arm64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-loong64-v2.1.7.tar.gz",
+            "size": 13452399,
+            "download_count": 198,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-loong64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-mips-v2.1.7.tar.gz",
+            "size": 13172361,
+            "download_count": 186,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-mips-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-mips64-v2.1.7.tar.gz",
+            "size": 13793158,
+            "download_count": 192,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-mips64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-mips64le-v2.1.7.tar.gz",
+            "size": 13484466,
+            "download_count": 187,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-mips64le-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-mipsle-v2.1.7.tar.gz",
+            "size": 12977376,
+            "download_count": 202,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-mipsle-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-ppc64le-v2.1.7.tar.gz",
+            "size": 13100175,
+            "download_count": 189,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-ppc64le-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-riscv64-v2.1.7.tar.gz",
+            "size": 13328126,
+            "download_count": 232,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-riscv64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-linux-s390x-v2.1.7.tar.gz",
+            "size": 13932347,
+            "download_count": 192,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-linux-s390x-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-macos-amd64-v2.1.7.zip",
+            "size": 14889765,
+            "download_count": 2242,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-macos-amd64-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing-macos-arm64-v2.1.7.zip",
+            "size": 13372993,
+            "download_count": 4568,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-macos-arm64-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing-macos-universal-v2.1.7.zip",
+            "size": 28225573,
+            "download_count": 1856,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-macos-universal-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing-netbsd-amd64-v2.1.7.tar.gz",
+            "size": 15378950,
+            "download_count": 204,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-netbsd-amd64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-openbsd-amd64-v2.1.7.tar.gz",
+            "size": 15402753,
+            "download_count": 206,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-openbsd-amd64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-openbsd-arm64-v2.1.7.tar.gz",
+            "size": 14226361,
+            "download_count": 183,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-openbsd-arm64-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-source-v2.1.7.tar.gz",
+            "size": 43763455,
+            "download_count": 1639,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-source-v2.1.7.tar.gz",
+            "content_type": "application/x-gtar"
+          },
+          {
+            "name": "syncthing-source-v2.1.7.tar.gz.asc",
+            "size": 1391,
+            "download_count": 239,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-source-v2.1.7.tar.gz.asc",
+            "content_type": "text/plain; charset=utf-8"
+          },
+          {
+            "name": "syncthing-windows-386-v2.1.7.zip",
+            "size": 13919162,
+            "download_count": 2804,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-windows-386-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing-windows-amd64-v2.1.7.zip",
+            "size": 14281765,
+            "download_count": 92196,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-windows-amd64-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing-windows-arm64-v2.1.7.zip",
+            "size": 12924843,
+            "download_count": 2169,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing-windows-arm64-v2.1.7.zip",
+            "content_type": "application/zip"
+          },
+          {
+            "name": "syncthing_2.1.7_amd64.deb",
+            "size": 14054904,
+            "download_count": 893,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing_2.1.7_amd64.deb",
+            "content_type": "application/x-debian-package"
+          },
+          {
+            "name": "syncthing_2.1.7_arm64.deb",
+            "size": 12901050,
+            "download_count": 311,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing_2.1.7_arm64.deb",
+            "content_type": "application/x-debian-package"
+          },
+          {
+            "name": "syncthing_2.1.7_armel.deb",
+            "size": 13374754,
+            "download_count": 203,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing_2.1.7_armel.deb",
+            "content_type": "application/x-debian-package"
+          },
+          {
+            "name": "syncthing_2.1.7_armhf.deb",
+            "size": 13374638,
+            "download_count": 211,
+            "browser_download_url": "https://github.com/syncthing/syncthing/releases/download/v2.1.7/syncthing_2.1.7_armhf.deb",
+            "content_type": "application/x-debian-package"
+          }
+        ]
+      }
+    }
+  }
+}

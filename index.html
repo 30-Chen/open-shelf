@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="个人开源应用收藏夹：自动展示 GitHub 项目介绍与最新 Release 下载地址">
+  <title>OPEN / SHELF · 我的开源应用</title>
+
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
+
+  <!-- 内核：依赖顺序固定，全部 defer，DOM 解析完成后按序执行 -->
+  <script defer src="assets/js/core/store.js"></script>
+  <script defer src="assets/js/core/net.js"></script>
+  <script defer src="assets/js/core/kernel.js"></script>
+
+  <!-- 业务模块：新增功能 = 新增一个目录 + 在这里加两行脚本引用 -->
+  <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/github.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/view.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/index.js"></script>
+
+  <!-- 最后启动 -->
+  <script defer src="assets/js/core/app.js"></script>
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span>&gt;_</span></div>
+        <div class="brand-text">
+          <!-- 改这里即可换成你自己的站名 -->
+          <h1>OPEN<span>/</span>SHELF</h1>
+          <p>我常用的开源应用 · 自动同步 GitHub Release</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <span class="status"><i class="dot"></i><span class="mono">SYSTEM ONLINE</span></span>
+        <a class="ghost-link mono" href="https://github.com" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+      </div>
+    </header>
+
+    <!-- 每个模块由内核自动创建独立 section 挂载进来，互不干扰 -->
+    <main id="modules" class="modules"></main>
+
+    <footer class="site-footer mono">
+      <span>© <span id="year"></span> · 数据来自 GitHub REST API</span>
+      <span>STATIC / MODULAR / NO BUILD</span>
+    </footer>
+  </div>
+</body>
+</html>
