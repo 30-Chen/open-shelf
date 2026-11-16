@@ -1,0 +1,95 @@
+/* ============================================================
+   landing.css · 首页引导页专用样式
+   全部使用 .lc- 前缀，不影响模块样式。
+   ============================================================ */
+
+.lc-hero { padding: 78px 0 54px; position: relative; }
+
+.lc-eyebrow {
+  display: inline-flex; align-items: center; gap: 9px;
+  font: 11px var(--mono); letter-spacing: 2px; color: var(--accent);
+  padding: 5px 12px; border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--accent-dim);
+}
+.lc-eyebrow i {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.lc-hero h2 {
+  margin: 24px 0 16px;
+  font: 600 clamp(34px, 6.4vw, 62px)/1.1 var(--sans);
+  letter-spacing: -1px; color: var(--text);
+}
+.lc-hero h2 em {
+  font-style: normal;
+  background: linear-gradient(100deg, #7cf2d8, #6d9cff);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.lc-lead { max-width: 640px; margin: 0; font-size: 15.5px; line-height: 1.9; color: var(--text-2); }
+
+.lc-stats { display: flex; flex-wrap: wrap; gap: 30px; margin-top: 38px; }
+.lc-stat { min-width: 92px; }
+.lc-stat b { display: block; font: 600 24px/1.2 var(--mono); color: var(--text); }
+.lc-stat span { display: block; margin-top: 5px; font: 10.5px var(--mono); letter-spacing: 1.1px; color: var(--muted); }
+
+.lc-section-head {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft);
+}
+.lc-section-head h3 { margin: 0; font: 600 12px var(--mono); letter-spacing: 1.8px; color: var(--text-2); }
+.lc-section-head .lc-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+.lc-section-head .lc-hint { font: 10px var(--mono); color: var(--muted); letter-spacing: 1px; }
+
+.lc-catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+.lc-card {
+  position: relative; display: flex; flex-direction: column; min-height: 186px;
+  padding: 22px; overflow: hidden;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: linear-gradient(155deg, rgba(20, 31, 50, .78), rgba(11, 18, 31, .8));
+  transition: border-color .22s, transform .22s, box-shadow .22s;
+  animation: rise .5s cubic-bezier(.2, .7, .3, 1) both;
+}
+.lc-card:hover {
+  border-color: var(--line-strong); transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .32), 0 0 0 1px rgba(85, 227, 194, .07);
+}
+.lc-corner {
+  position: absolute; top: 0; right: 0; width: 46px; height: 46px;
+  background: linear-gradient(225deg, rgba(85, 227, 194, .16), transparent 62%);
+  border-bottom-left-radius: 46px;
+}
+.lc-index { font-size: 10px; letter-spacing: 1.5px; color: var(--accent); }
+.lc-name { display: block; margin: 14px 0 8px; font-size: 20px; font-weight: 600; letter-spacing: .3px; }
+.lc-desc { display: block; font-size: 12.5px; line-height: 1.7; color: var(--muted); flex: 1; }
+.lc-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: 10.5px; letter-spacing: 1px; color: var(--text-2);
+}
+.lc-foot span { color: var(--accent); font-size: 14px; transition: transform .18s; }
+.lc-card:hover .lc-foot span { transform: translate(3px, -3px); }
+
+.lc-empty {
+  grid-column: 1 / -1; padding: 46px 20px; text-align: center;
+  border: 1px dashed var(--line); border-radius: var(--radius);
+  font-size: 13px; color: var(--muted);
+}
+
+/* ---------- 二级页面（面包屑 + 返回） ---------- */
+.lc-crumb {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 22px 0 6px; font: 10.5px var(--mono); letter-spacing: 1.1px; color: var(--muted);
+}
+.lc-crumb a { color: var(--text-2); transition: color .18s; }
+.lc-crumb a:hover { color: var(--accent); }
+.lc-crumb .lc-sep { color: var(--line-strong); }
+.lc-crumb .lc-current { color: var(--accent); }
+
+@media (max-width: 560px) {
+  .lc-hero { padding: 46px 0 34px; }
+  .lc-stats { gap: 20px; }
+  .lc-card { min-height: 168px; padding: 18px; }
+}

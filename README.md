@@ -2,7 +2,9 @@
 
 一个简洁、带科技感的个人主页，用来收集自己常用的开源 App。纯静态、零依赖、零构建，直接托管到 GitHub Pages。
 
-**第一个功能已完成**：提交一个 GitHub 仓库（`owner/repo` 或完整链接），页面自动读取项目介绍、Star、语言、Topics，以及**最新 Release 的版本号与安装包下载地址**（文件名、大小、下载次数），并支持源码 `.zip` / `.tar.gz`、更新日志、一键刷新。内置**静态快照兜底**：API 限流或断网时依然显示内容。
+**页面结构**：`index.html` 是引导页（模块入口目录），每个功能作为二级页面运行在 `module.html?id=<模块id>` 上，互不干扰。
+
+**模块 01 · 开源应用**：提交一个 GitHub 仓库（`owner/repo` 或完整链接）并选择分类目录（可新建），页面自动读取项目介绍、Star、语言、Topics，以及**最新 Release 的版本号与下载地址**（默认显示 3 个主要安装文件，按平台可执行包优先排序，文件名、大小、下载次数）。同时支持源码 `.zip` / `.tar.gz`、更新日志、一键刷新。内置**静态快照兜底**：API 限流或断网时依然显示内容。
 
 ---
 
@@ -42,9 +44,12 @@ git push -u origin main
 
 | 想改什么 | 改哪里 |
 | --- | --- |
-| 站名 / 副标题 / 右上角链接 | `index.html` 的 `<header>` |
+| 站名 / 引导页标题 / 右上角链接 | `index.html`、`module.html` 的 `<header>` 与 `.lc-hero` |
 | 默认收藏的项目清单 | `assets/js/modules/repo-showcase/defaults.js` |
+| 默认目录名称 | `assets/js/modules/repo-showcase/index.js` 的 `DEFAULT_GROUP` |
+| 下载列表显示几行 | `assets/js/modules/repo-showcase/view.js` 的 `MAX` |
 | 配色 / 圆角 / 字体 | `assets/css/base.css` 顶部的 CSS 变量 |
+| 引导页样式 | `assets/css/landing.css` |
 | 卡片样式 | `assets/css/module-repo-showcase.css` |
 | API 缓存时长 | `assets/js/core/app.js` 的 `cacheMs` |
 
@@ -81,22 +86,25 @@ node tools/update-snapshot.mjs
 ## 目录结构与模块化约定
 
 ```
-index.html                          页面骨架 + 脚本装配顺序
+index.html                          引导页：模块入口目录
+module.html                         二级页面容器：按 ?id= 挂载单个模块
+tools/deploy-github.sh              一键创建仓库 / 推送 / 开启 Pages
 data/snapshot.json                  可选的静态兜底快照
 tools/update-snapshot.mjs           一键生成 / 更新快照
 assets/css/
   base.css                         全站设计系统（变量、布局、共享控件）
+  landing.css                      引导页 / 二级页面框架样式（.lc- 前缀）
   module-repo-showcase.css         模块私有样式（统一 .rs- 前缀）
 assets/js/core/                     内核：所有模块共用，不含业务逻辑
   store.js                         命名空间隔离的 localStorage 封装
   net.js                           GET JSON + TTL 缓存 + 错误归一化
-  kernel.js                        事件总线 / 注册表 / 启动沙箱
-  app.js                           全局配置 + 启动
+  kernel.js                        事件总线 / 注册表 / 启动沙箱 / 目录渲染
+  app.js                           全局配置 + 页面分派启动
 assets/js/modules/repo-showcase/    业务模块 01
   defaults.js                      提交到仓库生效的默认清单
   github.js                        数据适配层：输入解析 + API + 归一化
   view.js                          纯渲染层：无状态、全量转义
-  index.js                         模块入口：注册、状态、交互
+  index.js                         模块入口：注册、状态、交互、分类目录
 ```
 
 「互不影响」的四层保证：
@@ -119,7 +127,10 @@ assets/js/modules/repo-showcase/    业务模块 01
   var Portal = global.Portal = global.Portal || {};
   Portal.registry.register({
     id: 'links',                       // 唯一 id，决定 DOM 容器与存储命名空间
+    index: '02',                       // 引导页卡片上的编号
     title: '常用链接',
+    desc: '收藏常用的网址，按标签整理。',   // 引导页卡片上的简介
+    path: 'module.html?id=links',      // 引导页卡片的入口地址
     mount: function (ctx) {
       // ctx.root   独立容器
       // ctx.store  私有存储
@@ -134,20 +145,20 @@ assets/js/modules/repo-showcase/    业务模块 01
 
 **2.** 新建 `assets/css/module-links.css`，类名统一用 `.lk-` 前缀。
 
-**3.** 在 `index.html` 里按依赖顺序加两个标签（模块脚本放在 `app.js` 之前）：
+**3.** 在 `index.html` 和 `module.html` **两个页面**里按依赖顺序加标签（模块脚本放在 `app.js` 之前）：
 
 ```html
 <link rel="stylesheet" href="assets/css/module-links.css">
 <script defer src="assets/js/modules/links/index.js"></script>
 ```
 
-内核会自动挂载它，顺序、故障、存储都与第一个模块隔离。
+内核会据此：在首页引导目录自动生成入口卡片，在 `module.html?id=links` 上只挂载这个模块。顺序、故障、存储都与其它模块隔离。
 
 ## 后续可扩展的方向
 
 - GitHub Actions 定时运行 `tools/update-snapshot.mjs`，站点彻底不依赖浏览器侧的 API 限额；
-- 分类 / 标签 / 搜索 / 排序；
+- 分类内搜索 / 排序；
 - 明暗主题切换（改 `base.css` 的 CSS 变量即可）；
-- 多版本下载、平台筛选（按文件名识别 Windows / macOS / Linux / Android）。
+- 多版本下载、按平台筛选（当前下载列表已默认显示 3 个主要安装文件）。
 
 > 安全说明：GitHub 返回的项目描述、Release 名称与更新日志全部经过 HTML 转义后才渲染，外链只允许 `http/https`。

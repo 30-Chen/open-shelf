@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="开源应用模块：自动展示 GitHub 项目介绍与最新 Release 下载地址">
+  <title>模块 · OPEN / SHELF</title>
+
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
+
+  <!-- 内核：依赖顺序固定，全部 defer，DOM 解析完成后按序执行 -->
+  <script defer src="assets/js/core/store.js"></script>
+  <script defer src="assets/js/core/net.js"></script>
+  <script defer src="assets/js/core/kernel.js"></script>
+
+  <!-- 业务模块 -->
+  <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/github.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/view.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/index.js"></script>
+
+  <!-- 最后启动 -->
+  <script defer src="assets/js/core/app.js"></script>
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span>&gt;_</span></div>
+        <div class="brand-text">
+          <h1>OPEN<span>/</span>SHELF</h1>
+          <p>我常用的开源应用 · 自动同步 GitHub Release</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <a class="ghost-link mono" href="index.html">← 返回首页</a>
+        <span class="status"><i class="dot"></i><span class="mono">MODULE ONLINE</span></span>
+        <a class="ghost-link mono" href="https://github.com" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+      </div>
+    </header>
+
+    <nav class="lc-crumb mono" aria-label="面包屑导航">
+      <a href="index.html">HOME</a>
+      <span class="lc-sep">/</span>
+      <span class="lc-current" id="module-title">模块</span>
+    </nav>
+
+    <!-- 内核按 ?id= 把对应模块挂载到这里 -->
+    <main id="modules" class="modules"></main>
+
+    <footer class="site-footer mono">
+      <span>© <span id="year"></span> · 数据来自 GitHub REST API</span>
+      <a class="ghost-link mono" href="index.html">← 返回模块入口</a>
+    </footer>
+  </div>
+</body>
+</html>

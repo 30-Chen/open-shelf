@@ -1,6 +1,6 @@
 /* ============================================================
    core/kernel.js · 模块内核
-   职责：事件总线 + 模块注册表 + 启动沙箱。
+   职责：事件总线 + 模块注册表 + 启动沙箱 + 引导页目录渲染。
    「互不影响」的四层保证：
      1. 独立 DOM 容器（section#module-<id>）
      2. 独立存储命名空间（store.namespace(id)）
@@ -34,7 +34,7 @@
   /* ---------- 注册表 ---------- */
   var defs = [];
   Portal.registry = {
-    /** def: { id, title?, mount(ctx) } */
+    /** def: { id, title?, desc?, path?, index?, mount(ctx) } */
     register: function (def) {
       if (!def || !def.id || typeof def.mount !== 'function') {
         throw new Error('模块定义必须包含 id 与 mount()');
@@ -44,15 +44,64 @@
       }
       defs.push(def);
     },
-    list: function () { return defs.slice(); }
+    list: function () { return defs.slice(); },
+    get: function (id) {
+      return defs.filter(function (d) { return d.id === id; })[0] || null;
+    }
+  };
+
+  /* ---------- 引导页目录 ---------- */
+  /** 把已注册模块渲染成入口卡片，供首页引导使用。 */
+  Portal.renderCatalog = function (mountRoot) {
+    var root = mountRoot || document.getElementById('catalog');
+    if (!root) return;
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function safePath(p) {
+      var s = String(p || '');
+      return /^(https?:\/\/|\/|\.\/|\.\.\/)/.test(s) ? esc(s) : esc('./' + s);
+    }
+
+    root.innerHTML = defs.map(function (def, i) {
+      var num = String(def.index || (i + 1)).padStart(2, '0');
+      var href = def.path || ('module.html?id=' + encodeURIComponent(def.id));
+      return '' +
+        '<a class="lc-card" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
+          '<span class="lc-corner mono" aria-hidden="true"></span>' +
+          '<span class="lc-index mono">' + esc(num) + ' / MODULE</span>' +
+          '<span class="lc-name">' + esc(def.title || def.id) + '</span>' +
+          '<span class="lc-desc">' + esc(def.desc || '') + '</span>' +
+          '<span class="lc-foot mono">进入模块 <span aria-hidden="true">↗</span></span>' +
+        '</a>';
+    }).join('');
+
+    Portal.bus.emit('catalog:ready', { modules: defs.map(function (d) { return d.id; }) });
   };
 
   /* ---------- 启动 ---------- */
-  Portal.boot = function (mountRoot) {
+  /**
+   * @param mountRoot 挂载点
+   * @param only      可选：只挂载指定 id 的模块（二级页面用）
+   */
+  Portal.boot = function (mountRoot, only) {
     var root = mountRoot || document.getElementById('modules');
     if (!root) { console.error('[kernel] 找不到挂载点 #modules'); return; }
 
-    defs.forEach(function (def) {
+    var list = only
+      ? defs.filter(function (d) { return d.id === only; })
+      : defs;
+
+    if (only && !list.length) {
+      root.innerHTML = '<div class="module-fatal">未找到模块「' +
+        String(only).replace(/[<>&]/g, '') + '」，请从<a href="index.html">首页</a>选择模块。</div>';
+      return;
+    }
+
+    list.forEach(function (def) {
       var section = document.createElement('section');
       section.className = 'module module--' + def.id;
       section.id = 'module-' + def.id;
@@ -78,6 +127,6 @@
         });
     });
 
-    Portal.bus.emit('app:ready', { modules: defs.map(function (d) { return d.id; }) });
+    Portal.bus.emit('app:ready', { modules: list.map(function (d) { return d.id; }) });
   };
 })(window);

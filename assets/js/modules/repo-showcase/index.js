@@ -10,6 +10,7 @@
   var View = NS.view;
   var Github = NS.github;
   var EXAMPLES = ['yt-dlp/yt-dlp', 'qBittorrent/qBittorrent', 'FreeTubeApp/FreeTube'];
+  var DEFAULT_GROUP = '默认';
 
   /** 简单并发池：避免一次性打出 2N 个请求触发 GitHub 限流 */
   function pool(tasks, limit) {
@@ -32,9 +33,50 @@
     });
   }
 
+  /** 归一化分组数据：兼容旧的扁平 projects 数组，并保证一定有默认目录 */
+  function normalizeGroups(raw, legacyProjects) {
+    var result = [];
+    function add(name, repos) {
+      var key = String(name || '').trim().slice(0, 24) || DEFAULT_GROUP;
+      var hit = result.filter(function (g) { return g.name === key; })[0];
+      if (!hit) { hit = { name: key, repos: [] }; result.push(hit); }
+      (repos || []).forEach(function (r) {
+        if (hit.repos.indexOf(r) < 0) hit.repos.push(r);
+      });
+    }
+    if (Array.isArray(raw)) {
+      raw.forEach(function (g) {
+        if (g && Array.isArray(g.repos)) add(g.name, g.repos);
+      });
+    } else if (raw && typeof raw === 'object') {
+      Object.keys(raw).forEach(function (k) { add(k, raw[k]); });
+    }
+    // 首次访问：没有分组也没有旧数据 → 用模块自带的默认清单填充默认目录
+    if (!result.length) {
+      var initial = Array.isArray(legacyProjects) && legacyProjects.length
+        ? legacyProjects : NS.defaults;
+      add(DEFAULT_GROUP, initial);
+    }
+    if (result[0].name !== DEFAULT_GROUP) {
+      result.unshift({ name: DEFAULT_GROUP, repos: [] });
+    }
+    return result;
+  }
+
+  function allRepos(groups) {
+    var out = [];
+    groups.forEach(function (g) {
+      g.repos.forEach(function (r) { if (out.indexOf(r) < 0) out.push(r); });
+    });
+    return out;
+  }
+
   Portal.registry.register({
     id: 'repo-showcase',
+    index: '01',
     title: '开源应用',
+    desc: '粘贴 GitHub 仓库地址，按分类目录整理，自动展示项目介绍与最新 Release 的下载地址。',
+    path: 'module.html?id=repo-showcase',
     mount: function (ctx) {
       var store = ctx.store;                              // 本模块私有存储
       var settings = Portal.store.namespace('settings');  // 跨模块共享的可选偏好
@@ -42,16 +84,18 @@
       var root = ctx.root;
       var esc = View.esc;
 
-      var savedProjects = store.get('projects', null);
+      // 迁移：旧版本用 projects 数组，新版本用 groups:[{name,repos}]
+      var legacy = store.get('projects', null);
+      var rawGroups = store.get('groups', null);
       var state = {
-        projects: Array.isArray(savedProjects) ? savedProjects : NS.defaults.slice(),
+        groups: normalizeGroups(rawGroups, legacy),
         snapshots: store.get('snapshots', {}) || {},
         items: {},
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
         busyAll: false
       };
-      if (savedProjects === null) store.set('projects', state.projects);
+      if (rawGroups === null || legacy !== null) saveGroups();
 
       var exampleHtml = EXAMPLES.map(function (n) {
         return '<button type="button" class="chip" data-action="example" data-repo="' + esc(n) +
@@ -64,7 +108,7 @@
             '<div class="rs-head-left">' +
               '<span class="rs-index mono">01 / MODULE</span>' +
               '<h2 class="rs-title">开源应用 <span class="rs-badge mono" id="rs-count">0 REPOS</span></h2>' +
-              '<p class="rs-sub">粘贴 GitHub 仓库地址，自动获取项目介绍与最新 Release 的下载地址。</p>' +
+              '<p class="rs-sub">粘贴 GitHub 仓库地址，选择或新建分类目录，自动获取项目介绍与最新 Release 下载地址。</p>' +
             '</div>' +
             '<div class="rs-head-actions">' +
               '<button class="btn" data-action="refresh-all" id="rs-refresh-all">↻ 全部刷新</button>' +
@@ -93,6 +137,12 @@
               '<input class="field" id="rs-input" autocomplete="off" spellcheck="false" ' +
                 'placeholder="owner/repo 或 https://github.com/owner/repo" aria-label="GitHub 仓库地址">' +
             '</div>' +
+            '<div class="rs-cat-wrap">' +
+              '<span class="rs-cat-label mono">分类</span>' +
+              '<select class="rs-cat-select" id="rs-group-select" aria-label="选择分类目录"></select>' +
+              '<input class="rs-cat-new" id="rs-group-new" type="text" maxlength="24" autocomplete="off" ' +
+                'placeholder="输入新目录名称" aria-label="新分类目录名称" hidden>' +
+            '</div>' +
             '<button class="btn btn--primary" type="submit">+ 添加项目</button>' +
           '</form>' +
 
@@ -106,12 +156,14 @@
             '<span id="rs-rate">等待同步…</span>' +
           '</div>' +
 
-          '<div class="rs-grid" id="rs-grid"></div>' +
+          '<div id="rs-groups" class="rs-groups"></div>' +
         '</div>';
 
-      var grid = root.querySelector('#rs-grid');
+      var groupsEl = root.querySelector('#rs-groups');
       var form = root.querySelector('#rs-form');
       var input = root.querySelector('#rs-input');
+      var groupSelect = root.querySelector('#rs-group-select');
+      var groupNew = root.querySelector('#rs-group-new');
       var msgEl = root.querySelector('#rs-msg');
       var countEl = root.querySelector('#rs-count');
       var rateEl = root.querySelector('#rs-rate');
@@ -136,31 +188,73 @@
           : msg;
       }
 
+      function saveGroups() {
+        store.set('groups', state.groups);
+      }
+
+      function renderGroupOptions(keep) {
+        var chosen = keep || groupSelect.value || DEFAULT_GROUP;
+        var options = state.groups.map(function (g) {
+          return '<option value="' + esc(g.name) + '"' + (g.name === chosen ? ' selected' : '') + '>' +
+            esc(g.name) + ' (' + g.repos.length + ')</option>';
+        }).join('');
+        groupSelect.innerHTML = options +
+          '<option value="__new__"' + (chosen === '__new__' ? ' selected' : '') + '>＋ 新建目录…</option>';
+        toggleNewInput();
+      }
+
+      function toggleNewInput() {
+        var isNew = groupSelect.value === '__new__';
+        groupNew.hidden = !isNew;
+        if (isNew) groupNew.focus();
+      }
+
+      function resolveTargetGroup() {
+        if (groupSelect.value !== '__new__') return groupSelect.value || DEFAULT_GROUP;
+        var name = String(groupNew.value || '').trim().slice(0, 24) || '';
+        if (!name) { flash('请输入新目录名称', 'error'); return null; }
+        if (name === '__new__') { flash('目录名称不可用', 'error'); return null; }
+        return name;
+      }
+
       function render() {
         // 记住已展开的更新日志 + 已经播放过入场动画的卡片
         var openNotes = Object.create(null);
-        Array.prototype.forEach.call(grid.querySelectorAll('.rs-notes[open]'), function (el) {
-          var card = el.closest('.rs-card');
-          if (card) openNotes[card.dataset.repo] = true;
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('.rs-notes[open]'), function (el) {
+          var cardEl = el.closest('.rs-card');
+          if (cardEl) openNotes[cardEl.dataset.repo] = true;
         });
 
-        grid.innerHTML = state.projects.length
-          ? state.projects.map(function (fullName, i) {
-              return View.card(state.items[fullName] || {
-                fullName: fullName,
-                status: 'loading',
-                data: state.snapshots[fullName] || null
-              }, i);
-            }).join('')
-          : View.empty();
+        var html = '';
+        var index = 0;
+        state.groups.forEach(function (g) {
+          if (!g.repos.length) return;             // 空目录不渲染
+          var cards = g.repos.map(function (fullName) {
+            var item = state.items[fullName] || {
+              fullName: fullName,
+              status: 'loading',
+              data: state.snapshots[fullName] || null
+            };
+            return View.card(item, index++);
+          }).join('');
+          html += '<section class="rs-group" data-group="' + esc(g.name) + '">' +
+            View.groupHead(g.name, g.repos.length, g.name === DEFAULT_GROUP) +
+            '<div class="rs-grid">' + cards + '</div>' +
+          '</section>';
+        });
 
-        Array.prototype.forEach.call(grid.querySelectorAll('.rs-card'), function (el) {
+        groupsEl.innerHTML = html || View.empty();
+
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('.rs-card'), function (el) {
           var repo = el.dataset.repo;
           if (animated[repo]) el.style.animation = 'none'; else animated[repo] = true;
           var notes = el.querySelector('.rs-notes');
           if (notes && openNotes[repo]) notes.open = true;
         });
-        countEl.textContent = state.projects.length + (state.projects.length === 1 ? ' REPO' : ' REPOS');
+
+        var total = allRepos(state.groups).length;
+        countEl.textContent = total + (total === 1 ? ' REPO' : ' REPOS');
+        renderGroupOptions(groupSelect.value);
       }
 
       function load(fullName, force) {
@@ -198,45 +292,69 @@
       }
 
       function loadAll(force) {
-        return pool(state.projects.map(function (name) {
+        return pool(allRepos(state.groups).map(function (name) {
           return function () { return load(name, force); };
         }), 3);
-      }
-
-      function saveProjects() {
-        store.set('projects', state.projects);
       }
 
       function add(raw) {
         var parsed = Github.parseInput(raw);
         if (!parsed.ok) { flash(parsed.error, 'error'); return; }
         var fullName = parsed.fullName;
-        if (state.projects.some(function (n) { return n.toLowerCase() === fullName.toLowerCase(); })) {
+        var all = allRepos(state.groups);
+        if (all.some(function (n) { return n.toLowerCase() === fullName.toLowerCase(); })) {
           flash('这个项目已经在收藏里了', 'warn');
           return;
         }
-        state.projects.unshift(fullName);
-        saveProjects();
+        var groupName = resolveTargetGroup();
+        if (!groupName) return;
+
+        var group = state.groups.filter(function (g) { return g.name === groupName; })[0];
+        if (!group) { group = { name: groupName, repos: [] }; state.groups.push(group); }
+        group.repos.unshift(fullName);
+        saveGroups();
         input.value = '';
-        flash('正在获取 ' + fullName + ' …');
+        if (groupSelect.value === '__new__') {
+          groupSelect.value = groupName;
+          groupNew.value = '';
+          toggleNewInput();
+        }
+        flash('已添加到「' + groupName + '」，正在获取 ' + fullName + ' …');
         render();
         load(fullName, true);
       }
 
       function remove(fullName) {
-        state.projects = state.projects.filter(function (n) { return n !== fullName; });
+        state.groups.forEach(function (g) {
+          g.repos = g.repos.filter(function (n) { return n !== fullName; });
+        });
         delete state.snapshots[fullName];
         delete state.items[fullName];
-        saveProjects();
+        saveGroups();
         store.set('snapshots', state.snapshots);
         render();
         flash('已移除 ' + fullName + '（只影响你自己的浏览器）');
+      }
+
+      function deleteGroup(name) {
+        if (!name || name === DEFAULT_GROUP) return;
+        var group = state.groups.filter(function (g) { return g.name === name; })[0];
+        if (!group) return;
+        var fallback = state.groups.filter(function (g) { return g.name === DEFAULT_GROUP; })[0];
+        if (!fallback) { fallback = { name: DEFAULT_GROUP, repos: [] }; state.groups.unshift(fallback); }
+        group.repos.forEach(function (r) { if (fallback.repos.indexOf(r) < 0) fallback.repos.push(r); });
+        state.groups = state.groups.filter(function (g) { return g.name !== name; });
+        saveGroups();
+        render();
+        flash('目录「' + name + '」已删除，项目已移入默认目录');
       }
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         add(input.value);
       });
+
+      groupSelect.addEventListener('change', toggleNewInput);
 
       root.addEventListener('click', function (e) {
         var target = e.target;
@@ -248,12 +366,14 @@
         if (action === 'example' && repo) { add(repo); return; }
         if (action === 'refresh' && repo) { load(repo, true); return; }
         if (action === 'remove' && repo) { remove(repo); return; }
+        if (action === 'delete-group') { deleteGroup(btn.dataset.group); return; }
 
         if (action === 'refresh-all') {
-          if (state.busyAll || !state.projects.length) return;
+          var total = allRepos(state.groups).length;
+          if (state.busyAll || !total) return;
           state.busyAll = true;
           refreshAllBtn.disabled = true;
-          flash('正在同步 ' + state.projects.length + ' 个项目…');
+          flash('正在同步 ' + total + ' 个项目…');
           loadAll(true).then(function () {
             state.busyAll = false;
             refreshAllBtn.disabled = false;
@@ -298,7 +418,7 @@
         Promise.race([Github.loadLocalSnapshot(), timeout])
           .then(function (snapshot) {
             if (!snapshot) return;
-            state.projects.forEach(function (name) {
+            allRepos(state.groups).forEach(function (name) {
               if (state.snapshots[name]) return; // 已有实时缓存，别用旧快照覆盖
               var d = Github.fromSnapshot(snapshot, name);
               if (d) state.items[name] = { fullName: name, status: 'ready', data: d };

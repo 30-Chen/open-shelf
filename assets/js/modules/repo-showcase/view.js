@@ -111,6 +111,22 @@
       '</a>';
   }
 
+  // 主要安装文件（各平台可执行包）优先，校验文件/签名/源码包靠后。
+  var PRIMARY_RE = /\.(exe|msi|appx|dmg|pkg|app|AppImage|deb|rpm|apk|ipa|zip|7z|rar|tar\.gz|tgz|bin|jar)$/i;
+  var SECONDARY_RE = /(checksums?|sha\d+|md5|sig|asc|pem|signature|\.txt$|\.sha\d+$|source[-_]?code|sources?\.jar)/i;
+  var SOURCE_RE = /(source|src)[-_.]?(code)?\.(zip|tar|tgz|7z)/i;
+
+  function assetScore(a) {
+    var name = String(a.name || '');
+    var s = 0;
+    if (PRIMARY_RE.test(name)) s += 100;
+    if (SOURCE_RE.test(name)) s -= 60;
+    else if (SECONDARY_RE.test(name)) s -= 80;
+    // 同档位内按下载量排序，越常用越靠前
+    s += Math.min(Number(a.downloads) || 0, 100000) / 100000;
+    return s;
+  }
+
   function releaseBlock(d) {
     var r = d.release;
     if (!r) {
@@ -124,13 +140,16 @@
         '</div>';
     }
 
-    var MAX = 6;
-    var visible = r.assets.slice(0, MAX);
-    var rest = r.assets.length - visible.length;
+    var MAX = 3;
+    var ordered = r.assets.slice().sort(function (a, b) {
+      return assetScore(b) - assetScore(a);
+    });
+    var visible = ordered.slice(0, MAX);
+    var rest = ordered.length - visible.length;
     var assets = visible.length
       ? '<div class="rs-assets">' + visible.map(assetRow).join('') +
           (rest > 0 ? '<a class="rs-asset-more mono" href="' + safeUrl(r.url) +
-            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个安装包 · 前往 Release 页面 ↗</a>' : '') +
+            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 ↗</a>' : '') +
         '</div>'
       : '<p class="rs-no-assets">该版本没有上传安装包，可下载源码归档或查看 Release 页面。</p>';
 
@@ -216,14 +235,29 @@
       '<span class="rs-card-line"></span>' + inner + '</article>';
   }
 
+  /** 分组标题：仅渲染视觉结构，卡片由调用方组装。key 为默认目录时不显示删除按钮。 */
+  function groupHead(key, count, isDefault) {
+    return '' +
+      '<header class="rs-group-head">' +
+        '<span class="rs-group-mark mono" aria-hidden="true">▎</span>' +
+        '<h3 class="rs-group-name">' + esc(key) + '</h3>' +
+        '<span class="rs-group-count mono">' + count + ' ' + (count === 1 ? 'REPO' : 'REPOS') + '</span>' +
+        '<span class="rs-group-rule" aria-hidden="true"></span>' +
+        (isDefault
+          ? '<span class="rs-group-tag mono">默认目录</span>'
+          : '<button class="rs-group-del mono" type="button" data-action="delete-group" data-group="' +
+            esc(key) + '" title="删除该目录，项目移入默认目录">删除目录 ×</button>') +
+      '</header>';
+  }
+
   function empty() {
     return '' +
       '<div class="rs-empty">' +
         '<div class="rs-empty-mark mono">[ ]</div>' +
         '<h3>还没有收藏任何项目</h3>' +
-        '<p>在上方粘贴 <code>owner/repo</code> 或 GitHub 链接，即可自动拉取项目介绍与最新 Release 下载地址。</p>' +
+        '<p>在上方粘贴 <code>owner/repo</code> 或 GitHub 链接，选择或新建一个分类目录，即可自动拉取项目介绍与最新 Release 下载地址。</p>' +
       '</div>';
   }
 
-  NS.view = { esc: esc, safeUrl: safeUrl, card: card, empty: empty, compact: compact };
+  NS.view = { esc: esc, safeUrl: safeUrl, card: card, groupHead: groupHead, empty: empty, compact: compact };
 })(window);
