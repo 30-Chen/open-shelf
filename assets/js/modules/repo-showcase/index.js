@@ -12,6 +12,10 @@
   var EXAMPLES = ['yt-dlp/yt-dlp', 'qBittorrent/qBittorrent', 'FreeTubeApp/FreeTube'];
   var DEFAULT_GROUP = '默认';
 
+  // 同步桥：只有本模块 mount() 完成后才 ready，首页不参与同步。
+  // 内核通过注册表的 sync 字段读写，本模块不引用其它模块。
+  var syncBridge = { ready: function () { return false; } };
+
   /** 简单并发池：避免一次性打出 2N 个请求触发 GitHub 限流 */
   function pool(tasks, limit) {
     return new Promise(function (resolve) {
@@ -77,6 +81,7 @@
     title: '开源应用',
     desc: '粘贴 GitHub 仓库地址，按分类目录整理，自动展示项目介绍与最新 Release 的下载地址。',
     path: 'module.html?id=repo-showcase',
+    sync: syncBridge,
     mount: function (ctx) {
       var store = ctx.store;                              // 本模块私有存储
       var settings = Portal.store.namespace('settings');  // 跨模块共享的可选偏好
@@ -428,6 +433,39 @@
           .catch(function () { /* 快照是可选的 */ })
           .then(function () { loadAll(false); });
       }
+
+      // ---------- 同步钩子 ----------
+      // 只暴露用户数据（分类 + 项目清单 + 快照），不暴露 token 等本地偏好。
+      syncBridge.ready = function () { return true; };
+      syncBridge.getState = function () {
+        return { groups: state.groups, snapshots: state.snapshots };
+      };
+      syncBridge.applyState = function (data) {
+        if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
+        var incoming = Array.isArray(data.groups)
+          ? data.groups.map(function (g) {
+              return {
+                name: String((g && g.name) || DEFAULT_GROUP).trim().slice(0, 24) || DEFAULT_GROUP,
+                repos: Array.isArray(g && g.repos)
+                  ? g.repos.map(function (r) { return String(r).trim(); }).filter(Boolean)
+                  : []
+              };
+            })
+          : [];
+        // 保留默认目录为第一项（与本模块约定一致）
+        var def = incoming.filter(function (g) { return g.name === DEFAULT_GROUP; })[0];
+        if (!def) incoming.unshift({ name: DEFAULT_GROUP, repos: [] });
+        else if (incoming[0].name !== DEFAULT_GROUP) {
+          incoming = [incoming.splice(incoming.indexOf(def), 1)[0]].concat(incoming);
+        }
+        state.groups = incoming;
+        state.snapshots = (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {};
+        state.items = {};
+        saveGroups();
+        store.set('snapshots', state.snapshots);
+        render();
+        loadAll(false);
+      };
 
       render();
       bootstrap();

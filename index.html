@@ -10,11 +10,13 @@
   <link rel="preconnect" href="https://api.github.com">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/sync.css">
 
   <!-- 内核：依赖顺序固定，全部 defer，DOM 解析完成后按序执行 -->
   <script defer src="assets/js/core/store.js"></script>
   <script defer src="assets/js/core/net.js"></script>
   <script defer src="assets/js/core/kernel.js"></script>
+  <script defer src="assets/js/core/sync.js"></script>
 
   <!-- 业务模块注册（首页只读取元数据渲染入口，不挂载模块） -->
   <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>

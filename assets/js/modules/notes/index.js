@@ -13,6 +13,9 @@
   var STORE_KEY = 'notes-v1';
   var ALL = '__all__';
 
+  // 同步桥：仅 mount() 完成后 ready，内核通过注册表读写，不引用其它模块。
+  var syncBridge = { ready: function () { return false; } };
+
   function uid() {
     return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
@@ -43,6 +46,7 @@
     title: '笔记 / 博客',
     desc: '用 Markdown 收藏教程与灵感，支持图文、代码和内嵌视频，按分类整理、搜索与导出。',
     path: 'module.html?id=notes',
+    sync: syncBridge,
     mount: function (ctx) {
       var store = ctx.store;              // 私有命名空间 portal:v1:notes:*
       var root = ctx.root;
@@ -380,6 +384,32 @@
           save();
         }
       });
+
+      // ---------- 同步钩子 ----------
+      syncBridge.ready = function () { return true; };
+      syncBridge.getState = function () {
+        return { notes: state.notes, categories: state.categories };
+      };
+      syncBridge.applyState = function (data) {
+        if (!data || typeof data !== 'object') throw new Error('笔记数据格式无效');
+        var incoming = Array.isArray(data.notes)
+          ? data.notes.map(normalizeNote).filter(Boolean)
+          : null;
+        if (!incoming) throw new Error('笔记数据缺少 notes 列表');
+        state.notes = incoming;
+        var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
+        state.notes.forEach(function (n) {
+          if (cats.indexOf(n.category) < 0) cats.push(n.category);
+        });
+        state.categories = cats;
+        state.category = ALL;
+        state.query = '';
+        state.view = 'list';
+        state.currentId = null;
+        state.draft = null;
+        persist();
+        render();
+      };
 
       render();
     }
