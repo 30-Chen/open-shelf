@@ -6,6 +6,21 @@
 
 **模块 01 · 开源应用**：提交一个 GitHub 仓库（`owner/repo` 或完整链接）并选择分类目录（可新建），页面自动读取项目介绍、Star、语言、Topics，以及**最新 Release 的版本号与下载地址**（默认显示 3 个主要安装文件，按平台可执行包优先排序，文件名、大小、下载次数）。同时支持源码 `.zip` / `.tar.gz`、更新日志、一键刷新。内置**静态快照兜底**：API 限流或断网时依然显示内容。
 
+**模块 02 · 笔记 / 博客**：用 Markdown 写教程与灵感，支持**图文、代码、内嵌视频**（B 站、YouTube、mp4 直链），按分类目录整理、全文搜索、标签归类。带左右分栏的实时预览编辑器、工具栏一键插入图片/视频/代码块；笔记保存在当前浏览器本地，可**导出/导入 JSON** 备份迁移。内置 3 篇示例教程，渲染器先转义后白名单注入，杜绝 XSS。
+
+### 笔记语法速查
+
+| 想写什么 | 写法 |
+| --- | --- |
+| 标题 | `# 一级` ~ `###### 六级` |
+| 强调 | `**粗体**`、`*斜体*`、`~~删除线~~` |
+| 链接 / 图片 | `[文字](https://…)`、`![说明](图片地址)` |
+| 代码块 | 三个反引号包裹，可跟语言名如 ``` js |
+| 列表 / 引用 | `- 项目`、`1. 项目`、`> 引用` |
+| 视频 | 单独一行写 `@video https://…`（B 站 / YouTube / mp4 直链） |
+
+> 视频与图片只引用网络地址，不上传文件、不占用存储；笔记正文与设置仅存在你自己的浏览器里，公开站点上的访客看不到彼此的内容。
+
 ---
 
 ## 快速开始
@@ -51,6 +66,8 @@ git push -u origin main
 | 配色 / 圆角 / 字体 | `assets/css/base.css` 顶部的 CSS 变量 |
 | 引导页样式 | `assets/css/landing.css` |
 | 卡片样式 | `assets/css/module-repo-showcase.css` |
+| 内置示例笔记 / 默认分类 | `assets/js/modules/notes/defaults.js` 的 `NS.defaults` / `NS.defaultCategories` |
+| 笔记样式 | `assets/css/module-notes.css` |
 | API 缓存时长 | `assets/js/core/app.js` 的 `cacheMs` |
 
 `defaults.js` 里的清单**提交到仓库后对所有访客生效**；访客自己在页面上添加/删除的项目只存在他浏览器的 `localStorage` 里，不会改动仓库，也不会影响别人。
@@ -88,23 +105,28 @@ node tools/update-snapshot.mjs
 ```
 index.html                          引导页：模块入口目录
 module.html                         二级页面容器：按 ?id= 挂载单个模块
-tools/deploy-github.sh              一键创建仓库 / 推送 / 开启 Pages
 data/snapshot.json                  可选的静态兜底快照
 tools/update-snapshot.mjs           一键生成 / 更新快照
 assets/css/
   base.css                         全站设计系统（变量、布局、共享控件）
   landing.css                      引导页 / 二级页面框架样式（.lc- 前缀）
-  module-repo-showcase.css         模块私有样式（统一 .rs- 前缀）
+  module-repo-showcase.css         模块 01 私有样式（.rs- 前缀）
+  module-notes.css                 模块 02 私有样式（.nt- 前缀）
 assets/js/core/                     内核：所有模块共用，不含业务逻辑
   store.js                         命名空间隔离的 localStorage 封装
   net.js                           GET JSON + TTL 缓存 + 错误归一化
   kernel.js                        事件总线 / 注册表 / 启动沙箱 / 目录渲染
   app.js                           全局配置 + 页面分派启动
-assets/js/modules/repo-showcase/    业务模块 01
+assets/js/modules/repo-showcase/    业务模块 01 · 开源应用
   defaults.js                      提交到仓库生效的默认清单
   github.js                        数据适配层：输入解析 + API + 归一化
   view.js                          纯渲染层：无状态、全量转义
   index.js                         模块入口：注册、状态、交互、分类目录
+assets/js/modules/notes/            业务模块 02 · 笔记 / 博客
+  defaults.js                      内置示例笔记与默认分类
+  markdown.js                      安全 Markdown 渲染 + 视频白名单
+  view.js                          纯渲染层：列表 / 阅读 / 编辑器
+  index.js                         模块入口：CRUD / 搜索 / 导入导出
 ```
 
 「互不影响」的四层保证：
@@ -116,9 +138,9 @@ assets/js/modules/repo-showcase/    业务模块 01
 
 模块之间不直接引用，需要通信时走 `ctx.bus.on/emit`（例如 `net:response` 事件）。
 
-## 新增第二个功能（示例）
+## 新增更多功能（示例）
 
-以后想加「书签」「常用链接」「博客列表」等模块，只需要三步，不需要碰现有代码：
+已有模块 01 开源应用、模块 02 笔记。以后想加「书签」「常用链接」等模块，只需要三步，不需要碰现有代码：
 
 **1.** 新建 `assets/js/modules/links/index.js`：
 
@@ -161,4 +183,4 @@ assets/js/modules/repo-showcase/    业务模块 01
 - 明暗主题切换（改 `base.css` 的 CSS 变量即可）；
 - 多版本下载、按平台筛选（当前下载列表已默认显示 3 个主要安装文件）。
 
-> 安全说明：GitHub 返回的项目描述、Release 名称与更新日志全部经过 HTML 转义后才渲染，外链只允许 `http/https`。
+> 安全说明：GitHub 返回的项目描述、Release 名称与更新日志全部经过 HTML 转义后才渲染，外链只允许 `http/https`。笔记渲染器同样先整体转义再白名单注入；视频 iframe 只接受 B 站 BV 号与 YouTube 视频 ID，图片仅放行 `http/https` 与 base64 图片，杜绝脚本注入。
