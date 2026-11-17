@@ -13,8 +13,29 @@
   var STORE_KEY = 'notes-v1';
   var ALL = '__all__';
 
-  // 同步桥：仅 mount() 完成后 ready，内核通过注册表读写，不引用其它模块。
+  // 同步桥：mount() 后用内存态，未挂载（如首页）时用冷数据读写 localStorage。
+  // 内核只通过注册表的 sync 字段访问，本模块不引用其它模块。
   var syncBridge = { ready: function () { return false; } };
+
+  /** 冷读取：未挂载时从 localStorage 取笔记；无数据返回 null（不参与同步） */
+  syncBridge.cold = function () {
+    var saved = Portal.store.namespace('notes').get(STORE_KEY, null);
+    if (!saved || !Array.isArray(saved.notes)) return null;
+    return {
+      notes: saved.notes.map(normalizeNote).filter(Boolean),
+      categories: Array.isArray(saved.categories) ? saved.categories.slice() : []
+    };
+  };
+  /** 冷写入：未挂载时把云端数据落盘，下次进入模块即生效 */
+  syncBridge.applyCold = function (data) {
+    if (!data || typeof data !== 'object' || !Array.isArray(data.notes)) {
+      throw new Error('笔记数据格式无效');
+    }
+    var notes = data.notes.map(normalizeNote).filter(Boolean);
+    var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
+    notes.forEach(function (n) { if (cats.indexOf(n.category) < 0) cats.push(n.category); });
+    Portal.store.namespace('notes').set(STORE_KEY, { notes: notes, categories: cats });
+  };
 
   function uid() {
     return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);

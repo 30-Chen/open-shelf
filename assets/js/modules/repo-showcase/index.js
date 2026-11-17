@@ -12,9 +12,44 @@
   var EXAMPLES = ['yt-dlp/yt-dlp', 'qBittorrent/qBittorrent', 'FreeTubeApp/FreeTube'];
   var DEFAULT_GROUP = '默认';
 
-  // 同步桥：只有本模块 mount() 完成后才 ready，首页不参与同步。
-  // 内核通过注册表的 sync 字段读写，本模块不引用其它模块。
+  // 同步桥：mount() 后用内存态，未挂载（如首页）时用冷数据读写 localStorage。
+  // 内核只通过注册表的 sync 字段访问，本模块不引用其它模块。
   var syncBridge = { ready: function () { return false; } };
+
+  /** 归一化为同步可用的分组结构（热/冷路径共用） */
+  function sanitizeGroups(data) {
+    var incoming = Array.isArray(data && data.groups)
+      ? data.groups.map(function (g) {
+          return {
+            name: String((g && g.name) || DEFAULT_GROUP).trim().slice(0, 24) || DEFAULT_GROUP,
+            repos: Array.isArray(g && g.repos)
+              ? g.repos.map(function (r) { return String(r).trim(); }).filter(Boolean)
+              : []
+          };
+        })
+      : [];
+    var def = incoming.filter(function (g) { return g.name === DEFAULT_GROUP; })[0];
+    if (!def) incoming.unshift({ name: DEFAULT_GROUP, repos: [] });
+    else if (incoming[0].name !== DEFAULT_GROUP) {
+      incoming = [incoming.splice(incoming.indexOf(def), 1)[0]].concat(incoming);
+    }
+    return incoming;
+  }
+
+  /** 冷读取：未挂载时从 localStorage 取用户数据；无数据返回 null（不参与同步） */
+  syncBridge.cold = function () {
+    var ns = Portal.store.namespace('repo-showcase');
+    var groups = ns.get('groups', null);
+    if (!Array.isArray(groups)) return null;
+    return { groups: sanitizeGroups({ groups: groups }), snapshots: ns.get('snapshots', {}) || {} };
+  };
+  /** 冷写入：未挂载时把云端数据落盘，下次进入模块即生效 */
+  syncBridge.applyCold = function (data) {
+    if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
+    var ns = Portal.store.namespace('repo-showcase');
+    ns.set('groups', sanitizeGroups(data));
+    ns.set('snapshots', (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {});
+  };
 
   /** 简单并发池：避免一次性打出 2N 个请求触发 GitHub 限流 */
   function pool(tasks, limit) {
@@ -442,23 +477,7 @@
       };
       syncBridge.applyState = function (data) {
         if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
-        var incoming = Array.isArray(data.groups)
-          ? data.groups.map(function (g) {
-              return {
-                name: String((g && g.name) || DEFAULT_GROUP).trim().slice(0, 24) || DEFAULT_GROUP,
-                repos: Array.isArray(g && g.repos)
-                  ? g.repos.map(function (r) { return String(r).trim(); }).filter(Boolean)
-                  : []
-              };
-            })
-          : [];
-        // 保留默认目录为第一项（与本模块约定一致）
-        var def = incoming.filter(function (g) { return g.name === DEFAULT_GROUP; })[0];
-        if (!def) incoming.unshift({ name: DEFAULT_GROUP, repos: [] });
-        else if (incoming[0].name !== DEFAULT_GROUP) {
-          incoming = [incoming.splice(incoming.indexOf(def), 1)[0]].concat(incoming);
-        }
-        state.groups = incoming;
+        state.groups = sanitizeGroups(data);
         state.snapshots = (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {};
         state.items = {};
         saveGroups();

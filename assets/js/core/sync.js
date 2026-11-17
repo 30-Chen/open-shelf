@@ -1,12 +1,13 @@
 /* ============================================================
-   core/sync.js · 跨设备同步内核（本地优先 + GitHub Gist）
+   core/sync.js · 全自动跨设备同步内核（本地优先 + GitHub Gist）
    职责：
-     1. 采集各模块通过 registry 暴露的 sync.getState() 数据
-     2. 推送到用户的私有 Gist / 从 Gist 拉取并分发给模块 sync.applyState()
-     3. 冲突检测：以内容哈希判断「本地未上传」或「云端已变更」，明确提示后覆盖
-     4. 悬浮面板 UI（配置 token / gist、上传、下载、状态）
+     1. 采集各模块通过 registry.sync 暴露的 getState()/cold() 数据
+     2. 本地改动自动检测 → 防抖后自动上传；云端变化自动轮询 → 自动下载
+     3. 冲突按「最后修改时间戳」裁决，不静默丢数据
+     4. 上传前把「当前页面未挂载模块」的云端数据合并回去，避免覆盖
+     5. 悬浮面板 UI：自动开关、配置、状态、手动上传/下载
 
-   数据只写进用户自己的 Gist，token 只存在本机 localStorage，
+   数据只写进用户自己的私有 Gist，token 只存在本机 localStorage，
    不进入仓库、不经过任何第三方。模块之间仍互不引用，仅通过注册表通信。
    ============================================================ */
 (function (global) {
@@ -18,18 +19,30 @@
   var FILE = 'open-shelf.json';
   var DESC = 'Open Shelf · 跨设备同步（自动生成，请勿手动修改）';
 
+  // 调度参数
+  var LOCAL_TICK = 1500;    // 本地哈希检测间隔
+  var CLOUD_TICK = 15000;   // 云端轮询间隔
+  var DEBOUNCE = 2500;      // 本地改动后等待上传的防抖
+  var SKEW = 1500;          // 时间戳裁决容差，避免双方同时认为「我更新」
+
   var cfg = {
     token: store.get('token', '') || '',
     gistId: store.get('gistId', '') || '',
-    syncedHash: store.get('syncedHash', '') || '',
-    syncedAt: Number(store.get('syncedAt', 0)) || 0
+    syncedHash: store.get('syncedHash', '') || '',   // 上次同步成功的完整 payload 哈希
+    localHash: store.get('localHash', '') || '',     // 上次同步成功时本地模块数据哈希
+    syncedAt: Number(store.get('syncedAt', 0)) || 0,
+    localChangedAt: Number(store.get('localChangedAt', 0)) || 0,
+    auto: store.get('auto', true) !== false
   };
 
   function saveCfg() {
     store.set('token', cfg.token);
     store.set('gistId', cfg.gistId);
     store.set('syncedHash', cfg.syncedHash);
+    store.set('localHash', cfg.localHash);
     store.set('syncedAt', cfg.syncedAt);
+    store.set('localChangedAt', cfg.localChangedAt);
+    store.set('auto', cfg.auto);
   }
 
   function esc(v) {
@@ -50,44 +63,55 @@
   }
   function hashModules(modules) { return hash(JSON.stringify(modules || {})); }
 
-  /* ---------- 模块数据聚合 ---------- */
-  function liveProviders() {
-    var out = [];
-    Portal.registry.list().forEach(function (def) {
-      var s = def.sync;
-      if (!s) return;
-      // ready() 由模块在 mount() 后置为 true：首页只注册不挂载，不能参与同步，
-      // 否则会用空数据覆盖云端。
-      if (typeof s.ready === 'function' && !s.ready()) return;
-      if (typeof s.getState === 'function' && typeof s.applyState === 'function') out.push(def);
+  /* ---------- 模块数据聚合（热数据 + 冷数据） ---------- */
+  function syncDefs() {
+    return Portal.registry.list().filter(function (def) {
+      var s = def && def.sync;
+      return s && (typeof s.getState === 'function' || typeof s.cold === 'function');
     });
-    return out;
   }
 
-  function buildPayload() {
+  /** 采集所有模块数据：已挂载用内存态，未挂载读 localStorage 冷数据 */
+  function collectLocal() {
     var modules = {};
-    liveProviders().forEach(function (def) {
+    syncDefs().forEach(function (def) {
+      var s = def.sync;
+      var data = null;
       try {
-        var s = def.sync.getState();
-        if (s && typeof s === 'object') modules[def.id] = s;
-      } catch (e) { console.error('[sync] getState ' + def.id, e); }
+        if (typeof s.ready === 'function' && s.ready()) data = s.getState();
+        else if (typeof s.cold === 'function') data = s.cold();
+      } catch (e) { console.error('[sync] collect ' + def.id, e); }
+      if (data && typeof data === 'object') modules[def.id] = data;
     });
-    return { app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: modules };
+    return modules;
   }
 
-  function applyPayload(payload, sourceHash) {
-    var modules = payload && payload.modules && typeof payload.modules === 'object'
-      ? payload.modules : {};
+  /** 把云端数据写回模块：已挂载走 applyState（即时重绘），未挂载走 applyCold（写存储） */
+  function applyRemote(modules) {
     var applied = [], failed = [];
-    liveProviders().forEach(function (def) {
+    syncDefs().forEach(function (def) {
       if (!Object.prototype.hasOwnProperty.call(modules, def.id)) return;
-      try { def.sync.applyState(modules[def.id]); applied.push(def.id); }
-      catch (e) { console.error('[sync] applyState ' + def.id, e); failed.push(def.id); }
+      var s = def.sync;
+      try {
+        if (typeof s.ready === 'function' && s.ready() && typeof s.applyState === 'function') {
+          s.applyState(modules[def.id]);
+        } else if (typeof s.applyCold === 'function') {
+          s.applyCold(modules[def.id]);
+        } else {
+          return; // 模块未挂载且未提供冷写入能力，跳过（下次挂载读旧数据）
+        }
+        applied.push(def.id);
+      } catch (e) { console.error('[sync] apply ' + def.id, e); failed.push(def.id); }
     });
-    cfg.syncedHash = sourceHash;
-    cfg.syncedAt = Number(payload && payload.updatedAt) || Date.now();
-    saveCfg();
     return { applied: applied, failed: failed };
+  }
+
+  /** 上传前把「当前页面没提供的模块」从云端保留下来，避免整包覆盖丢数据 */
+  function mergeModules(remoteModules, localModules) {
+    var out = {};
+    Object.keys(remoteModules || {}).forEach(function (k) { out[k] = remoteModules[k]; });
+    Object.keys(localModules || {}).forEach(function (k) { out[k] = localModules[k]; });
+    return out;
   }
 
   /* ---------- GitHub API ---------- */
@@ -144,66 +168,208 @@
     });
   }
 
+  /** 把模块数据写进 Gist（不存在则创建私有 Gist） */
+  function writeGist(merged, localModules, mergedHash) {
+    var content = JSON.stringify({
+      app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
+    }, null, 2);
+    var method = cfg.gistId ? 'PATCH' : 'POST';
+    var path = cfg.gistId ? '/gists/' + encodeURIComponent(cfg.gistId) : '/gists';
+    var body = cfg.gistId
+      ? { files: {} }
+      : { description: DESC, public: false, files: {} };
+    body.files[FILE] = { content: content };
+    return request(method, path, body).then(function (g) {
+      cfg.gistId = g.id;
+      cfg.syncedHash = mergedHash;
+      cfg.localHash = hashModules(localModules);
+      cfg.syncedAt = Date.now();
+      saveCfg();
+      return { ok: true, id: g.id, htmlUrl: g.html_url, count: Object.keys(merged).length };
+    });
+  }
+
+  /* ---------- 调度器状态 ---------- */
+  var syncing = false;
+  var lastSeenLocalHash = null;
+  var debounceTimer = null;
+  var localTimer = null;
+  var cloudTimer = null;
+  var lastAuto = { at: 0, result: null, reason: '' };
+
+  /** 单次对账：读云端 → 判定方向 → 上传/下载/无事 */
+  function reconcile(reason) {
+    reason = reason || 'manual';
+    if (syncing) return Promise.resolve({ skipped: true });
+    if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
+    // 允许无 gistId：本地有数据时会自动新建私有 Gist（见下方 writeGist）
+
+    syncing = true;
+    var localModules = collectLocal();
+    var localHash = hashModules(localModules);
+
+    // 404 视为云端不存在，后续重建；其它错误原样抛出
+    return readRemote().catch(function (e) {
+      if (e && e.status === 404) return null;
+      throw e;
+    }).then(function (remote) {
+      var localDirty = localHash !== cfg.localHash;
+      var remoteHash = remote && remote.payload ? hashModules(remote.payload.modules) : '';
+      var remoteChanged = !!cfg.gistId && remoteHash !== cfg.syncedHash;
+
+      // 云端文件缺失：用本地数据新建 Gist
+      if (!remote || !remote.payload) {
+        if (!Object.keys(localModules).length) return { error: '云端与本地都没有可同步的数据' };
+        return writeGist(localModules, localModules, localHash);
+      }
+
+      var remoteModules = remote.payload.modules || {};
+      var remoteTs = Date.parse(remote.gist.updated_at) || Number(remote.payload.updatedAt) || 0;
+
+      if (!localDirty && !remoteChanged) {
+        return { ok: true, note: 'in-sync', remoteHash: remoteHash };
+      }
+
+      // 上传方向：仅本地变；或双方都变但本地时间更新
+      var localWins = localDirty && (!remoteChanged || cfg.localChangedAt > remoteTs + SKEW);
+      if (localWins) {
+        var merged = mergeModules(remoteModules, localModules);
+        return writeGist(merged, localModules, hashModules(merged));
+      }
+
+      // 下载方向：仅云端变；或双方都变但云端更新
+      var r = applyRemote(remoteModules);
+      cfg.syncedHash = remoteHash;
+      cfg.localHash = hashModules(collectLocal());
+      cfg.syncedAt = remoteTs || Date.now();
+      saveCfg();
+      r.ok = true;
+      r.remoteAt = remote.gist.updated_at;
+      r.htmlUrl = remote.gist.html_url;
+      if (r.failed.length) r.error = r.failed.length + ' 个模块应用失败，已保留本地数据';
+      return r;
+    }).catch(function (e) {
+      return { error: e && e.message || String(e) };
+    }).then(function (r) {
+      syncing = false;
+      lastSeenLocalHash = hashModules(collectLocal());
+      lastAuto = { at: Date.now(), result: r, reason: reason };
+      if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
+      return r;
+    });
+  }
+
+  function autoRun(reason) {
+    if (!cfg.auto || !cfg.token) return;
+    reconcile(reason); // 内部吞掉异常，结果在 lastAuto / 事件里
+  }
+
+  function startScheduler() {
+    if (localTimer) return;
+
+    var initial = hashModules(collectLocal());
+    lastSeenLocalHash = initial;
+    var bootReason = null;
+    // 上次同步后本地又变了（例如另一标签页编辑）
+    if (cfg.localHash && initial !== cfg.localHash) {
+      cfg.localChangedAt = Date.now();
+      saveCfg();
+      bootReason = 'startup';
+    }
+    // 已配置 token 但还没 Gist，且本地有数据：启动时自动建库备份
+    if (!bootReason && cfg.token && !cfg.gistId && Object.keys(collectLocal()).length) {
+      bootReason = 'first-upload';
+    }
+    if (bootReason) global.setTimeout(function () { autoRun(bootReason); }, 800);
+
+    // 本地改动检测：允许无 Gist（首次改动会自动建私有 Gist）
+    localTimer = global.setInterval(function () {
+      if (!cfg.auto || !cfg.token) return;
+      if (global.document && global.document.hidden) return;
+      var h = hashModules(collectLocal());
+      if (h === lastSeenLocalHash) return;
+      lastSeenLocalHash = h;
+      cfg.localChangedAt = Date.now();
+      saveCfg();
+      global.clearTimeout(debounceTimer);
+      debounceTimer = global.setTimeout(function () { autoRun('local-change'); }, DEBOUNCE);
+    }, LOCAL_TICK);
+
+    // 云端轮询：必须已有 Gist 才有意义
+    cloudTimer = global.setInterval(function () {
+      if (!cfg.auto || !cfg.token || !cfg.gistId) return;
+      if (global.document && global.document.hidden) return;
+      autoRun('cloud-poll');
+    }, CLOUD_TICK);
+
+    if (global.document && global.document.addEventListener) {
+      global.document.addEventListener('visibilitychange', function () {
+        if (!global.document.hidden) autoRun('visible');
+      });
+    }
+  }
+
   /* ---------- 对外操作 ---------- */
   var sync = {
     config: cfg,
     saveConfig: saveCfg,
     hash: hash,
+    reconcile: reconcile,
+    lastAuto: function () { return lastAuto; },
 
-    /** 本地是否有未上传改动 */
-    localDirty: function () {
-      if (!cfg.syncedHash) return liveProviders().length > 0;
-      return hashModules(buildPayload().modules) !== cfg.syncedHash;
+    setAuto: function (on) {
+      cfg.auto = !!on;
+      saveCfg();
+      if (cfg.auto) autoRun('enabled');
+      return cfg.auto;
     },
 
-    /** 上传：云端有别人改动时先返回 needConfirm，force 后覆盖 */
+    /** 本地是否有未同步改动 */
+    localDirty: function () {
+      if (!cfg.localHash) return collectLocalModulesCount() > 0;
+      return hashModules(collectLocal()) !== cfg.localHash;
+    },
+
+    /** 手动上传（保留兼容） */
     push: function (opts) {
       opts = opts || {};
       if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
-      if (!liveProviders().length) return Promise.resolve({ error: '请先进入某个模块，再执行同步' });
-
-      var payload = buildPayload();
-      var hashValue = hashModules(payload.modules);
-      var content = JSON.stringify(payload, null, 2);
-
-      return readRemote().then(function (remote) {
-        var remoteHash = remote && remote.payload ? hashModules(remote.payload.modules) : '';
+      if (!collectLocalModulesCount()) return Promise.resolve({ error: '请先进入某个模块，再执行同步' });
+      var localModules = collectLocal();
+      var localHash = hashModules(localModules);
+      return readRemote().catch(function (e) {
+        if (e && e.status === 404) return null;
+        throw e;
+      }).then(function (remote) {
+        var remoteModules = remote && remote.payload ? (remote.payload.modules || {}) : {};
+        var remoteHash = hashModules(remoteModules);
         if (cfg.gistId && remoteHash && remoteHash !== cfg.syncedHash && !opts.force) {
           return { needConfirm: true, kind: 'push' };
         }
-        var method = cfg.gistId ? 'PATCH' : 'POST';
-        var path = cfg.gistId ? '/gists/' + encodeURIComponent(cfg.gistId) : '/gists';
-        var body = cfg.gistId
-          ? { files: {} }
-          : { description: DESC, public: false, files: {} };
-        body.files[FILE] = { content: content };
-        return request(method, path, body).then(function (g) {
-          cfg.gistId = g.id;
-          cfg.syncedHash = hashValue;
-          cfg.syncedAt = Date.now();
-          saveCfg();
-          return { ok: true, id: g.id, htmlUrl: g.html_url, count: Object.keys(payload.modules).length };
-        });
+        var merged = mergeModules(remoteModules, localModules);
+        return writeGist(merged, localModules, hashModules(merged));
       }).catch(function (e) {
         return { error: e && e.message || String(e) };
       });
     },
 
-    /** 下载：本地有未上传改动时先返回 needConfirm，force 后覆盖 */
+    /** 手动下载（保留兼容） */
     pull: function (opts) {
       opts = opts || {};
       if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
       if (!cfg.gistId) return Promise.resolve({ error: '请先填写 Gist ID（或先上传一次）' });
-      if (!liveProviders().length) return Promise.resolve({ error: '请先进入某个模块，再执行同步' });
-
+      if (!collectLocalModulesCount()) return Promise.resolve({ error: '请先进入某个模块，再执行同步' });
       return readRemote().then(function (remote) {
         if (!remote || !remote.payload) return { error: '云端没有找到同步数据文件（' + FILE + '）' };
-        var remoteHash = hashModules(remote.payload.modules);
-        var localHash = hashModules(buildPayload().modules);
-        if (localHash !== cfg.syncedHash && !opts.force) {
-          return { needConfirm: true, kind: 'pull' };
-        }
-        var r = applyPayload(remote.payload, remoteHash);
+        var remoteModules = remote.payload.modules || {};
+        var remoteHash = hashModules(remoteModules);
+        var localDirty = hashModules(collectLocal()) !== cfg.localHash;
+        if (localDirty && !opts.force) return { needConfirm: true, kind: 'pull' };
+        var r = applyRemote(remoteModules);
+        cfg.syncedHash = remoteHash;
+        cfg.localHash = hashModules(collectLocal());
+        cfg.syncedAt = Date.parse(remote.gist.updated_at) || Date.now();
+        saveCfg();
         r.ok = true;
         r.remoteAt = remote.gist.updated_at;
         r.htmlUrl = remote.gist.html_url;
@@ -213,14 +379,19 @@
       });
     },
 
-    /** 断开：清掉关联，保留 token，本地数据不动 */
+    /** 断开：清掉关联，保留 token 与自动开关，本地数据不动 */
     disconnect: function () {
       cfg.gistId = '';
       cfg.syncedHash = '';
+      cfg.localHash = '';
       cfg.syncedAt = 0;
+      cfg.localChangedAt = 0;
       saveCfg();
     }
   };
+
+  function collectLocalModulesCount() { return Object.keys(collectLocal()).length; }
+
   Portal.sync = sync;
 
   /* ---------- 悬浮面板 UI ---------- */
@@ -228,6 +399,18 @@
     if (!ts) return '从未';
     try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); }
     catch (e) { return String(ts); }
+  }
+
+  function autoText() {
+    var r = lastAuto.result;
+    if (!lastAuto.at) return '等待首次检查';
+    if (!r) return '检查中…';
+    if (r.skipped) return '正在同步…';
+    if (r.error) return '出错 · ' + String(r.error).slice(0, 40);
+    if (r.note === 'in-sync') return '已是最新';
+    if (r.ok && r.applied) return '已下载 ' + r.applied.length + ' 个模块';
+    if (r.ok && r.count) return '已上传 ' + r.count + ' 个模块';
+    return '检查完成';
   }
 
   function buildUI() {
@@ -249,13 +432,20 @@
     panel.innerHTML = '' +
       '<div class="sy-head">' +
         '<div>' +
-          '<span class="sy-kicker mono">LOCAL-FIRST / GIST</span>' +
+          '<span class="sy-kicker mono">AUTO SYNC / GIST</span>' +
           '<h3 class="sy-title">跨设备同步</h3>' +
         '</div>' +
         '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
       '</div>' +
 
       '<div class="sy-state" id="sy-state"></div>' +
+
+      '<div class="sy-auto-row">' +
+        '<div class="sy-auto-label">自动同步<span>本地改动自动上传，云端变化自动下载</span></div>' +
+        '<button class="sy-switch" id="sy-auto" type="button" role="switch" aria-checked="false">' +
+          '<span class="sy-switch-knob"></span>' +
+        '</button>' +
+      '</div>' +
 
       '<div class="sy-fields">' +
         '<label class="sy-label">GitHub Token' +
@@ -281,7 +471,7 @@
       '</div>' +
 
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">数据只写进你自己的私有 Gist；Token 仅保存在当前浏览器，不会写进仓库或发给第三方。上传会覆盖云端，下载会覆盖本地，冲突时均会先确认。</p>';
+      '<p class="sy-note">数据只写进你自己的私有 Gist；Token 仅保存在当前浏览器，不写进仓库、不发第三方。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传；两端几乎同时修改时以时间较新者为准，并在下方显示结果。</p>';
 
     document.body.appendChild(fab);
     document.body.appendChild(panel);
@@ -290,6 +480,7 @@
     var stateEl = panel.querySelector('#sy-state');
     var tokenEl = panel.querySelector('#sy-token');
     var gistEl = panel.querySelector('#sy-gist');
+    var autoBtn = panel.querySelector('#sy-auto');
     var timer = null;
 
     function msg(text, kind) {
@@ -305,21 +496,31 @@
     function refresh() {
       var dirty = sync.localDirty();
       var ready = !!cfg.token && !!cfg.gistId;
+      var last = lastAuto.result;
+      var hasError = !!(last && last.error);
       var dot = panel.querySelector('#sy-dot');
-      dot.className = 'sy-fab-dot' + (!ready ? '' : (dirty ? ' is-dirty' : ' is-synced'));
+      dot.className = 'sy-fab-dot' +
+        (!ready || !cfg.auto ? '' : (hasError ? ' is-error' : (dirty ? ' is-dirty' : ' is-synced')));
 
-      var providers = liveProviders();
+      autoBtn.className = 'sy-switch' + (cfg.auto ? ' is-on' : '');
+      autoBtn.setAttribute('aria-checked', cfg.auto ? 'true' : 'false');
+
+      var providers = syncDefs();
       var modules = providers.length
         ? providers.map(function (d) {
             return '<span class="sy-tag mono">' + esc(d.index || d.id) + ' ' + esc(d.title || d.id) + '</span>';
           }).join('')
-        : '<span class="sy-tag sy-tag--warn mono">请进入模块后同步</span>';
+        : '<span class="sy-tag sy-tag--warn mono">暂无模块</span>';
+
+      var stateText = !ready
+        ? (cfg.token ? '待关联 Gist' : '未配置')
+        : (!cfg.auto ? '自动已关闭' : (dirty ? '本地有改动' : '已同步'));
 
       stateEl.innerHTML = '' +
         '<div class="sy-state-row"><span>状态</span><b class="' +
-          (!ready ? 'sy-s0' : (dirty ? 'sy-s2' : 'sy-s1')) + '">' +
-          (!ready ? (cfg.token ? '待关联 Gist' : '未配置') : (dirty ? '本地有改动' : '已同步')) +
-        '</b></div>' +
+          (!ready || !cfg.auto ? 'sy-s0' : (hasError ? 'sy-s3' : (dirty ? 'sy-s2' : 'sy-s1'))) + '">' +
+          esc(stateText) + '</b></div>' +
+        '<div class="sy-state-row"><span>自动检查</span><b class="mono">' + esc(autoText()) + '</b></div>' +
         '<div class="sy-state-row"><span>Gist</span><b class="mono">' +
           (cfg.gistId ? esc(cfg.gistId.slice(0, 10)) + '…' : '—') + '</b></div>' +
         '<div class="sy-state-row"><span>上次同步</span><b class="mono">' + fmtTime(cfg.syncedAt) + '</b></div>' +
@@ -332,6 +533,7 @@
       if (gistEl.value !== cfg.gistId) gistEl.value = cfg.gistId;
       saveCfg();
       refresh();
+      if (cfg.token && cfg.auto) autoRun('config-change');
     }
 
     function run(action, force) {
@@ -352,15 +554,23 @@
           gistEl.value = cfg.gistId;
           msg('已上传 · Gist ' + (r.id || '').slice(0, 10) + '… · ' + r.count + ' 个模块', 'ok');
         } else {
-          var names = (r.applied || []).length;
-          msg('已下载 · 更新 ' + names + ' 个模块' +
-            ((r.failed || []).length ? '，' + r.failed.length + ' 个失败' : ''), 'ok');
+          msg('已下载 · 更新 ' + (r.applied || []).length + ' 个模块', 'ok');
         }
       }).catch(function (e) {
         msg(e && e.message || String(e), 'error');
       }).then(function () {
         btn.disabled = false;
         refresh();
+      });
+    }
+
+    // 自动同步结果只更新状态行；出错时在面板消息区提示
+    if (Portal.bus && Portal.bus.on) {
+      Portal.bus.on('sync:auto', function (info) {
+        refresh();
+        if (info && info.result && info.result.error && !panel.hidden) {
+          msg('自动同步：' + info.result.error, 'error');
+        }
       });
     }
 
@@ -371,6 +581,11 @@
     panel.querySelector('#sy-close').addEventListener('click', function () { panel.hidden = true; });
     tokenEl.addEventListener('change', commitConfig);
     gistEl.addEventListener('change', commitConfig);
+    autoBtn.addEventListener('click', function () {
+      var on = sync.setAuto(!cfg.auto);
+      refresh();
+      msg(on ? '自动同步已开启' : '自动同步已关闭', on ? 'ok' : 'warn');
+    });
     panel.querySelector('#sy-push').addEventListener('click', function () { commitConfig(); run('push'); });
     panel.querySelector('#sy-pull').addEventListener('click', function () { commitConfig(); run('pull'); });
     panel.querySelector('#sy-disconnect').addEventListener('click', function () {
@@ -384,7 +599,7 @@
     refresh();
   }
 
-  function start() { buildUI(); }
+  function start() { buildUI(); startScheduler(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start, { once: true });
   } else { start(); }
