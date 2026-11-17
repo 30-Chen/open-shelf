@@ -5,7 +5,7 @@
      2. 本地改动自动检测 → 防抖后自动上传；云端变化自动轮询 → 自动下载
      3. 冲突按「最后修改时间戳」裁决，不静默丢数据
      4. 上传前把「当前页面未挂载模块」的云端数据合并回去，避免覆盖
-     5. 悬浮面板 UI：自动开关、配置、状态、手动上传/下载
+     5. 页头 ☁ SYNC 触发按钮 + 下拉面板：自动开关、配置、状态、手动上传/下载、公开分享
 
    数据只写进用户自己的私有 Gist，token 只存在本机 localStorage，
    不进入仓库、不经过任何第三方。模块之间仍互不引用，仅通过注册表通信。
@@ -456,7 +456,7 @@
 
   Portal.sync = sync;
 
-  /* ---------- 悬浮面板 UI ---------- */
+  /* ---------- 页头触发按钮 + 下拉面板 UI ---------- */
   function fmtTime(ts) {
     if (!ts) return '从未';
     try { return new Date(ts).toLocaleString('zh-CN', { hour12: false }); }
@@ -476,15 +476,21 @@
   }
 
   function buildUI() {
-    if (document.getElementById('sy-fab')) return;
+    if (document.getElementById('sy-wrap')) return;
+
+    // 把同步入口做进页头：一个包裹层放触发按钮 + 面板，锚定在 SYSTEM ONLINE 旁
+    var wrap = document.createElement('div');
+    wrap.id = 'sy-wrap';
+    wrap.className = 'sy-wrap';
 
     var fab = document.createElement('button');
-    fab.id = 'sy-fab';
-    fab.className = 'sy-fab';
+    fab.id = 'sy-trigger';
+    fab.className = 'sy-trigger';
     fab.type = 'button';
     fab.setAttribute('aria-label', '跨设备同步设置');
-    fab.innerHTML = '<span class="sy-fab-icon" aria-hidden="true">☁</span>' +
-      '<span class="sy-fab-dot" id="sy-dot"></span>';
+    fab.setAttribute('aria-expanded', 'false');
+    fab.innerHTML = '<span class="sy-trigger-ico mono" aria-hidden="true">☁</span>' +
+      '<span class="sy-trigger-dot" id="sy-dot"></span>';
 
     var panel = document.createElement('section');
     panel.id = 'sy-panel';
@@ -551,8 +557,19 @@
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
       '<p class="sy-note">私有同步 Gist 仅你自己可读写；公开分享 Gist 任何人可读、仅你可写，两者独立。Token 只保存在当前浏览器，不写进仓库、不发第三方；公开分享只上传模块数据，不含 Token。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
 
-    document.body.appendChild(fab);
-    document.body.appendChild(panel);
+    wrap.appendChild(fab);
+    wrap.appendChild(panel);
+
+    // 优先插入页头 .header-meta（SYSTEM/MODULE ONLINE 旁）；找不到时降级挂到 body
+    var headerMeta = document.querySelector('.header-meta');
+    if (headerMeta) {
+      var statusEl = headerMeta.querySelector('.status');
+      if (statusEl && statusEl.parentNode) statusEl.parentNode.insertBefore(wrap, statusEl.nextSibling);
+      else headerMeta.appendChild(wrap);
+    } else {
+      wrap.classList.add('sy-wrap--floating');
+      document.body.appendChild(wrap);
+    }
 
     var msgEl = panel.querySelector('#sy-msg');
     var stateEl = panel.querySelector('#sy-state');
@@ -576,8 +593,10 @@
       var ready = !!cfg.token && !!cfg.gistId;
       var last = lastAuto.result;
       var hasError = !!(last && last.error);
-      var dot = panel.querySelector('#sy-dot');
-      dot.className = 'sy-fab-dot' +
+      // 状态点在触发按钮内（不是 panel 内）——必须用全局查找并做空值保护，
+      // 否则 panel.querySelector 返回 null，dot.className 抛错会中断整个 refresh。
+      var dot = document.getElementById('sy-dot');
+      if (dot) dot.className = 'sy-trigger-dot' +
         (!ready || !cfg.auto ? '' : (hasError ? ' is-error' : (dirty ? ' is-dirty' : ' is-synced')));
 
       autoBtn.className = 'sy-switch' + (cfg.auto ? ' is-on' : '');
@@ -670,11 +689,19 @@
       });
     }
 
-    fab.addEventListener('click', function () {
-      panel.hidden = !panel.hidden;
-      if (!panel.hidden) { refresh(); tokenEl.focus(); }
+    function setOpen(open) {
+      panel.hidden = !open;
+      fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) refresh();
+    }
+
+    fab.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOpen(panel.hidden);
     });
-    panel.querySelector('#sy-close').addEventListener('click', function () { panel.hidden = true; });
+    panel.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () { if (!panel.hidden) setOpen(false); });
+    panel.querySelector('#sy-close').addEventListener('click', function () { setOpen(false); });
     tokenEl.addEventListener('change', commitConfig);
     gistEl.addEventListener('change', commitConfig);
     autoBtn.addEventListener('click', function () {
