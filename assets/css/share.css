@@ -1,0 +1,69 @@
+/* ============================================================
+   share.css · 公开只读分享页（独立 sh- 前缀）
+   模块内容区复用 .rs- / .nt- 样式，这里只定义分享页自身结构。
+   ============================================================ */
+
+.sh-banner {
+  display: flex; align-items: flex-start; gap: 16px;
+  margin: 8px 0 18px; padding: 18px 20px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: linear-gradient(135deg, rgba(85, 227, 194, .06), rgba(122, 162, 247, .04));
+}
+.sh-banner-icon {
+  flex: 0 0 auto; width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(85, 227, 194, .35); border-radius: 10px;
+  color: var(--accent); font-size: 18px;
+  background: rgba(85, 227, 194, .07);
+}
+.sh-banner-text h2 { margin: 0; font: 600 16px var(--sans); letter-spacing: .3px; }
+.sh-banner-text p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
+.sh-banner-text strong { color: var(--warn); font-weight: 600; }
+
+.sh-status { min-height: 0; margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.sh-status--error { color: var(--danger); }
+
+.sh-loading {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  min-height: 220px; color: var(--muted); font-size: 12px;
+}
+.sh-loading[hidden] { display: none; }
+.sh-spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--line-strong); border-top-color: var(--accent);
+  animation: sh-spin .8s linear infinite;
+}
+@keyframes sh-spin { to { transform: rotate(360deg); } }
+
+.sh-tabs {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 4px 0 22px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.sh-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(0, 0, 0, .2); color: var(--text-2);
+  font: 500 13px var(--sans); cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.sh-tab .mono { font-size: 11px; color: var(--muted); }
+.sh-tab:hover { border-color: var(--line-strong); color: var(--text); }
+.sh-tab.is-active {
+  color: var(--accent); border-color: rgba(85, 227, 194, .45);
+  background: rgba(85, 227, 194, .08);
+}
+.sh-tab.is-active .mono { color: var(--accent); }
+.sh-tab[hidden] { display: none; }
+.sh-count { margin-left: auto; font-size: 11px; color: var(--muted); }
+
+.sh-pane[hidden] { display: none; }
+
+/* 只读模式下把模块内「仅本地存储 / 刷新 / 编辑」类提示替换为中性说明 */
+.sh-pane .nt-statusbar span:first-child { color: var(--accent); }
+
+@media (max-width: 720px) {
+  .sh-banner { padding: 14px; gap: 12px; }
+  .sh-banner-text h2 { font-size: 14px; }
+  .sh-count { margin-left: 0; width: 100%; }
+}

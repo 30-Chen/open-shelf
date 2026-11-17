@@ -32,7 +32,10 @@
     localHash: store.get('localHash', '') || '',     // 上次同步成功时本地模块数据哈希
     syncedAt: Number(store.get('syncedAt', 0)) || 0,
     localChangedAt: Number(store.get('localChangedAt', 0)) || 0,
-    auto: store.get('auto', true) !== false
+    auto: store.get('auto', true) !== false,
+    shareGistId: store.get('shareGistId', '') || '',  // 公开分享用的独立 Gist（与私有同步 Gist 分开）
+    shareOwner: store.get('shareOwner', '') || '',    // 公开 Gist 所属用户名，用于拼 raw 链接
+    shareAt: Number(store.get('shareAt', 0)) || 0
   };
 
   function saveCfg() {
@@ -43,6 +46,9 @@
     store.set('syncedAt', cfg.syncedAt);
     store.set('localChangedAt', cfg.localChangedAt);
     store.set('auto', cfg.auto);
+    store.set('shareGistId', cfg.shareGistId);
+    store.set('shareOwner', cfg.shareOwner);
+    store.set('shareAt', cfg.shareAt);
   }
 
   function esc(v) {
@@ -309,6 +315,58 @@
     }
   }
 
+  /* ---------- 公开只读分享（与私有同步 Gist 完全分开） ---------- */
+  var SHARE_DESC = 'Open Shelf · 公开只读分享（自动生成，请勿手动修改）';
+
+  function buildShareUrl() {
+    if (!cfg.shareGistId) return '';
+    var base = './';
+    try {
+      var href = (global.location && global.location.href) || '';
+      base = href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
+    } catch (e) { /* 保持默认 */ }
+    return base + 'share.html?id=' + encodeURIComponent(cfg.shareGistId) +
+      (cfg.shareOwner ? '&owner=' + encodeURIComponent(cfg.shareOwner) : '');
+  }
+
+  /** 采集所有模块数据（含未挂载模块的冷数据），写进公开 Gist。绝不写入 token / 本地偏好。 */
+  function publishShare() {
+    if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
+    var modules = collectLocal();
+    if (!Object.keys(modules).length) return Promise.resolve({ error: '本地还没有可分享的数据，请先添加项目或笔记' });
+    var content = JSON.stringify({
+      app: 'open-shelf-share', version: 1, updatedAt: Date.now(), modules: modules
+    }, null, 2);
+    var method = cfg.shareGistId ? 'PATCH' : 'POST';
+    var path = cfg.shareGistId ? '/gists/' + encodeURIComponent(cfg.shareGistId) : '/gists';
+    var body = cfg.shareGistId
+      ? { files: {} }
+      : { description: SHARE_DESC, public: true, files: {} };
+    body.files[FILE] = { content: content };
+    return request(method, path, body).then(function (g) {
+      cfg.shareGistId = g.id;
+      cfg.shareOwner = (g.owner && g.owner.login) || cfg.shareOwner || '';
+      cfg.shareAt = Date.now();
+      saveCfg();
+      return { ok: true, id: g.id, owner: cfg.shareOwner, count: Object.keys(modules).length, url: buildShareUrl() };
+    }).catch(function (e) {
+      return { error: e && e.message || String(e) };
+    });
+  }
+
+  /** 停止分享：清本地关联；removeRemote=true 时同时删除远端公开 Gist */
+  function unpublishShare(removeRemote) {
+    var id = cfg.shareGistId;
+    cfg.shareGistId = '';
+    cfg.shareOwner = '';
+    cfg.shareAt = 0;
+    saveCfg();
+    if (!removeRemote || !id) return Promise.resolve({ ok: true });
+    return request('DELETE', '/gists/' + encodeURIComponent(id))
+      .then(function () { return { ok: true }; })
+      .catch(function (e) { return { error: e && e.message || String(e) }; });
+  }
+
   /* ---------- 对外操作 ---------- */
   var sync = {
     config: cfg,
@@ -387,7 +445,11 @@
       cfg.syncedAt = 0;
       cfg.localChangedAt = 0;
       saveCfg();
-    }
+    },
+
+    publishShare: publishShare,
+    unpublishShare: unpublishShare,
+    shareUrl: buildShareUrl
   };
 
   function collectLocalModulesCount() { return Object.keys(collectLocal()).length; }
@@ -470,8 +532,24 @@
           'target="_blank" rel="noopener noreferrer">获取 Token ↗</a>' +
       '</div>' +
 
+      '<div class="sy-share">' +
+        '<div class="sy-share-head">' +
+          '<span class="sy-kicker mono">PUBLIC VIEW / 只读分享</span>' +
+          '<span class="sy-share-pill mono" id="sy-share-pill">未发布</span>' +
+        '</div>' +
+        '<p class="sy-share-desc">把当前内容复制到一个<strong>公开</strong> Gist，生成只读链接。任何人可查看，但无法修改；与上面的私有同步 Gist 完全分开。</p>' +
+        '<div class="sy-share-url" id="sy-share-url" hidden>' +
+          '<input class="sy-input" id="sy-share-link" type="text" readonly value="">' +
+          '<button class="sy-link" id="sy-share-copy" type="button">复制链接</button>' +
+        '</div>' +
+        '<div class="sy-actions sy-share-actions">' +
+          '<button class="btn btn--primary sy-btn" id="sy-share-publish" type="button">⇧ 发布 / 更新分享</button>' +
+          '<button class="btn sy-btn" id="sy-share-stop" type="button" hidden>停止分享</button>' +
+        '</div>' +
+      '</div>' +
+
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">数据只写进你自己的私有 Gist；Token 仅保存在当前浏览器，不写进仓库、不发第三方。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传；两端几乎同时修改时以时间较新者为准，并在下方显示结果。</p>';
+      '<p class="sy-note">私有同步 Gist 仅你自己可读写；公开分享 Gist 任何人可读、仅你可写，两者独立。Token 只保存在当前浏览器，不写进仓库、不发第三方；公开分享只上传模块数据，不含 Token。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
 
     document.body.appendChild(fab);
     document.body.appendChild(panel);
@@ -525,6 +603,24 @@
           (cfg.gistId ? esc(cfg.gistId.slice(0, 10)) + '…' : '—') + '</b></div>' +
         '<div class="sy-state-row"><span>上次同步</span><b class="mono">' + fmtTime(cfg.syncedAt) + '</b></div>' +
         '<div class="sy-tags">' + modules + '</div>';
+
+      // 公开分享区：发布状态、链接、停止按钮
+      var pill = panel.querySelector('#sy-share-pill');
+      var urlBox = panel.querySelector('#sy-share-url');
+      var linkInput = panel.querySelector('#sy-share-link');
+      var stopBtn = panel.querySelector('#sy-share-stop');
+      if (cfg.shareGistId) {
+        pill.textContent = '已发布';
+        pill.className = 'sy-share-pill mono is-live';
+        urlBox.hidden = false;
+        linkInput.value = buildShareUrl();
+        stopBtn.hidden = false;
+      } else {
+        pill.textContent = '未发布';
+        pill.className = 'sy-share-pill mono';
+        urlBox.hidden = true;
+        stopBtn.hidden = true;
+      }
     }
 
     function commitConfig() {
@@ -594,6 +690,49 @@
       gistEl.value = '';
       refresh();
       msg('已断开关联', 'warn');
+    });
+
+    // ---- 公开只读分享 ----
+    var sharePublishBtn = panel.querySelector('#sy-share-publish');
+    var shareStopBtn = panel.querySelector('#sy-share-stop');
+    var shareLinkInput = panel.querySelector('#sy-share-link');
+
+    sharePublishBtn.addEventListener('click', function () {
+      commitConfig(); // 确保 token 已保存
+      if (!cfg.token) { msg('请先填写 GitHub Token', 'error'); tokenEl.focus(); return; }
+      sharePublishBtn.disabled = true;
+      msg('正在发布到公开 Gist…');
+      sync.publishShare().then(function (r) {
+        if (r && r.error) { msg(r.error, 'error'); return; }
+        refresh();
+        msg('已发布 · ' + (r.count || 0) + ' 个模块 · 链接已生成', 'ok');
+      }).catch(function (e) {
+        msg(e && e.message || String(e), 'error');
+      }).then(function () { sharePublishBtn.disabled = false; });
+    });
+
+    panel.querySelector('#sy-share-copy').addEventListener('click', function () {
+      var text = shareLinkInput.value;
+      if (!text) return;
+      function done() { msg('分享链接已复制', 'ok'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          shareLinkInput.select(); document.execCommand && document.execCommand('copy'); done();
+        });
+      } else {
+        shareLinkInput.select(); document.execCommand && document.execCommand('copy'); done();
+      }
+    });
+
+    shareStopBtn.addEventListener('click', function () {
+      if (!global.confirm('停止分享会删除这个公开 Gist，已发出的分享链接将立即失效。确定继续？')) return;
+      shareStopBtn.disabled = true;
+      sync.unpublishShare(true).then(function (r) {
+        if (r && r.error) { msg('本地已停止，但远端删除失败：' + r.error, 'warn'); }
+        else { msg('已停止分享，公开 Gist 已删除', 'ok'); }
+        refresh();
+        shareStopBtn.disabled = false;
+      });
     });
 
     refresh();

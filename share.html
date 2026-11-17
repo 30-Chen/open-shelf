@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="OPEN / SHELF 的公开只读分享：查看发布的项目清单与笔记，内容不可修改。">
+  <title>公开分享 · OPEN / SHELF</title>
+
+  <link rel="preconnect" href="https://gist.githubusercontent.com">
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
+  <link rel="stylesheet" href="assets/css/module-notes.css">
+  <link rel="stylesheet" href="assets/css/share.css">
+
+  <!-- 只需要：安全 Markdown 渲染 + 只读渲染层 + 控制器。
+       刻意不加载任何模块的 index.js / sync.js / app.js：分享页无编辑、无同步、无本地存储。 -->
+  <script defer src="assets/js/modules/notes/markdown.js"></script>
+  <script defer src="assets/js/core/share-view.js"></script>
+  <script defer src="assets/js/core/share.js"></script>
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span>&gt;_</span></div>
+        <div class="brand-text">
+          <h1>OPEN<span>/</span>SHELF</h1>
+          <p>公开分享 · 只读查看</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <a class="ghost-link mono" href="index.html">← 首页</a>
+        <span class="status"><i class="dot"></i><span class="mono">PUBLIC VIEW</span></span>
+      </div>
+    </header>
+
+    <div class="sh-banner">
+      <div class="sh-banner-icon mono" aria-hidden="true">◉</div>
+      <div class="sh-banner-text">
+        <h2>这是一个只读分享页面</h2>
+        <p>这里展示的是发布者公开的内容，任何人都可以查看，但<strong>无法添加、修改或删除</strong>。你自己的收藏与笔记请返回首页进入模块操作。</p>
+      </div>
+    </div>
+
+    <p class="sh-status mono" id="sh-status" role="status"></p>
+
+    <div class="sh-loading" id="sh-loading">
+      <span class="sh-spinner" aria-hidden="true"></span>
+      <span class="mono">正在读取公开分享…</span>
+    </div>
+
+    <main id="sh-content" hidden>
+      <nav class="sh-tabs" aria-label="内容分类">
+        <button class="sh-tab" data-tab="repos" type="button" role="tab" aria-selected="false">
+          <span class="mono">01</span> 开源应用
+        </button>
+        <button class="sh-tab" data-tab="notes" type="button" role="tab" aria-selected="false">
+          <span class="mono">02</span> 笔记 / 博客
+        </button>
+        <span class="sh-count mono" id="sh-count"></span>
+      </nav>
+
+      <section id="sh-repos" class="sh-pane" role="tabpanel"></section>
+      <section id="sh-notes" class="sh-pane" role="tabpanel" hidden></section>
+    </main>
+
+    <footer class="site-footer mono">
+      <span>© <span id="sh-year"></span> · 内容来自发布者的公开分享，本站不存储任何访客数据</span>
+      <a class="ghost-link mono" href="index.html">← 返回模块入口</a>
+    </footer>
+  </div>
+  <script>document.getElementById('sh-year').textContent = String(new Date().getFullYear());</script>
+</body>
+</html>

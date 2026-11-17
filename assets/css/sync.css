@@ -132,6 +132,25 @@
 .sy-msg--error { color: var(--danger); }
 .sy-msg--warn { color: var(--warn); }
 
+.sy-share {
+  margin-top: 14px; padding: 13px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(122, 162, 247, .035);
+}
+.sy-share-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sy-share-head .sy-kicker { color: var(--accent-2, #7aa2f7); }
+.sy-share-pill {
+  padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: 10px; color: var(--muted);
+}
+.sy-share-pill.is-live { color: var(--accent); border-color: rgba(85, 227, 194, .4); background: rgba(85, 227, 194, .08); }
+.sy-share-desc { margin: 9px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.sy-share-desc strong { color: var(--warn); font-weight: 600; }
+.sy-share-url { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.sy-share-url .sy-input { flex: 1; min-width: 0; font-size: 11px; }
+.sy-share-actions { margin-top: 10px; }
+.sy-share-actions .sy-btn { height: 36px; font-size: 12px; }
+
 .sy-note {
   margin: 10px 0 0; padding-top: 10px;
   border-top: 1px solid var(--line-soft);
