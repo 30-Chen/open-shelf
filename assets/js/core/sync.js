@@ -367,6 +367,121 @@
       .catch(function (e) { return { error: e && e.message || String(e) }; });
   }
 
+  /* ---------- 配置口令 / 恢复码（Web Crypto：PBKDF2 + AES-GCM） ----------
+     目的：把难记的 token + gistId 用用户自设口令加密成一串「恢复码」。
+     换设备时只输入同一个口令 + 粘贴恢复码即可还原配置，口令本身不落盘、不上传。
+     恢复码格式：OS1.<base64url(salt)>.<base64url(iv)>.<base64url(ciphertext)> */
+  var RECOVERY_PREFIX = 'OS1';
+  var PBKDF2_ITER = 120000;
+
+  function getCrypto() { return (global.crypto || (typeof crypto !== 'undefined' ? crypto : null)); }
+  function subtle() { var c = getCrypto(); return c && c.subtle ? c.subtle : null; }
+  function hasCodec() {
+    return typeof global.TextEncoder === 'function' && typeof global.TextDecoder === 'function';
+  }
+  function b64urlEncode(bytes) {
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlDecode(str) {
+    var s = String(str).replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s), out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function deriveKey(passphrase, salt) {
+    var s = subtle();
+    return s.importKey('raw', new global.TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey'])
+      .then(function (baseKey) {
+        return s.deriveKey(
+          { name: 'PBKDF2', salt: salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+          baseKey,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['encrypt', 'decrypt']
+        );
+      });
+  }
+
+  /** 把当前同步配置（含分享 Gist）用口令加密成恢复码。口令不落盘。 */
+  function makeRecovery(passphrase) {
+    passphrase = String(passphrase || '');
+    if (passphrase.length < 6) return Promise.resolve({ error: '口令至少 6 位，越长越安全' });
+    var s = subtle(), c = getCrypto();
+    if (!s || !c || !c.getRandomValues || !hasCodec()) {
+      return Promise.resolve({ error: '当前环境不支持加密，请在 HTTPS 或 localhost 下使用' });
+    }
+    if (!cfg.token) return Promise.resolve({ error: '请先填入 GitHub Token，再生成恢复码' });
+    var payload = {
+      v: 1,
+      token: cfg.token,
+      gistId: cfg.gistId || '',
+      shareGistId: cfg.shareGistId || '',
+      shareOwner: cfg.shareOwner || ''
+    };
+    var salt = new Uint8Array(16), iv = new Uint8Array(12);
+    c.getRandomValues(salt);
+    c.getRandomValues(iv);
+    return deriveKey(passphrase, salt).then(function (key) {
+      return s.encrypt({ name: 'AES-GCM', iv: iv }, key, new global.TextEncoder().encode(JSON.stringify(payload)));
+    }).then(function (buf) {
+      return {
+        ok: true,
+        code: RECOVERY_PREFIX + '.' + b64urlEncode(salt) + '.' + b64urlEncode(iv) + '.' +
+          b64urlEncode(new Uint8Array(buf))
+      };
+    }).catch(function (e) {
+      return { error: '生成失败：' + (e && e.message || String(e)) };
+    });
+  }
+
+  /** 用口令解密恢复码，回填配置；成功后本地哈希清零，下次对账以云端为准。 */
+  function restoreRecovery(passphrase, code) {
+    passphrase = String(passphrase || '');
+    if (passphrase.length < 6) return Promise.resolve({ error: '口令至少 6 位' });
+    var s = subtle();
+    if (!s || !hasCodec()) {
+      return Promise.resolve({ error: '当前环境不支持解密，请在 HTTPS 或 localhost 下使用' });
+    }
+    var parts = String(code || '').trim().split('.');
+    if (parts.length !== 4 || parts[0] !== RECOVERY_PREFIX) {
+      return Promise.resolve({ error: '恢复码格式不正确（应包含 OS1. 前缀）' });
+    }
+    var salt, iv, data;
+    try {
+      salt = b64urlDecode(parts[1]);
+      iv = b64urlDecode(parts[2]);
+      data = b64urlDecode(parts[3]);
+    } catch (e) { return Promise.resolve({ error: '恢复码内容损坏' }); }
+    return deriveKey(passphrase, salt).then(function (key) {
+      return s.decrypt({ name: 'AES-GCM', iv: iv }, key, data);
+    }).then(function (buf) {
+      var payload;
+      try { payload = JSON.parse(new global.TextDecoder().decode(buf)); }
+      catch (e) { throw new Error('恢复码内容无法解析'); }
+      if (!payload || !payload.token) throw new Error('恢复码内没有有效的 Token');
+      cfg.token = String(payload.token);
+      cfg.gistId = String(payload.gistId || '');
+      cfg.shareGistId = String(payload.shareGistId || '');
+      cfg.shareOwner = String(payload.shareOwner || '');
+      // 新设备以云端为准：清空同步哈希，让下次对账走下载方向
+      cfg.syncedHash = '';
+      cfg.localHash = '';
+      cfg.localChangedAt = 0;
+      cfg.auto = true;
+      saveCfg();
+      return { ok: true, gistId: cfg.gistId, shareGistId: cfg.shareGistId };
+    }).catch(function (e) {
+      var m = e && e.message || String(e);
+      if (/OperationError|InvalidAccess|The operation failed|auth/i.test(m)) {
+        return { error: '口令错误，或恢复码已被篡改' };
+      }
+      return { error: '恢复失败：' + m };
+    });
+  }
+
   /* ---------- 对外操作 ---------- */
   var sync = {
     config: cfg,
@@ -449,7 +564,9 @@
 
     publishShare: publishShare,
     unpublishShare: unpublishShare,
-    shareUrl: buildShareUrl
+    shareUrl: buildShareUrl,
+    makeRecovery: makeRecovery,
+    restoreRecovery: restoreRecovery
   };
 
   function collectLocalModulesCount() { return Object.keys(collectLocal()).length; }
@@ -528,6 +645,30 @@
         '</label>' +
       '</div>' +
 
+      '<div class="sy-pass">' +
+        '<div class="sy-pass-head">' +
+          '<span class="sy-kicker mono">PASSPHRASE / 换设备免记 Token</span>' +
+        '</div>' +
+        '<p class="sy-pass-desc">设一个好记的口令，把上面的 Token 加密成一串<strong>恢复码</strong>。换设备时只需输入同一个口令 + 粘贴恢复码，token / Gist ID 自动填好，无需再找那串长 Token。口令不保存、不上传。</p>' +
+        '<label class="sy-label">配置口令' +
+          '<span class="sy-label-hint">至少 6 位，自己记牢；忘了无法找回</span>' +
+          '<input class="sy-input" id="sy-pass" type="password" autocomplete="new-password" ' +
+            'spellcheck="false" placeholder="自己设一个好记的口令">' +
+        '</label>' +
+        '<label class="sy-label sy-pass-code-label">恢复码' +
+          '<span class="sy-label-hint">生成后复制保存；换设备时粘贴到这里</span>' +
+          '<textarea class="sy-input sy-textarea" id="sy-code" rows="3" spellcheck="false" ' +
+            'placeholder="OS1.…"></textarea>' +
+        '</label>' +
+        '<div class="sy-actions sy-pass-actions">' +
+          '<button class="btn sy-btn" id="sy-pass-make" type="button">生成恢复码</button>' +
+          '<button class="btn btn--primary sy-btn" id="sy-pass-restore" type="button">用恢复码恢复</button>' +
+        '</div>' +
+        '<div class="sy-actions sy-actions--sub">' +
+          '<button class="sy-link" id="sy-code-copy" type="button">复制恢复码</button>' +
+        '</div>' +
+      '</div>' +
+
       '<div class="sy-actions">' +
         '<button class="btn btn--primary sy-btn" id="sy-push" type="button">↑ 上传</button>' +
         '<button class="btn sy-btn" id="sy-pull" type="button">↓ 下载</button>' +
@@ -555,7 +696,7 @@
       '</div>' +
 
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">私有同步 Gist 仅你自己可读写；公开分享 Gist 任何人可读、仅你可写，两者独立。Token 只保存在当前浏览器，不写进仓库、不发第三方；公开分享只上传模块数据，不含 Token。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
+      '<p class="sy-note">换设备不用重新申请 Token：设一个口令生成恢复码，妥善保存这段码；新设备粘贴恢复码 + 输入同一口令即可自动配好。恢复码用 AES-GCM 加密、口令经 PBKDF2 派生，口令本身不保存也不上传——忘了口令或泄露了恢复码都可能导致配置无法恢复或被他人使用，请像保管密码一样对待。私有同步 Gist 仅你自己可读写；公开分享 Gist 任何人可读、仅你可写。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
 
     wrap.appendChild(fab);
     wrap.appendChild(panel);
@@ -760,6 +901,69 @@
         refresh();
         shareStopBtn.disabled = false;
       });
+    });
+
+    // ---- 配置口令 / 恢复码 ----
+    var passEl = panel.querySelector('#sy-pass');
+    var codeEl = panel.querySelector('#sy-code');
+    var makeBtn = panel.querySelector('#sy-pass-make');
+    var restoreBtn = panel.querySelector('#sy-pass-restore');
+
+    makeBtn.addEventListener('click', function () {
+      commitConfig(); // 确保 token/gist 已保存
+      if (!cfg.token) { msg('请先填入 GitHub Token，再生成恢复码', 'error'); tokenEl.focus(); return; }
+      makeBtn.disabled = true;
+      msg('正在生成恢复码…');
+      sync.makeRecovery(passEl.value).then(function (r) {
+        if (r && r.error) { msg(r.error, 'error'); return; }
+        codeEl.value = r.code;
+        msg('恢复码已生成 · 复制并妥善保存', 'ok');
+      }).catch(function (e) {
+        msg(e && e.message || String(e), 'error');
+      }).then(function () { makeBtn.disabled = false; });
+    });
+
+    restoreBtn.addEventListener('click', function () {
+      var code = codeEl.value.trim();
+      if (!code) { msg('请先粘贴恢复码', 'error'); codeEl.focus(); return; }
+      if (!passEl.value) { msg('请输入生成恢复码时用的口令', 'error'); passEl.focus(); return; }
+      restoreBtn.disabled = true;
+      msg('正在用口令恢复配置…');
+      sync.restoreRecovery(passEl.value, code).then(function (r) {
+        if (r && r.error) { msg(r.error, 'error'); return; }
+        // 回填输入框，让状态与底层配置一致
+        tokenEl.value = cfg.token;
+        gistEl.value = cfg.gistId;
+        passEl.value = '';
+        refresh();
+        var bits = ['配置已恢复'];
+        if (r.gistId) bits.push('Gist 已关联');
+        if (r.shareGistId) bits.push('分享链接已恢复');
+        msg(bits.join(' · ') + ' · 正在从云端拉取最新数据…', 'ok');
+        // 恢复后立即对账：新设备以云端为准下载
+        return sync.reconcile('restore');
+      }).then(function (r2) {
+        if (r2 && r2.error) msg('配置已恢复，但拉取失败：' + r2.error, 'warn');
+        else if (r2 && (r2.applied || r2.note === 'in-sync' || r2.count)) {
+          msg('配置已恢复 · 云端数据已同步', 'ok');
+          refresh();
+        }
+      }).catch(function (e) {
+        msg(e && e.message || String(e), 'error');
+      }).then(function () { restoreBtn.disabled = false; });
+    });
+
+    panel.querySelector('#sy-code-copy').addEventListener('click', function () {
+      var text = codeEl.value;
+      if (!text) { msg('还没有可复制的恢复码', 'warn'); return; }
+      function done() { msg('恢复码已复制 · 妥善保管', 'ok'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () {
+          codeEl.select(); document.execCommand && document.execCommand('copy'); done();
+        });
+      } else {
+        codeEl.select(); document.execCommand && document.execCommand('copy'); done();
+      }
     });
 
     refresh();

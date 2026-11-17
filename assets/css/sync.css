@@ -158,6 +158,23 @@
 .sy-share-actions { margin-top: 10px; }
 .sy-share-actions .sy-btn { height: 36px; font-size: 12px; }
 
+/* 配置口令 / 恢复码 */
+.sy-pass {
+  margin-top: 16px; padding: 13px 14px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(122, 162, 247, .035);
+}
+.sy-pass-head .sy-kicker { color: var(--accent-2, #7aa2f7); }
+.sy-pass-desc { margin: 9px 0 12px; font-size: 11px; line-height: 1.6; color: var(--muted); }
+.sy-pass-desc strong { color: var(--accent); font-weight: 600; }
+.sy-textarea {
+  height: auto; min-height: 64px; padding: 9px 12px;
+  resize: vertical; line-height: 1.5; word-break: break-all;
+}
+.sy-pass-actions { margin-top: 10px; }
+.sy-pass-actions .sy-btn { height: 36px; font-size: 12px; }
+.sy-pass .sy-actions--sub { margin-top: 8px; justify-content: flex-start; }
+
 .sy-note {
   margin: 10px 0 0; padding-top: 10px;
   border-top: 1px solid var(--line-soft);
