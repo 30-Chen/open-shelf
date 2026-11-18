@@ -103,7 +103,14 @@ html[data-theme="light"] .sy-input::placeholder { color: #94a2b8; }
 html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
 
 /* ---------- 首页引导 ---------- */
-html[data-theme="light"] .lc-hero h2 em { background: linear-gradient(100deg, #0e9c7e, #2f63c9); }
+/* 渐变文字：只换背景图，不能用 background 简写——它会把 background-clip 重置成 border-box，
+   而 text-fill-color 仍是 transparent，导致浅色下这行字直接消失 */
+html[data-theme="light"] .lc-hero h2 em {
+  background-image: linear-gradient(100deg, #0e9c7e, #2f63c9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 html[data-theme="light"] .lc-card {
   background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
   box-shadow: 0 10px 28px rgba(24, 42, 74, .08);
