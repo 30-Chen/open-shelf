@@ -12,9 +12,9 @@
 
 .sy-trigger {
   position: relative;
-  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0; flex: 0 0 auto;
   white-space: nowrap;
-  min-height: 30px; padding: 7px 11px;
+  width: 30px; min-height: 30px; padding: 0;
   border: 1px solid var(--line); border-radius: 8px;
   background: rgba(0, 0, 0, .18); color: var(--muted);
   font: 500 11px var(--mono); letter-spacing: .8px; line-height: 1;
@@ -36,7 +36,6 @@
   -webkit-mask: var(--i-cloud-img) no-repeat center / contain;
   mask: var(--i-cloud-img) no-repeat center / contain;
 }
-.sy-trigger-label { line-height: 1; }
 .sy-trigger-dot {
   position: absolute;
   top: -3px; right: -3px;

@@ -605,9 +605,10 @@
     fab.className = 'sy-trigger';
     fab.type = 'button';
     fab.setAttribute('aria-label', '跨设备同步设置');
+    fab.title = '跨设备同步设置';
     fab.setAttribute('aria-expanded', 'false');
+    // 纯图标按钮；同步状态仍由右上角小圆点表达，文字说明放在 aria-label / title
     fab.innerHTML = '<i class="sy-trigger-ico" aria-hidden="true"></i>' +
-      '<span class="sy-trigger-label mono">SYNC</span>' +
       '<span class="sy-trigger-dot" id="sy-dot"></span>';
 
     var panel = document.createElement('section');
