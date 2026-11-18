@@ -114,18 +114,20 @@ img { max-width: 100%; }
   flex-wrap: wrap; gap: 10px 16px; min-width: 0;
 }
 
+/* 与同步按钮 .sy-trigger 保持同一套胶囊规格：尺寸 / 边框 / 背景 / 字体一致 */
 .status {
-  display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 0 0 auto;
   white-space: nowrap;
-  font-size: 10.5px; letter-spacing: 1.2px; color: var(--text-2);
+  min-height: 30px; padding: 7px 11px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(0, 0, 0, .18); color: var(--muted);
+  font: 500 11px var(--mono); letter-spacing: .8px; line-height: 1;
 }
 .dot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 0 3px rgba(85, 227, 194, 0.13), 0 0 10px var(--accent);
-  animation: pulse 2.4s ease-in-out infinite;
 }
-@keyframes pulse { 50% { opacity: 0.45; } }
 
 .ghost-link {
   display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;

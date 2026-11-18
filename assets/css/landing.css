@@ -56,10 +56,10 @@
   border-color: var(--line-strong); transform: translateY(-3px);
   box-shadow: 0 18px 44px rgba(0, 0, 0, .32), 0 0 0 1px rgba(85, 227, 194, .07);
 }
+/* 卡片高光：从右上角大面积柔和散开，没有硬边扇形，避免割裂感 */
 .lc-corner {
-  position: absolute; top: 0; right: 0; width: 46px; height: 46px;
-  background: linear-gradient(225deg, rgba(85, 227, 194, .16), transparent 62%);
-  border-bottom-left-radius: 46px;
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(160px 120px at 100% 0%, rgba(85, 227, 194, .10), transparent 72%);
 }
 .lc-index { font-size: 10px; letter-spacing: 1.5px; color: var(--accent); }
 .lc-name { display: block; margin: 14px 0 8px; font-size: 20px; font-weight: 600; letter-spacing: .3px; }
