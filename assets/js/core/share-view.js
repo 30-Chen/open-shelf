@@ -80,7 +80,7 @@
         '<span class="rs-tag rs-tag--none mono">暂无发布版本</span></div>' +
         '<p class="rs-no-assets">该仓库还没有正式 Release。</p>' +
         '<div class="rs-source mono"><a href="' + safeUrl((d.htmlUrl || '') + '/releases') +
-        '" target="_blank" rel="noopener noreferrer">查看 Releases 页面 ↗</a></div></div>';
+        '" target="_blank" rel="noopener noreferrer">查看 Releases 页面 <i class="i-ico i-ext" aria-hidden="true"></i></a></div></div>';
     }
     var MAX = 3;
     var ordered = (r.assets || []).slice().sort(function (a, b) { return assetScore(b) - assetScore(a); });
@@ -89,7 +89,7 @@
     var assets = visible.length
       ? '<div class="rs-assets">' + visible.map(assetRow).join('') +
           (rest > 0 ? '<a class="rs-asset-more mono" href="' + safeUrl(r.url) +
-            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 ↗</a>' : '') +
+            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 <i class="i-ico i-ext" aria-hidden="true"></i></a>' : '') +
         '</div>'
       : '<p class="rs-no-assets">该版本没有上传安装包。</p>';
     var notes = r.body && r.body.trim()
@@ -105,7 +105,7 @@
       '<div class="rs-source mono">' +
         (r.sourceZip ? '<a href="' + safeUrl(r.sourceZip) + '" target="_blank" rel="noopener noreferrer">↓ 源码 .zip</a>' : '') +
         (r.sourceTar ? '<a href="' + safeUrl(r.sourceTar) + '" target="_blank" rel="noopener noreferrer">↓ 源码 .tar.gz</a>' : '') +
-        '<a href="' + safeUrl(r.url) + '" target="_blank" rel="noopener noreferrer">查看 Release ↗</a>' +
+        '<a href="' + safeUrl(r.url) + '" target="_blank" rel="noopener noreferrer">查看 Release <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
       '</div>' + notes + '</div>';
   }
 
@@ -115,7 +115,7 @@
     if (d.language) meta.push('<span class="rs-lang"><i style="background:' + esc(color) + '"></i>' + esc(d.language) + '</span>');
     meta.push('<span title="Star 数">★ ' + esc(compact(d.stars)) + '</span>');
     if (d.license) meta.push('<span>' + esc(d.license) + '</span>');
-    if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 ↗</a>');
+    if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 <i class="i-ico i-ext" aria-hidden="true"></i></a>');
     var topics = (d.topics || []).length
       ? '<div class="rs-topics">' + d.topics.map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div>'
       : '';
@@ -125,7 +125,7 @@
       '<header class="rs-card-head">' +
         '<span class="rs-num mono">' + num + '</span>' +
         '<a class="rs-path mono" href="' + safeUrl(d.htmlUrl || ('https://github.com/' + fullName)) +
-          '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <span>↗</span></a>' +
+          '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
       '</header>' +
       '<div class="rs-repo">' +
         (d.avatar ? '<img class="rs-avatar" src="' + safeUrl(d.avatar + (d.avatar.indexOf('?') >= 0 ? '&' : '?') + 's=96') + '" alt="" loading="lazy">' : '') +
@@ -136,7 +136,7 @@
       releaseBlock(d) +
       '<div class="rs-card-foot mono"><span>' +
         (d.offline ? '静态快照 · ' + esc(date(d.generatedAt)) : '分享快照 · ' + esc(date(d.fetchedAt))) +
-      '</span><a href="' + safeUrl((d.htmlUrl || '') + '/releases') + '" target="_blank" rel="noopener noreferrer">全部版本 ↗</a></div>' +
+      '</span><a href="' + safeUrl((d.htmlUrl || '') + '/releases') + '" target="_blank" rel="noopener noreferrer">全部版本 <i class="i-ico i-ext" aria-hidden="true"></i></a></div>' +
     '</article>';
   }
 
@@ -200,7 +200,7 @@
     // 阅读面板：全部正文预渲染，点击切换显示（纯前端，无编辑）
     var readers = list.map(function (n) {
       return '<article class="nt-article" data-reader="' + esc(n.id) + '" hidden>' +
-        '<div class="nt-reader-bar"><button class="nt-back mono" data-back>← 返回列表</button></div>' +
+        '<div class="nt-reader-bar"><button class="nt-back mono" data-back><i class="i-ico i-back" aria-hidden="true"></i> 返回列表</button></div>' +
         '<div class="nt-article-head">' +
           '<div class="nt-card-meta mono"><span class="nt-cat-pill">' + esc(n.category || '未分类') + '</span>' +
             '<time>更新于 ' + esc(date(n.updatedAt)) + '</time></div>' +

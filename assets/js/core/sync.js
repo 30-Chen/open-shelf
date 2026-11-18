@@ -606,7 +606,8 @@
     fab.type = 'button';
     fab.setAttribute('aria-label', '跨设备同步设置');
     fab.setAttribute('aria-expanded', 'false');
-    fab.innerHTML = '<span class="sy-trigger-ico mono" aria-hidden="true">☁</span>' +
+    fab.innerHTML = '<i class="sy-trigger-ico" aria-hidden="true"></i>' +
+      '<span class="sy-trigger-label mono">SYNC</span>' +
       '<span class="sy-trigger-dot" id="sy-dot"></span>';
 
     var panel = document.createElement('section');
@@ -676,7 +677,7 @@
       '<div class="sy-actions sy-actions--sub">' +
         '<button class="sy-link" id="sy-disconnect" type="button">断开关联</button>' +
         '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
-          'target="_blank" rel="noopener noreferrer">获取 Token ↗</a>' +
+          'target="_blank" rel="noopener noreferrer">获取 Token <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
       '</div>' +
 
       '<div class="sy-share">' +

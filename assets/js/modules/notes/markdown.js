@@ -80,7 +80,7 @@
 
     // 兜底：安全外链
     return '<div class="nt-video"><a class="nt-video-link" href="' + http +
-      '" target="_blank" rel="noopener noreferrer">▶ 打开视频 ↗</a>' + cap + '</div>';
+      '" target="_blank" rel="noopener noreferrer">▶ 打开视频 <i class="i-ico i-ext" aria-hidden="true"></i></a>' + cap + '</div>';
   }
 
   /** 行内渲染：输入必须是「已转义」的字符串。 */

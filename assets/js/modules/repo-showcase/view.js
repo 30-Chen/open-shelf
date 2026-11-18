@@ -65,7 +65,7 @@
       '<header class="rs-card-head">' +
         '<span class="rs-num mono">' + num + '</span>' +
         '<a class="rs-path mono" href="' + safeUrl(url || 'https://github.com/' + fullName) +
-          '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <span>↗</span></a>' +
+          '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
         '<div class="rs-card-actions">' +
           '<button class="rs-icon-btn" data-action="refresh" data-repo="' + attrRepo(fullName) +
             '" title="重新获取" aria-label="重新获取">↻</button>' +
@@ -81,7 +81,7 @@
     if (d.language) meta.push('<span class="rs-lang"><i style="background:' + esc(color) + '"></i>' + esc(d.language) + '</span>');
     meta.push('<span title="Star 数">★ ' + esc(compact(d.stars)) + '</span>');
     if (d.license) meta.push('<span>' + esc(d.license) + '</span>');
-    if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 ↗</a>');
+    if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 <i class="i-ico i-ext" aria-hidden="true"></i></a>');
 
     var topics = (d.topics || []).length
       ? '<div class="rs-topics">' + d.topics.map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div>'
@@ -136,7 +136,7 @@
           '<span class="rs-tag rs-tag--none mono">暂无发布版本</span></div>' +
           '<p class="rs-no-assets">该仓库还没有正式 Release，可直接前往仓库查看源码或预发布版本。</p>' +
           '<div class="rs-source mono"><a href="' + safeUrl(d.htmlUrl + '/releases') +
-            '" target="_blank" rel="noopener noreferrer">查看 Releases 页面 ↗</a></div>' +
+            '" target="_blank" rel="noopener noreferrer">查看 Releases 页面 <i class="i-ico i-ext" aria-hidden="true"></i></a></div>' +
         '</div>';
     }
 
@@ -149,7 +149,7 @@
     var assets = visible.length
       ? '<div class="rs-assets">' + visible.map(assetRow).join('') +
           (rest > 0 ? '<a class="rs-asset-more mono" href="' + safeUrl(r.url) +
-            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 ↗</a>' : '') +
+            '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 <i class="i-ico i-ext" aria-hidden="true"></i></a>' : '') +
         '</div>'
       : '<p class="rs-no-assets">该版本没有上传安装包，可下载源码归档或查看 Release 页面。</p>';
 
@@ -171,7 +171,7 @@
         '<div class="rs-source mono">' +
           '<a href="' + safeUrl(r.sourceZip) + '" target="_blank" rel="noopener noreferrer">↓ 源码 .zip</a>' +
           '<a href="' + safeUrl(r.sourceTar) + '" target="_blank" rel="noopener noreferrer">↓ 源码 .tar.gz</a>' +
-          '<a href="' + safeUrl(r.url) + '" target="_blank" rel="noopener noreferrer">查看 Release ↗</a>' +
+          '<a href="' + safeUrl(r.url) + '" target="_blank" rel="noopener noreferrer">查看 Release <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
         '</div>' +
         notes +
       '</div>';
@@ -210,7 +210,7 @@
     return '' +
       '<div class="rs-card-foot mono">' +
         '<span><i class="rs-led' + (d.offline ? ' rs-led--offline' : '') + '"></i> ' + label + '</span>' +
-        '<a href="' + safeUrl(d.htmlUrl + '/releases') + '" target="_blank" rel="noopener noreferrer">全部版本 ↗</a>' +
+        '<a href="' + safeUrl(d.htmlUrl + '/releases') + '" target="_blank" rel="noopener noreferrer">全部版本 <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
       '</div>';
   }
 

@@ -125,7 +125,7 @@
     return '' +
       '<div class="nt nt--reader">' +
         '<div class="nt-reader-bar">' +
-          '<button class="nt-back mono" data-act="back">← 返回列表</button>' +
+          '<button class="nt-back mono" data-act="back"><i class="i-ico i-back" aria-hidden="true"></i> 返回列表</button>' +
           '<div class="nt-reader-actions">' +
             '<button class="btn" data-act="edit" data-id="' + esc(note.id) + '">✎ 编辑</button>' +
             '<button class="btn btn--danger-ghost" data-act="delete" data-id="' + esc(note.id) + '">删除</button>' +
@@ -169,7 +169,7 @@
     return '' +
       '<div class="nt nt--editor">' +
         '<div class="nt-reader-bar">' +
-          '<button class="nt-back mono" data-act="back">← 返回列表</button>' +
+          '<button class="nt-back mono" data-act="back"><i class="i-ico i-back" aria-hidden="true"></i> 返回列表</button>' +
           '<span class="nt-editor-state mono">' + (isNew ? 'NEW NOTE' : 'EDITING') + '</span>' +
         '</div>' +
         '<div class="nt-editor-form">' +

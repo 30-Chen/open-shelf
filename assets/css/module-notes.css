@@ -161,6 +161,7 @@
   margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft);
 }
 .nt-back {
+  display: inline-flex; align-items: center; gap: 5px;
   border: 0; background: transparent; color: var(--text-2); font-size: 11px; letter-spacing: 1px;
 }
 .nt-back:hover { color: var(--accent); }

@@ -75,7 +75,7 @@
           '<span class="lc-index mono">' + esc(num) + ' / MODULE</span>' +
           '<span class="lc-name">' + esc(def.title || def.id) + '</span>' +
           '<span class="lc-desc">' + esc(def.desc || '') + '</span>' +
-          '<span class="lc-foot mono">进入模块 <span aria-hidden="true">↗</span></span>' +
+          '<span class="lc-foot mono">进入模块 <i class="i-ico i-ext" aria-hidden="true"></i></span>' +
         '</a>';
     }).join('');
 

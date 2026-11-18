@@ -109,10 +109,14 @@ img { max-width: 100%; }
 .brand-text h1 span { color: var(--accent); padding: 0 2px; }
 .brand-text p { margin: 5px 0 0; font-size: 12.5px; color: var(--muted); letter-spacing: 0.3px; }
 
-.header-meta { display: flex; align-items: center; gap: 18px; flex: 0 0 auto; }
+.header-meta {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap; gap: 10px 16px; min-width: 0;
+}
 
 .status {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 10.5px; letter-spacing: 1.2px; color: var(--text-2);
 }
 .dot {
@@ -124,11 +128,28 @@ img { max-width: 100%; }
 @keyframes pulse { 50% { opacity: 0.45; } }
 
 .ghost-link {
+  display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+  white-space: nowrap;
   font-size: 11px; letter-spacing: 1px; color: var(--muted);
-  padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px;
+  min-height: 30px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px;
   transition: color .18s, border-color .18s, background .18s;
 }
 .ghost-link:hover { color: var(--accent); border-color: var(--line-strong); background: var(--accent-dim); }
+
+/* ---------- 统一图标（SVG mask，跨设备一致，颜色继承文字） ----------
+   用法：<i class="i-ico i-ext" aria-hidden="true"></i>
+   i-ext  外链箭头 ↗   i-back 返回箭头 ←   i-cloud 同步云 ☁ */
+.i-ico {
+  display: inline-block; flex: 0 0 auto;
+  width: 1em; height: 1em;
+  vertical-align: -0.14em;
+  background: currentColor;
+  -webkit-mask: var(--i-img) no-repeat center / contain;
+  mask: var(--i-img) no-repeat center / contain;
+}
+.i-ext { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M8 7h9v9'/%3E%3C/svg%3E"); }
+.i-back { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 12H5m0 0 6-6m-6 6 6 6'/%3E%3C/svg%3E"); }
+.i-cloud { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E"); }
 
 /* ---------- 模块容器（由内核创建） ---------- */
 .modules { display: flex; flex-direction: column; gap: 20px; padding: 30px 0 10px; }
@@ -192,8 +213,8 @@ details > summary::-webkit-details-marker { display: none; }
 
 @media (max-width: 720px) {
   .page { width: min(100% - 32px, 1120px); padding-top: 32px; }
-  .site-header { align-items: flex-start; flex-direction: column; gap: 16px; padding-bottom: 22px; }
-  .header-meta { width: 100%; justify-content: space-between; }
+  .site-header { align-items: stretch; flex-direction: column; gap: 16px; padding-bottom: 22px; }
+  .header-meta { width: 100%; justify-content: flex-start; row-gap: 8px; }
   .site-footer { font-size: 10px; }
 }
 

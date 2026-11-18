@@ -3,15 +3,21 @@
    触发按钮内嵌在页头 .header-meta，与 SYSTEM ONLINE 同一行；面板锚定其下。
    ============================================================ */
 
+/* 云图标 SVG mask（与 base.css 的 .i-cloud 一致，跨设备统一渲染） */
+:root {
+  --i-cloud-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
+}
+
 .sy-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
 
 .sy-trigger {
   position: relative;
-  display: inline-flex; align-items: center; gap: 7px;
-  height: 30px; padding: 0 11px;
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  white-space: nowrap;
+  min-height: 30px; padding: 7px 11px;
   border: 1px solid var(--line); border-radius: 8px;
   background: rgba(0, 0, 0, .18); color: var(--muted);
-  font: 500 11px var(--mono); letter-spacing: .8px;
+  font: 500 11px var(--mono); letter-spacing: .8px; line-height: 1;
   cursor: pointer;
   transition: color .18s, border-color .18s, background .18s, box-shadow .18s;
 }
@@ -22,7 +28,15 @@
 .sy-trigger[aria-expanded="true"] {
   color: var(--accent); border-color: rgba(85, 227, 194, .45); background: rgba(85, 227, 194, .08);
 }
-.sy-trigger-ico { font-size: 15px; line-height: 1; }
+/* 云图标：用 i-cloud 的 SVG mask，放大到与文字高度相当且更醒目 */
+.sy-trigger-ico {
+  display: inline-block; flex: 0 0 auto;
+  width: 17px; height: 17px;
+  background: currentColor;
+  -webkit-mask: var(--i-cloud-img) no-repeat center / contain;
+  mask: var(--i-cloud-img) no-repeat center / contain;
+}
+.sy-trigger-label { line-height: 1; }
 .sy-trigger-dot {
   position: absolute;
   top: -3px; right: -3px;
@@ -41,8 +55,10 @@
   right: 0;
   z-index: 61;
   width: min(380px, calc(100vw - 32px));
-  max-height: calc(100vh - 140px);
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 140px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -183,7 +199,12 @@
 
 @media (max-width: 720px) {
   .sy-wrap--floating { right: 16px; bottom: 16px; }
-  .sy-panel { right: 0; padding: 16px; }
-  /* 窄屏下页头面板不超出视口右缘 */
-  .header-meta .sy-panel { right: -8px; width: min(380px, calc(100vw - 32px)); }
+  /* 窄屏下页头里的锚定面板会溢出视口左右缘，改为固定在视口内 */
+  .header-meta .sy-panel {
+    position: fixed;
+    top: 12px; right: 12px; left: 12px;
+    width: auto; max-width: none;
+    max-height: calc(100dvh - 24px);
+    padding: 16px;
+  }
 }
