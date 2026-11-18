@@ -10,11 +10,14 @@
 
   <link rel="preconnect" href="https://gist.githubusercontent.com">
   <link rel="preconnect" href="https://api.github.com">
+  <!-- 主题脚本尽早执行，首屏前定好明暗，避免闪烁 -->
+  <script src="assets/js/core/theme.js"></script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
   <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
   <link rel="stylesheet" href="assets/css/module-notes.css">
   <link rel="stylesheet" href="assets/css/share.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
 
   <!-- 只需要：安全 Markdown 渲染 + 只读渲染层 + 控制器。
        刻意不加载任何模块的 index.js / sync.js / app.js：分享页无编辑、无同步、无本地存储。 -->
@@ -37,7 +40,7 @@
       </div>
       <div class="header-meta">
         <a class="ghost-link mono" href="index.html"><i class="i-ico i-back" aria-hidden="true"></i> 首页</a>
-        <span class="status"><i class="dot"></i><span class="mono">PUBLIC VIEW</span></span>
+        <span class="status"><i class="dot"></i><span class="mono">PUBLIC</span></span>
       </div>
     </header>
 

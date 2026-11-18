@@ -8,11 +8,14 @@
   <title>模块 · OPEN / SHELF</title>
 
   <link rel="preconnect" href="https://api.github.com">
+  <!-- 主题脚本尽早执行，首屏前定好明暗，避免闪烁 -->
+  <script src="assets/js/core/theme.js"></script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
   <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
   <link rel="stylesheet" href="assets/css/module-notes.css">
   <link rel="stylesheet" href="assets/css/sync.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
 
   <!-- 内核：依赖顺序固定，全部 defer，DOM 解析完成后按序执行 -->
   <script defer src="assets/js/core/store.js"></script>
@@ -48,7 +51,7 @@
       </div>
       <div class="header-meta">
         <a class="ghost-link mono" href="index.html"><i class="i-ico i-back" aria-hidden="true"></i> 返回首页</a>
-        <span class="status"><i class="dot"></i><span class="mono">MODULE ONLINE</span></span>
+        <span class="status"><i class="dot"></i><span class="mono">MODULE</span></span>
         <a class="ghost-link mono" href="https://github.com" target="_blank" rel="noopener noreferrer">GITHUB <i class="i-ico i-ext" aria-hidden="true"></i></a>
       </div>
     </header>

@@ -79,7 +79,6 @@
 .rs-add .btn { flex: 0 0 auto; }
 
 .rs-suggest { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 24px; }
-.rs-suggest-label { font-size: 10px; letter-spacing: 1.2px; color: var(--muted); margin-right: 2px; }
 .rs-hint { font-size: 11.5px; color: var(--accent); margin-left: auto; }
 .rs-hint--error { color: var(--danger); }
 .rs-hint--warn { color: var(--warn); }
@@ -197,8 +196,40 @@
   background: var(--accent-dim); color: var(--accent); font-size: 11px;
 }
 .rs-tag--none { border-color: var(--line); background: transparent; color: var(--muted); }
+.rs-tag--pre { border-color: rgba(255, 196, 107, .45); background: rgba(255, 196, 107, .1); color: var(--warn); }
 .rs-date { margin-left: auto; font-size: 10.5px; color: var(--muted); }
 .rs-release-name { margin: 9px 0 2px; font-size: 12.5px; color: var(--text-2); }
+
+/* 版本切换 */
+.rs-version-bar { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
+.rs-version-bar .rs-kicker { flex: 0 0 auto; }
+.rs-version-select {
+  flex: 1; min-width: 0; height: 30px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 7px;
+  background: rgba(0, 0, 0, .22); color: var(--text);
+  font-size: 11px; cursor: pointer; appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 13px) 13px, calc(100% - 8px) 13px;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  transition: border-color .18s;
+}
+.rs-version-select:hover, .rs-version-select:focus { border-color: var(--line-strong); outline: 0; }
+.rs-version-select option { background: #0d1523; color: var(--text); }
+
+/* 平台筛选 */
+.rs-platform-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.rs-plat {
+  padding: 4px 9px; border: 1px solid var(--line); border-radius: 999px;
+  background: transparent; color: var(--muted);
+  font: 10px var(--mono); letter-spacing: .2px;
+  transition: color .16s, border-color .16s, background .16s;
+}
+.rs-plat:hover { color: var(--text); border-color: var(--line-strong); }
+.rs-plat.is-active {
+  color: #04130f; font-weight: 650; border-color: transparent;
+  background: linear-gradient(120deg, #67ecd0, #4fd8c0);
+}
 
 .rs-assets { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 .rs-asset {
@@ -294,6 +325,9 @@
   .rs-hint { margin-left: 0; width: 100%; }
   .rs-settings-panel { right: auto; left: 0; }
   .rs-card { padding: 16px 14px 14px; }
+  .rs-version-bar { flex-wrap: wrap; }
+  .rs-platform-bar { gap: 5px; }
+  .rs-plat { padding: 3px 8px; font-size: 9.5px; }
   .rs-asset { grid-template-columns: 14px minmax(0, 1fr) auto; }
   .rs-asset-count { display: none; }
   .rs-group-head { gap: 7px; }

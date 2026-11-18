@@ -595,7 +595,7 @@
   function buildUI() {
     if (document.getElementById('sy-wrap')) return;
 
-    // 把同步入口做进页头：一个包裹层放触发按钮 + 面板，锚定在 SYSTEM ONLINE 旁
+    // 把同步入口做进页头：一个包裹层放触发按钮 + 面板，锚定在状态标签旁
     var wrap = document.createElement('div');
     wrap.id = 'sy-wrap';
     wrap.className = 'sy-wrap';
@@ -702,7 +702,7 @@
     wrap.appendChild(fab);
     wrap.appendChild(panel);
 
-    // 优先插入页头 .header-meta（SYSTEM/MODULE ONLINE 旁）；找不到时降级挂到 body
+    // 优先插入页头 .header-meta（状态标签旁）；找不到时降级挂到 body
     var headerMeta = document.querySelector('.header-meta');
     if (headerMeta) {
       var statusEl = headerMeta.querySelector('.status');

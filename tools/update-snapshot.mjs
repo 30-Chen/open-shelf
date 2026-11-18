@@ -73,14 +73,23 @@ async function main() {
   const repos = {};
 
   for (const fullName of list) {
-    const [repo, release] = await Promise.all([
+    const [repo, releases] = await Promise.all([
       getJSON(API + '/repos/' + fullName),
-      getJSON(API + '/repos/' + fullName + '/releases/latest')
+      getJSON(API + '/repos/' + fullName + '/releases?per_page=10')
     ]);
     if (!repo) { console.warn('跳过（仓库不存在）:', fullName); continue; }
-    repos[fullName] = { repo: slimRepo(repo), release: slimRelease(release) };
-    console.log('✓', fullName, release ? release.tag_name : '（无 Release）',
-      (release && release.assets ? release.assets.length : 0) + ' 个安装包');
+    const list = Array.isArray(releases) ? releases.filter(r => r && !r.draft).slice(0, 5) : [];
+    const stable = list.filter(r => !r.prerelease);
+    const pre = list.filter(r => r.prerelease);
+    const ordered = stable.concat(pre);
+    // release 字段保留最新版本以兼容旧页面；releases 供新版多版本切换使用
+    repos[fullName] = {
+      repo: slimRepo(repo),
+      release: slimRelease(ordered[0] || null),
+      releases: ordered.map(slimRelease).filter(Boolean)
+    };
+    console.log('✓', fullName, ordered.length ? ordered.map(r => r.tag_name).join(', ') : '（无 Release）',
+      ordered.reduce((n, r) => n + (r.assets ? r.assets.length : 0), 0) + ' 个安装包');
   }
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

@@ -9,7 +9,6 @@
   var NS = Portal.moduleAssets.repoShowcase;
   var View = NS.view;
   var Github = NS.github;
-  var EXAMPLES = ['yt-dlp/yt-dlp', 'qBittorrent/qBittorrent', 'FreeTubeApp/FreeTube'];
   var DEFAULT_GROUP = '默认';
 
   // 同步桥：mount() 后用内存态，未挂载（如首页）时用冷数据读写 localStorage。
@@ -131,16 +130,12 @@
         groups: normalizeGroups(rawGroups, legacy),
         snapshots: store.get('snapshots', {}) || {},
         items: {},
+        ui: {},                  // 每张卡的版本 / 平台选择，纯本地视图状态
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
         busyAll: false
       };
       if (rawGroups === null || legacy !== null) saveGroups();
-
-      var exampleHtml = EXAMPLES.map(function (n) {
-        return '<button type="button" class="chip" data-action="example" data-repo="' + esc(n) +
-          '">+ ' + esc(n) + '</button>';
-      }).join('');
 
       root.innerHTML = '' +
         '<div class="rs">' +
@@ -187,7 +182,6 @@
           '</form>' +
 
           '<div class="rs-suggest">' +
-            '<span class="rs-suggest-label mono">QUICK ADD</span>' + exampleHtml +
             '<span class="rs-hint" id="rs-msg" role="status"></span>' +
           '</div>' +
 
@@ -275,7 +269,7 @@
               status: 'loading',
               data: state.snapshots[fullName] || null
             };
-            return View.card(item, index++);
+            return View.card(item, index++, state.ui[fullName] || {});
           }).join('');
           html += '<section class="rs-group" data-group="' + esc(g.name) + '">' +
             View.groupHead(g.name, g.repos.length, g.name === DEFAULT_GROUP) +
@@ -396,6 +390,17 @@
 
       groupSelect.addEventListener('change', toggleNewInput);
 
+      // 版本下拉切换：只重渲染，不发请求（数据已随仓库一起拉回）
+      root.addEventListener('change', function (e) {
+        var el = e.target;
+        if (!el || el.dataset.action !== 'version') return;
+        var repo = el.dataset.repo;
+        if (!repo) return;
+        var ui = state.ui[repo] || (state.ui[repo] = {});
+        ui.version = Math.max(0, Number(el.value) || 0);
+        render();
+      });
+
       root.addEventListener('click', function (e) {
         var target = e.target;
         var btn = target && target.closest ? target.closest('[data-action]') : null;
@@ -403,10 +408,16 @@
         var action = btn.dataset.action;
         var repo = btn.dataset.repo;
 
-        if (action === 'example' && repo) { add(repo); return; }
         if (action === 'refresh' && repo) { load(repo, true); return; }
         if (action === 'remove' && repo) { remove(repo); return; }
         if (action === 'delete-group') { deleteGroup(btn.dataset.group); return; }
+
+        if (action === 'platform' && repo) {
+          var ui = state.ui[repo] || (state.ui[repo] = {});
+          ui.platform = btn.dataset.platform || 'auto';
+          render();
+          return;
+        }
 
         if (action === 'refresh-all') {
           var total = allRepos(state.groups).length;

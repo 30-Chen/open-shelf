@@ -1,0 +1,189 @@
+/* ============================================================
+   theme.css · 亮色主题（data-theme="light"）
+   只覆盖暗色 designers 里写死的 surface 色值；所有语义色仍走 base.css 变量。
+   默认无 data-theme / data-theme="dark" 时呈现站点原本的深空风格。
+   ============================================================ */
+
+:root {
+  --th-surface: #ffffff;
+  --th-surface-2: #f6f8fc;
+  --th-surface-3: #eef2f9;
+  --th-inset: #eef2f9;
+  --th-line: rgba(28, 46, 74, .16);
+  --th-line-soft: rgba(28, 46, 74, .09);
+  --th-line-strong: rgba(16, 150, 122, .5);
+  --th-text: #17233a;
+  --th-text-2: #3d4d67;
+  --th-muted: #697b96;
+  --th-accent: #0e9c7e;
+  --th-accent-2: #3f6fd8;
+  --th-blue: #2f63c9;
+  --th-warn: #b5730f;
+  --th-danger: #d8385a;
+  --th-shadow: 0 12px 34px rgba(24, 42, 74, .13);
+}
+
+html[data-theme="light"] {
+  --bg: #eef2f8;
+  --surface: rgba(255, 255, 255, .86);
+  --surface-2: rgba(255, 255, 255, .94);
+  --line: var(--th-line);
+  --line-soft: var(--th-line-soft);
+  --line-strong: var(--th-line-strong);
+  --text: var(--th-text);
+  --text-2: var(--th-text-2);
+  --muted: var(--th-muted);
+  --accent: var(--th-accent);
+  --accent-dim: rgba(14, 156, 126, .10);
+  --blue: var(--th-blue);
+  --warn: var(--th-warn);
+  --danger: var(--th-danger);
+  --radius: 14px;
+  --radius-sm: 9px;
+}
+
+/* ---------- 背景层 ---------- */
+html[data-theme="light"] body { color: var(--text); }
+html[data-theme="light"] .grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(28, 46, 74, .06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 46, 74, .06) 1px, transparent 1px);
+}
+html[data-theme="light"] .glow {
+  background:
+    radial-gradient(circle 520px at 18% -8%, rgba(109, 156, 255, .16), transparent 70%),
+    radial-gradient(circle 620px at 82% 2%, rgba(85, 227, 194, .18), transparent 70%);
+}
+
+/* ---------- 页头 ---------- */
+html[data-theme="light"] .site-header { border-bottom-color: var(--line); }
+html[data-theme="light"] .brand-mark {
+  border-color: rgba(14, 156, 126, .4);
+  background: linear-gradient(145deg, rgba(14, 156, 126, .14), rgba(47, 99, 201, .08));
+  box-shadow: inset 0 0 18px rgba(14, 156, 126, .08), 0 0 20px rgba(14, 156, 126, .08);
+}
+html[data-theme="light"] .ghost-link,
+html[data-theme="light"] .sy-trigger,
+html[data-theme="light"] .theme-toggle { background: rgba(28, 46, 74, .05); }
+html[data-theme="light"] .ghost-link:hover,
+html[data-theme="light"] .sy-trigger:hover,
+html[data-theme="light"] .theme-toggle:hover { background: var(--accent-dim); }
+html[data-theme="light"] .sy-trigger-dot { border-color: #fff; }
+html[data-theme="light"] .dot { border-color: #fff; }
+html[data-theme="light"] .site-footer { border-top-color: var(--line); }
+
+/* ---------- 通用控件 ---------- */
+html[data-theme="light"] .btn {
+  background: rgba(28, 46, 74, .04);
+  box-shadow: none;
+}
+html[data-theme="light"] .btn:hover { background: rgba(28, 46, 74, .08); }
+html[data-theme="light"] .btn--primary { color: #fff; }
+html[data-theme="light"] .btn--primary:hover { color: #fff; }
+html[data-theme="light"] .field::placeholder { color: #94a2b8; }
+html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
+
+/* ---------- 首页引导 ---------- */
+html[data-theme="light"] .lc-hero h2 em { background: linear-gradient(100deg, #0e9c7e, #2f63c9); }
+html[data-theme="light"] .lc-card {
+  background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
+  box-shadow: 0 10px 28px rgba(24, 42, 74, .08);
+}
+html[data-theme="light"] .lc-card:hover {
+  box-shadow: var(--th-shadow), 0 0 0 1px rgba(14, 156, 126, .12);
+}
+html[data-theme="light"] .lc-corner { background: radial-gradient(160px 120px at 100% 0%, rgba(14, 156, 126, .12), transparent 72%); }
+html[data-theme="light"] .lc-section-head,
+html[data-theme="light"] .lc-crumb,
+html[data-theme="light"] .rs-group-head { border-color: var(--line); }
+html[data-theme="light"] .lc-empty { background: var(--th-surface); }
+
+/* ---------- 模块 01：开源应用 ---------- */
+html[data-theme="light"] .rs-settings-panel {
+  background: rgba(255, 255, 255, .98);
+  box-shadow: var(--th-shadow);
+}
+html[data-theme="light"] .rs-setting-input { background: var(--th-inset) !important; }
+html[data-theme="light"] .rs-cat-select option,
+html[data-theme="light"] .rs-version-select option { background: #fff; }
+html[data-theme="light"] .rs-input-wrap,
+html[data-theme="light"] .rs-cat-wrap { background: var(--th-surface); }
+html[data-theme="light"] .rs-statusbar { background: rgba(28, 46, 74, .03); }
+html[data-theme="light"] .rs-card {
+  background: linear-gradient(160deg, #ffffff, var(--th-surface-2));
+  box-shadow: 0 8px 24px rgba(24, 42, 74, .08);
+}
+html[data-theme="light"] .rs-card:hover {
+  box-shadow: var(--th-shadow), 0 0 0 1px rgba(14, 156, 126, .12);
+}
+html[data-theme="light"] .rs-topics span { background: rgba(28, 46, 74, .04); }
+html[data-theme="light"] .rs-release { background: var(--th-surface-3); }
+html[data-theme="light"] .rs-version-select { background: var(--th-inset); }
+html[data-theme="light"] .rs-asset { background: rgba(28, 46, 74, .03); }
+html[data-theme="light"] .rs-asset:hover { background: var(--accent-dim); }
+html[data-theme="light"] .rs-notes pre { background: var(--th-inset); }
+html[data-theme="light"] .rs-empty { background: var(--th-surface); }
+html[data-theme="light"] .sk {
+  background: linear-gradient(90deg, rgba(28,46,74,.05) 25%, rgba(28,46,74,.10) 50%, rgba(28,46,74,.05) 75%);
+}
+html[data-theme="light"] .rs-stale { background: rgba(181, 115, 15, .09); }
+
+/* ---------- 模块 02：笔记 ---------- */
+html[data-theme="light"] .nt-tools-panel,
+html[data-theme="light"] .nt-flash { background: #fff; box-shadow: var(--th-shadow); }
+html[data-theme="light"] .nt-filter.is-active span { color: rgba(255, 255, 255, .78); }
+html[data-theme="light"] .nt-search-wrap,
+html[data-theme="light"] .nt-input,
+html[data-theme="light"] .nt-edit-pane,
+html[data-theme="light"] .nt-preview-pane { background: var(--th-surface); }
+html[data-theme="light"] .nt-select option { background: #fff; }
+html[data-theme="light"] .nt-card {
+  background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
+  box-shadow: 0 8px 22px rgba(24, 42, 74, .07);
+}
+html[data-theme="light"] .nt-card:hover { box-shadow: var(--th-shadow); }
+html[data-theme="light"] .nt-card-cover { background: var(--th-surface-3); }
+html[data-theme="light"] .nt-card-cover--ph {
+  background:
+    linear-gradient(135deg, rgba(47, 99, 201, .09), rgba(14, 156, 126, .07)),
+    repeating-linear-gradient(45deg, transparent 0 12px, rgba(28, 46, 74, .04) 12px 13px);
+}
+html[data-theme="light"] .nt-code { color: #0a7d63; background: rgba(14, 156, 126, .08); }
+html[data-theme="light"] .nt-pre { background: var(--th-inset); color: var(--th-text); }
+html[data-theme="light"] .nt-video-frame,
+html[data-theme="light"] .nt-video video { background: var(--th-surface-3); }
+html[data-theme="light"] .nt-quote { background: var(--accent-dim); }
+html[data-theme="light"] .nt-reader-bar,
+html[data-theme="light"] .nt-article-head { border-color: var(--line); }
+
+/* ---------- 同步面板 ---------- */
+html[data-theme="light"] .sy-panel {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .99), rgba(244, 247, 252, .99));
+  box-shadow: var(--th-shadow);
+}
+html[data-theme="light"] .sy-state { background: rgba(28, 46, 74, .03); }
+html[data-theme="light"] .sy-switch { background: rgba(28, 46, 74, .16); }
+html[data-theme="light"] .sy-input { background: var(--th-inset); }
+html[data-theme="light"] .sy-share,
+html[data-theme="light"] .sy-pass { background: rgba(47, 99, 201, .04); }
+html[data-theme="light"] .sy-note { border-top-color: var(--line); }
+
+/* ---------- 只读分享页 ---------- */
+html[data-theme="light"] .sh-banner {
+  background: linear-gradient(135deg, rgba(14, 156, 126, .07), rgba(47, 99, 201, .05));
+}
+html[data-theme="light"] .sh-banner-icon {
+  border-color: rgba(14, 156, 126, .35);
+  background: rgba(14, 156, 126, .08);
+}
+html[data-theme="light"] .sh-tab { background: rgba(28, 46, 74, .04); }
+html[data-theme="light"] .sh-tab.is-active {
+  border-color: rgba(14, 156, 126, .45);
+  background: rgba(14, 156, 126, .10);
+}
+
+/* ---------- 窄屏：主题按钮标签可隐藏以节省空间 ---------- */
+@media (max-width: 520px) {
+  .theme-toggle .theme-label { display: none; }
+  .theme-toggle { padding: 7px 9px; }
+}
