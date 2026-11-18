@@ -708,6 +708,9 @@
       var statusEl = headerMeta.querySelector('.status');
       if (statusEl && statusEl.parentNode) statusEl.parentNode.insertBefore(wrap, statusEl.nextSibling);
       else headerMeta.appendChild(wrap);
+      // SYNC 紧跟状态标签；主题按钮无论脚本顺序如何都保持在最后
+      var themeEl = headerMeta.querySelector('#theme-toggle');
+      if (themeEl && themeEl.nextSibling) headerMeta.appendChild(themeEl);
     } else {
       wrap.classList.add('sy-wrap--floating');
       document.body.appendChild(wrap);

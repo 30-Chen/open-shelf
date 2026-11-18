@@ -16,6 +16,7 @@
   --muted:         #71829d;
   --accent:        #55e3c2;
   --accent-dim:    rgba(85, 227, 194, 0.10);
+  --accent-2:      #7aa2f7;
   --blue:          #6d9cff;
   --warn:          #ffc46b;
   --danger:        #ff8197;
@@ -165,18 +166,16 @@ img { max-width: 100%; }
 
 /* ---------- 主题切换按钮（三段循环：自动 → 亮 → 暗） ---------- */
 .theme-toggle {
-  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
-  white-space: nowrap;
-  min-height: 30px; padding: 7px 11px;
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 30px; min-height: 30px; padding: 0;
   border: 1px solid var(--line); border-radius: 8px;
   background: rgba(0, 0, 0, .18); color: var(--muted);
-  font: 500 11px var(--mono); letter-spacing: .8px; line-height: 1;
   cursor: pointer;
   transition: color .18s, border-color .18s, background .18s;
 }
 .theme-toggle:hover { color: var(--accent); border-color: var(--line-strong); background: var(--accent-dim); }
-.theme-toggle .theme-ico { width: 15px; height: 15px; }
-.theme-toggle .theme-label { line-height: 1; }
+/* 图标与 SYNC 的云图标同尺寸（17px），类名须与 theme.js 输出一致 */
+.theme-toggle .i-ico { width: 17px; height: 17px; }
 
 /* ---------- 模块容器（由内核创建） ---------- */
 .modules { display: flex; flex-direction: column; gap: 20px; padding: 30px 0 10px; }

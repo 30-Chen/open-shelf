@@ -13,7 +13,6 @@
   var KEY = 'portal:v1:settings:theme';
   var MODES = ['auto', 'light', 'dark'];
   var ICONS = { auto: 'i-auto', light: 'i-sun', dark: 'i-moon' };
-  var LABELS = { auto: 'AUTO', light: 'LIGHT', dark: 'DARK' };
   var SUNRISE = 6, SUNSET = 18; // 本地时间（小时）
 
   function read() {
@@ -64,8 +63,8 @@
       var tip = mode === 'auto'
         ? '自动主题（日出 06:00 – 日落 18:00，当前 ' + (effective === 'light' ? '亮色' : '暗色') + '）· 点击切换'
         : (mode === 'light' ? '亮色主题 · 点击切换' : '暗色主题 · 点击切换');
-      btn.innerHTML = '<i class="i-ico i-ico--btn ' + ICONS[mode] + '" aria-hidden="true"></i>' +
-        '<span class="theme-label mono">' + LABELS[mode] + '</span>';
+      // 仅图标，不显示文字；当前模式通过 title / aria-label 说明
+      btn.innerHTML = '<i class="i-ico ' + ICONS[mode] + '" aria-hidden="true"></i>';
       btn.title = tip;
       btn.setAttribute('aria-label', tip);
     }
@@ -79,10 +78,8 @@
     });
 
     paint();
-    // 放在状态标签之前，与其它页头控件同排
-    var status = header.querySelector('.status');
-    if (status && status.parentNode) status.parentNode.insertBefore(btn, status);
-    else header.insertBefore(btn, header.firstChild);
+    // 放在页头控件最后（SYNC、外链之后），与其它胶囊控件同排
+    header.appendChild(btn);
   }
 
   // 暴露给需要的页面（目前无需外部调用，仅便于测试）

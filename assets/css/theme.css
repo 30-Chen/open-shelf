@@ -35,12 +35,15 @@ html[data-theme="light"] {
   --muted: var(--th-muted);
   --accent: var(--th-accent);
   --accent-dim: rgba(14, 156, 126, .10);
+  --accent-2: var(--th-accent-2);
   --blue: var(--th-blue);
   --warn: var(--th-warn);
   --danger: var(--th-danger);
   --radius: 14px;
   --radius-sm: 9px;
 }
+
+html[data-theme="light"] ::selection { background: rgba(14, 156, 126, .18); color: var(--text); }
 
 /* ---------- 背景层 ---------- */
 html[data-theme="light"] body { color: var(--text); }
@@ -62,9 +65,12 @@ html[data-theme="light"] .brand-mark {
   background: linear-gradient(145deg, rgba(14, 156, 126, .14), rgba(47, 99, 201, .08));
   box-shadow: inset 0 0 18px rgba(14, 156, 126, .08), 0 0 20px rgba(14, 156, 126, .08);
 }
+/* 状态胶囊原本是 rgba(0,0,0,.18) 黑底，浅色下会变成脏斑，统一成浅底 */
+html[data-theme="light"] .status,
 html[data-theme="light"] .ghost-link,
 html[data-theme="light"] .sy-trigger,
 html[data-theme="light"] .theme-toggle { background: rgba(28, 46, 74, .05); }
+html[data-theme="light"] .status:hover,
 html[data-theme="light"] .ghost-link:hover,
 html[data-theme="light"] .sy-trigger:hover,
 html[data-theme="light"] .theme-toggle:hover { background: var(--accent-dim); }
@@ -78,9 +84,22 @@ html[data-theme="light"] .btn {
   box-shadow: none;
 }
 html[data-theme="light"] .btn:hover { background: rgba(28, 46, 74, .08); }
-html[data-theme="light"] .btn--primary { color: #fff; }
-html[data-theme="light"] .btn--primary:hover { color: #fff; }
-html[data-theme="light"] .field::placeholder { color: #94a2b8; }
+/* 亮色下主按钮改用主题深绿渐变配白字，避免白字压在亮薄荷绿上几乎看不清 */
+html[data-theme="light"] .btn--primary {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(120deg, #16ae8c, #0e9c7e);
+  box-shadow: 0 4px 18px rgba(14, 156, 126, .22);
+}
+html[data-theme="light"] .btn--primary:hover {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(120deg, #1abd99, #0c8c71);
+}
+/* 浅色输入框占位符统一为中性灰，避免深灰在白底上显得像已填内容 */
+html[data-theme="light"] .field::placeholder,
+html[data-theme="light"] .nt-input::placeholder,
+html[data-theme="light"] .nt-textarea::placeholder,
+html[data-theme="light"] .nt-cat-new::placeholder,
+html[data-theme="light"] .sy-input::placeholder { color: #94a2b8; }
 html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
 
 /* ---------- 首页引导 ---------- */
@@ -131,6 +150,12 @@ html[data-theme="light"] .rs-stale { background: rgba(181, 115, 15, .09); }
 /* ---------- 模块 02：笔记 ---------- */
 html[data-theme="light"] .nt-tools-panel,
 html[data-theme="light"] .nt-flash { background: #fff; box-shadow: var(--th-shadow); }
+/* 选中态筛选/平台胶囊：改为浅色主题深绿，白色文字才清晰 */
+html[data-theme="light"] .nt-filter.is-active,
+html[data-theme="light"] .rs-plat.is-active {
+  color: #fff; border-color: transparent;
+  background: linear-gradient(120deg, #16ae8c, #0e9c7e);
+}
 html[data-theme="light"] .nt-filter.is-active span { color: rgba(255, 255, 255, .78); }
 html[data-theme="light"] .nt-search-wrap,
 html[data-theme="light"] .nt-input,
@@ -149,6 +174,7 @@ html[data-theme="light"] .nt-card-cover--ph {
     repeating-linear-gradient(45deg, transparent 0 12px, rgba(28, 46, 74, .04) 12px 13px);
 }
 html[data-theme="light"] .nt-code { color: #0a7d63; background: rgba(14, 156, 126, .08); }
+html[data-theme="light"] .nt-link { border-bottom-color: rgba(14, 156, 126, .35); }
 html[data-theme="light"] .nt-pre { background: var(--th-inset); color: var(--th-text); }
 html[data-theme="light"] .nt-video-frame,
 html[data-theme="light"] .nt-video video { background: var(--th-surface-3); }
@@ -180,10 +206,4 @@ html[data-theme="light"] .sh-tab { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .sh-tab.is-active {
   border-color: rgba(14, 156, 126, .45);
   background: rgba(14, 156, 126, .10);
-}
-
-/* ---------- 窄屏：主题按钮标签可隐藏以节省空间 ---------- */
-@media (max-width: 520px) {
-  .theme-toggle .theme-label { display: none; }
-  .theme-toggle { padding: 7px 9px; }
 }
