@@ -198,6 +198,12 @@
   function readRemote() {
     if (!cfg.gistId) return Promise.resolve(null);
     return request('GET', '/gists/' + encodeURIComponent(cfg.gistId)).then(function (g) {
+      // Gist API 对单个文件只返回最多 1MB；被截断的 JSON 不能当作「云端无数据」，
+      // 否则会把本地内容误判为更新并覆盖云端。这里直接报错，保护已有数据。
+      var file = g && g.files && g.files[FILE];
+      if (file && file.truncated) {
+        throw new Error('云端数据超过 Gist 单文件 1MB 上限已被截断，请清理大体积媒体后再同步');
+      }
       return { gist: g, payload: parseGist(g) };
     });
   }
@@ -208,6 +214,13 @@
     var content = JSON.stringify({
       app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
     }, null, 2);
+    // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限）
+    if (content.length > 950 * 1024) {
+      return Promise.reject(new Error(
+        '本地数据 ' + Math.round(content.length / 1024) + 'KB 超过云同步单文件上限（约 950KB），' +
+        '请删除部分图片/视频或改用网络地址'
+      ));
+    }
     var method = cfg.gistId ? 'PATCH' : 'POST';
     var path = cfg.gistId ? '/gists/' + encodeURIComponent(cfg.gistId) : '/gists';
     var body = cfg.gistId

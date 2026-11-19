@@ -226,10 +226,14 @@
         state.flashTimer = global.setTimeout(function () { el.className = 'nt-flash mono'; }, 3200);
       }
 
-      /* ---------- 拖拽 / 选择上传媒体（图片压缩后以 data URI 随笔记同步） ---------- */
-      var MAX_IMAGE_RAW = 2 * 1024 * 1024;
-      var MAX_VIDEO = 4 * 1024 * 1024;
-      var MAX_BODY = 2 * 1024 * 1024;
+      /* ---------- 拖拽 / 选择上传媒体（自动压缩，受 Gist 单文件 1MB 限制约束） ---------- */
+      // GitHub Gist API 对单个文件只返回最多 1MB；超限会被截断导致同步数据损坏。
+      // 媒体以 data URI（比原始文件大约 1/3）存进同步文件，因此必须留出安全余量。
+      var MAX_IMAGE_RAW = 8 * 1024 * 1024;    // 源图放宽到 8MB，上传后自动压到目标体积
+      var IMAGE_TARGET = 260 * 1024;          // 每张图片压缩目标（data URI 字符数）
+      var MAX_VIDEO = 600 * 1024;             // 本地视频无法在浏览器有效压缩，限制到安全体积
+      var MEDIA_TOTAL = 900 * 1024;           // 全部媒体 data URI 总量上限（给其它数据留余量）
+      var MAX_BODY = 200 * 1024;              // 正文只存短引用，实际远远用不到
 
       function fileToDataUrl(file) {
         return new Promise(function (resolve, reject) {
@@ -240,44 +244,70 @@
         });
       }
 
+      /** 迭代压缩：优先降 JPEG 质量，再降尺寸，直到小于目标体积 */
+      function compressImage(url, name) {
+        return new Promise(function (resolve) {
+          var img = new global.Image();
+          img.onload = function () {
+            try {
+              var w = img.width || 1, h = img.height || 1;
+              var scale = Math.min(1, 1600 / Math.max(w, h));
+              var quality = 0.82;
+              function attempt(round) {
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(w * scale));
+                canvas.height = Math.max(1, Math.round(h * scale));
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';       // 透明区域转白底，避免 JPEG 发黑
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                var out = canvas.toDataURL('image/jpeg', quality);
+                if (out.length <= IMAGE_TARGET || round <= 0) {
+                  return resolve({ url: out, name: name, shrunk: out.length < url.length });
+                }
+                if (quality > 0.5) quality = Math.max(0.5, quality - 0.12);
+                else { scale *= 0.78; quality = 0.72; }
+                attempt(round - 1);
+              }
+              attempt(6);
+            } catch (e) { resolve({ url: url, name: name, shrunk: false }); }
+          };
+          img.onerror = function () { resolve({ url: url, name: name, shrunk: false }); };
+          img.src = url;
+        });
+      }
+
       function prepareMedia(file) {
         var type = String(file.type || '').toLowerCase();
         if (type.indexOf('image/') === 0) {
           if (file.size > MAX_IMAGE_RAW) {
-            return Promise.reject(new Error('图片「' + file.name + '」超过 2MB，请先压缩'));
+            return Promise.reject(new Error('图片「' + file.name + '」超过 8MB，请先压缩'));
           }
           return fileToDataUrl(file).then(function (url) {
-            // GIF / SVG / 小图原样保留；大图压到 1600px、JPEG 0.82，避免撑爆同步体积
-            if (type === 'image/gif' || type === 'image/svg+xml' || file.size < 300 * 1024) {
-              return { url: url, name: file.name };
+            // 已经在目标体积内的小图、以及需要保留动画/矢量的 GIF/SVG 原样保留
+            if (url.length <= IMAGE_TARGET ||
+                type === 'image/gif' || type === 'image/svg+xml') {
+              return { url: url, name: file.name, shrunk: false };
             }
-            return new Promise(function (resolve) {
-              var img = new global.Image();
-              img.onload = function () {
-                try {
-                  var ratio = Math.min(1, 1600 / Math.max(img.width || 1, img.height || 1));
-                  var canvas = document.createElement('canvas');
-                  canvas.width = Math.max(1, Math.round((img.width || 1) * ratio));
-                  canvas.height = Math.max(1, Math.round((img.height || 1) * ratio));
-                  var c = canvas.getContext('2d');
-                  c.fillStyle = '#ffffff';
-                  c.fillRect(0, 0, canvas.width, canvas.height);
-                  c.drawImage(img, 0, 0, canvas.width, canvas.height);
-                  resolve({ url: canvas.toDataURL('image/jpeg', 0.82), name: file.name });
-                } catch (e) { resolve({ url: url, name: file.name }); }
-              };
-              img.onerror = function () { resolve({ url: url, name: file.name }); };
-              img.src = url;
-            });
+            return compressImage(url, file.name);
           });
         }
         if (type.indexOf('video/') === 0) {
+          // 浏览器端无法可靠压缩视频，且 base64 会放大 1/3，必须限制在 Gist 安全线内
           if (file.size > MAX_VIDEO) {
-            return Promise.reject(new Error('视频「' + file.name + '」超过 4MB，请改用网络地址'));
+            return Promise.reject(new Error('视频「' + file.name + '」超过 600KB，本地视频无法自动压缩，请改用网络视频地址'));
           }
-          return fileToDataUrl(file).then(function (url) { return { url: url, name: file.name }; });
+          return fileToDataUrl(file).then(function (url) {
+            return { url: url, name: file.name, shrunk: false };
+          });
         }
         return Promise.reject(new Error('只支持图片或视频文件'));
+      }
+
+      function mediaTotal() {
+        return Object.keys(state.media).reduce(function (sum, id) {
+          return sum + String(state.media[id].d || '').length;
+        }, 0);
       }
 
       function insertSnippet(ta, snippet) {
@@ -294,7 +324,7 @@
         var files = Array.prototype.slice.call(fileList || []);
         var ta = root.querySelector('#nt-body');
         if (!files.length || !ta) return;
-        var done = 0, errors = [];
+        var done = 0, errors = [], compressed = 0;
         var queue = Promise.resolve();
         files.forEach(function (file) {
           queue = queue.then(function () {
@@ -306,6 +336,9 @@
               if (ta.value.length + snippet.length > MAX_BODY) {
                 throw new Error('这篇笔记内容过长，无法再插入媒体');
               }
+              if (mediaTotal() + media.url.length > MEDIA_TOTAL) {
+                throw new Error('本地媒体总大小已达上限（约 900KB），请删除部分图片/视频，或改用网络地址');
+              }
               state.media[id] = {
                 t: /^data:video/i.test(media.url) ? 'v' : 'i',
                 n: name, d: media.url
@@ -314,6 +347,7 @@
               if (state.draftMedia.indexOf(id) < 0) state.draftMedia.push(id);
               touch();      // 上传即视为用户数据，允许参与同步
               persist();    // 立即落盘，刷新/切页不丢媒体
+              if (media.shrunk) compressed++;
               done++;
             }).catch(function (e) { errors.push(e && e.message || String(e)); });
           });
@@ -321,6 +355,7 @@
         queue.then(function () {
           updatePreview();
           if (done) flash('已插入 ' + done + ' 个媒体文件' +
+            (compressed ? '（自动压缩 ' + compressed + ' 张）' : '') +
             (errors.length ? '，' + errors.length + ' 个失败：' + errors[0] : ''));
           else flash(errors[0] || '没有可插入的媒体文件', 'error');
         });

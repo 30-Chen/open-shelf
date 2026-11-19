@@ -212,7 +212,7 @@
               '<div class="nt-drop-hint" aria-hidden="true">' +
                 '<i class="i-ico i-cloud" aria-hidden="true"></i>' +
                 '<strong>松开即可插入</strong>' +
-                '<span>图片 / 视频会随笔记一起同步</span>' +
+                '<span>图片自动压缩，媒体随笔记同步</span>' +
               '</div>' +
               '<input id="nt-media-input" class="nt-media-input" type="file" ' +
                 'accept="image/*,video/*" multiple hidden>' +
@@ -223,7 +223,7 @@
             '</section>' +
           '</div>' +
           '<div class="nt-editor-foot">' +
-            '<span class="nt-hint mono">提示：图片 / 视频可拖进左侧编辑区；正文只保留简短引用，媒体单独保存并随笔记同步。</span>' +
+            '<span class="nt-hint mono">提示：拖入图片会自动压缩（约 200KB/张）；本地视频限 600KB，更大请用网络地址。正文只留短引用，媒体随笔记同步。</span>' +
             '<div>' +
               '<button class="btn" data-act="cancel">取消</button> ' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +
