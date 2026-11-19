@@ -307,7 +307,10 @@
   .nt-search-wrap { width: 100%; }
 }
 @media (max-width: 560px) {
-  .nt-head-actions { width: 100%; }
+  .nt-head-actions { width: 100%; position: relative; }
+  /* 更多面板改为相对整行 actions 定位，避免相对窄按钮在窄屏横向溢出 */
+  .nt-tools-menu { position: static; }
+  .nt-tools-panel { right: 0; left: auto; width: min(232px, calc(100vw - 32px)); }
   .nt-title { font-size: 21px; }
   .nt-grid { grid-template-columns: 1fr; }
   .nt-editor-foot .btn { flex: 1; }

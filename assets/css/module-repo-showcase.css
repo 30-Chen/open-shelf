@@ -307,9 +307,11 @@
   .rs-add { flex-direction: column; }
   .rs-input-wrap, .rs-cat-wrap { flex: 1 1 auto; width: 100%; }
   .rs-add .btn { width: 100%; }
-  .rs-head-actions { width: 100%; }
+  .rs-head-actions { width: 100%; position: relative; }
   .rs-hint { margin-left: 0; width: 100%; }
-  .rs-settings-panel { right: auto; left: 0; }
+  /* 设置面板改为相对整行 actions 定位，避免相对窄按钮在窄屏横向溢出 */
+  .rs-settings { position: static; }
+  .rs-settings-panel { right: 0; left: auto; width: min(360px, calc(100vw - 32px)); }
   .rs-card { padding: 16px 14px 14px; }
   .rs-platform-bar { gap: 5px; }
   .rs-plat { padding: 3px 8px; font-size: 9.5px; }
