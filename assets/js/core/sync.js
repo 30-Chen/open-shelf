@@ -247,8 +247,14 @@
         return { ok: true, note: 'in-sync', remoteHash: remoteHash };
       }
 
-      // 上传方向：仅本地变；或双方都变但本地时间更新
-      var localWins = localDirty && (!remoteChanged || cfg.localChangedAt > remoteTs + SKEW);
+      // 新设备首次关联云端（syncedHash 为空）：无条件以云端为准。
+      // 否则本地时间戳（本机 Date.now()，可能比写入云端的设备时钟新很多）会被误判为
+      // 「本地更新」从而上传，把新设备上的示例/空数据整包覆盖掉云端真实数据。
+      // 首次关联时本地数据一律视为不可信，必须先把云端数据拉下来。
+      var firstLink = !cfg.syncedHash;
+      // 上传方向：仅本地变；或双方都变但本地时间更新；且不是首次关联。
+      var localWins = !firstLink && localDirty &&
+        (!remoteChanged || cfg.localChangedAt > remoteTs + SKEW);
       if (localWins) {
         var merged = mergeModules(remoteModules, localModules);
         return writeGist(merged, localModules, hashModules(merged));
