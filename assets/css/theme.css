@@ -93,6 +93,9 @@ html[data-theme="light"] .sel-menu {
 }
 html[data-theme="light"] .sel-option:hover,
 html[data-theme="light"] .sel-option.is-active { background: var(--accent-dim); }
+html[data-theme="light"] .sel-pill .sel-cancel { background: rgba(28, 46, 74, .04); }
+html[data-theme="light"] .sel-pill .sel-cancel:hover,
+html[data-theme="light"] .sel-pill .sel-cancel:focus-visible { background: rgba(28, 46, 74, .09); }
 /* 亮色下主按钮改用主题深绿渐变配白字，避免白字压在亮薄荷绿上几乎看不清 */
 html[data-theme="light"] .btn--primary {
   color: #fff; border-color: transparent;
