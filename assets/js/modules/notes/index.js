@@ -407,6 +407,8 @@
         if (t.id === 'nt-category') {
           var isNew = t.value === '__new__';
           var extra = root.querySelector('#nt-category-new');
+          var pill = root.querySelector('#nt-cat-pill');
+          if (pill) pill.classList.toggle('is-new', isNew);
           if (extra) {
             extra.hidden = !isNew;
             if (isNew) extra.focus();

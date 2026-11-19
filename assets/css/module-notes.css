@@ -196,16 +196,8 @@
 .nt-input::placeholder { color: #5b6b83; }
 .nt-input:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(85, 227, 194, .07); }
 .nt-field--title .nt-input { font-size: 17px; height: 46px; }
-/* 统一分类下拉：与模块 01 同规格的自定义箭头，避免各平台原生外观不一致 */
-.nt-select {
-  -webkit-appearance: none; appearance: none; cursor: pointer;
-  padding-right: 30px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='%23aab9cf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 2 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 11px center; background-size: 10px 7px;
-}
-.nt-select option { background: #0e1727; color: var(--text); }
-.nt-cat-wrap { display: block; position: relative; }
-.nt-cat-new { margin-top: 8px; }
+/* 分类下拉：复用 .sel-pill（与「设置 / 更多」同一套按钮胶囊），占满表单列宽 */
+.nt-cat-wrap { width: 100%; }
 .nt-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
 .nt-editor-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 460px; }

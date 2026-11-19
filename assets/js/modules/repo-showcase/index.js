@@ -180,11 +180,12 @@
               '<input class="field" id="rs-input" autocomplete="off" spellcheck="false" ' +
                 'placeholder="owner/repo 或 https://github.com/owner/repo" aria-label="GitHub 仓库地址">' +
             '</div>' +
-            '<div class="rs-cat-wrap">' +
-              '<span class="rs-cat-label mono">分类</span>' +
+            '<div class="rs-cat-wrap sel-pill" id="rs-cat-pill">' +
+              '<i class="i-ico i-folder sel-lead" aria-hidden="true"></i>' +
               '<select class="rs-cat-select" id="rs-group-select" aria-label="选择分类目录"></select>' +
+              '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
               '<input class="rs-cat-new" id="rs-group-new" type="text" maxlength="24" autocomplete="off" ' +
-                'placeholder="输入新目录名称" aria-label="新分类目录名称" hidden>' +
+                'placeholder="新目录名称" aria-label="新分类目录名称" hidden>' +
             '</div>' +
             '<button class="btn btn--primary" type="submit">+ 添加项目</button>' +
           '</form>' +
@@ -206,6 +207,7 @@
       var input = root.querySelector('#rs-input');
       var groupSelect = root.querySelector('#rs-group-select');
       var groupNew = root.querySelector('#rs-group-new');
+      var catPill = root.querySelector('#rs-cat-pill');
       var msgEl = root.querySelector('#rs-msg');
       var countEl = root.querySelector('#rs-count');
       var rateEl = root.querySelector('#rs-rate');
@@ -253,6 +255,7 @@
       function toggleNewInput() {
         var isNew = groupSelect.value === '__new__';
         groupNew.hidden = !isNew;
+        if (catPill) catPill.classList.toggle('is-new', isNew);
         if (isNew) groupNew.focus();
       }
 

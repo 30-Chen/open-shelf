@@ -180,11 +180,13 @@
           '<div class="nt-form-grid">' +
             '<label class="nt-field">' +
               '<span>分类</span>' +
-              '<span class="nt-cat-wrap">' +
-                '<select class="nt-input nt-select" id="nt-category">' + catOptions +
+              '<span class="nt-cat-wrap sel-pill" id="nt-cat-pill">' +
+                '<i class="i-ico i-folder sel-lead" aria-hidden="true"></i>' +
+                '<select class="nt-select" id="nt-category">' + catOptions +
                   '<option value="__new__">＋ 新建分类…</option>' +
                 '</select>' +
-                '<input class="nt-input nt-cat-new" id="nt-category-new" type="text" maxlength="24" placeholder="输入新分类名称" hidden>' +
+                '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
+                '<input class="nt-cat-new" id="nt-category-new" type="text" maxlength="24" placeholder="新分类名称" hidden>' +
               '</span>' +
             '</label>' +
             '<label class="nt-field">' +

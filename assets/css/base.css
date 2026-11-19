@@ -167,6 +167,9 @@ img { max-width: 100%; }
 .i-moon { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z'/%3E%3C/svg%3E"); }
 .i-auto { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 3a9 9 0 0 1 0 18Z' fill='%23000' stroke='none'/%3E%3C/svg%3E"); }
 .i-github { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58v-2.23c-3.34.73-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.32.47-2.39 1.24-3.23-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.83.58C20.56 22.29 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z'/%3E%3C/svg%3E"); }
+/* 下拉选择用图标：文件夹（分类）/ 箭头（下拉），mask + currentColor 跨主题一致 */
+.i-folder { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z'/%3E%3C/svg%3E"); }
+.i-chev { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
 
 /* ---------- 主题切换按钮（三段循环：自动 → 亮 → 暗） ---------- */
 .theme-toggle {
@@ -223,6 +226,44 @@ img { max-width: 100%; }
   box-shadow: 0 4px 22px rgba(85, 227, 194, .18);
 }
 .btn--primary:hover { color: #04130f; background: linear-gradient(120deg, #7bf3da, #56e2c7); border-color: transparent; }
+
+/* ---------- 按钮式下拉胶囊 ----------
+   与 .btn（设置 / 更多）同规格：相同高度、边框、圆角、背景、字色与 hover。
+   原生 <select> 透明铺满，箭头与前置图标用 .i-ico 的 mask + currentColor，
+   深浅主题、各平台外观一致，不再依赖硬编码颜色的 SVG 背景图。 */
+.sel-pill {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, .025); color: var(--text-2);
+  font-size: 13px; letter-spacing: .2px;
+  transition: border-color .18s, color .18s, background .18s;
+}
+.sel-pill:hover, .sel-pill:focus-within {
+  color: var(--text); border-color: var(--line-strong); background: rgba(255, 255, 255, .055);
+}
+.sel-pill > .i-ico.sel-lead { width: 15px; height: 15px; color: var(--accent); flex: 0 0 auto; }
+/* 箭头覆盖在 select 右缘：点击箭头区域仍能展开原生下拉，没有死区 */
+.sel-pill > .i-ico.sel-chev {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; color: var(--muted); pointer-events: none;
+}
+.sel-pill select {
+  flex: 1; min-width: 0; height: 100%; padding-right: 20px;
+  border: 0; outline: 0; background: transparent; color: var(--text);
+  font: 12.5px var(--sans); cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+.sel-pill select option { background: #0d1523; color: var(--text); }
+/* 选中「新建分类」时，让输入框独占胶囊，隐藏 select 与箭头 */
+.sel-pill.is-new select, .sel-pill.is-new .sel-chev { display: none; }
+.sel-pill input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; outline: 0; background: transparent; color: var(--text);
+  font: 12.5px var(--sans);
+}
+.sel-pill input::placeholder { color: #5b6b83; }
 
 .field {
   width: 100%; height: 100%;

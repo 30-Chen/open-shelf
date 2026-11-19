@@ -84,6 +84,11 @@ html[data-theme="light"] .btn {
   box-shadow: none;
 }
 html[data-theme="light"] .btn:hover { background: rgba(28, 46, 74, .08); }
+/* 按钮式下拉胶囊：与 .btn 保持同样的浅色底与 hover，选项浮层用白底深字 */
+html[data-theme="light"] .sel-pill { background: rgba(28, 46, 74, .04); }
+html[data-theme="light"] .sel-pill:hover,
+html[data-theme="light"] .sel-pill:focus-within { background: rgba(28, 46, 74, .08); }
+html[data-theme="light"] .sel-pill select option { background: #fff; color: var(--text); }
 /* 亮色下主按钮改用主题深绿渐变配白字，避免白字压在亮薄荷绿上几乎看不清 */
 html[data-theme="light"] .btn--primary {
   color: #fff; border-color: transparent;
@@ -98,7 +103,7 @@ html[data-theme="light"] .btn--primary:hover {
 html[data-theme="light"] .field::placeholder,
 html[data-theme="light"] .nt-input::placeholder,
 html[data-theme="light"] .nt-textarea::placeholder,
-html[data-theme="light"] .nt-cat-new::placeholder,
+html[data-theme="light"] .sel-pill input::placeholder,
 html[data-theme="light"] .sy-input::placeholder { color: #94a2b8; }
 html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
 
@@ -130,13 +135,7 @@ html[data-theme="light"] .rs-settings-panel {
   box-shadow: var(--th-shadow);
 }
 html[data-theme="light"] .rs-setting-input { background: var(--th-inset) !important; }
-html[data-theme="light"] .rs-cat-select option { background: #fff; }
-html[data-theme="light"] .rs-input-wrap,
-html[data-theme="light"] .rs-cat-wrap { background: var(--th-surface); }
-/* 浅色下分类下拉箭头用深灰，保证对比度 */
-html[data-theme="light"] .rs-cat-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='%236b7c98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 2 6 6 6-6'/%3E%3C/svg%3E");
-}
+html[data-theme="light"] .rs-input-wrap { background: var(--th-surface); }
 html[data-theme="light"] .rs-statusbar { background: rgba(28, 46, 74, .03); }
 html[data-theme="light"] .rs-card {
   background: linear-gradient(160deg, #ffffff, var(--th-surface-2));
@@ -169,11 +168,6 @@ html[data-theme="light"] .nt-search-wrap,
 html[data-theme="light"] .nt-input,
 html[data-theme="light"] .nt-edit-pane,
 html[data-theme="light"] .nt-preview-pane { background: var(--th-surface); }
-/* nt-input 的 background 简写会清掉箭头，这里补回深灰箭头 */
-html[data-theme="light"] .nt-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='%236b7c98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 2 6 6 6-6'/%3E%3C/svg%3E");
-}
-html[data-theme="light"] .nt-select option { background: #fff; }
 html[data-theme="light"] .nt-card {
   background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
   box-shadow: 0 8px 22px rgba(24, 42, 74, .07);
