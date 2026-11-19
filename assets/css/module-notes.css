@@ -223,6 +223,21 @@
   color: var(--text); font: 13px/1.75 var(--mono); tab-size: 2;
 }
 .nt-textarea::placeholder { color: #5b6b83; }
+
+/* 拖拽上传：整个左侧编辑区都是投放入口 */
+.nt-edit-pane { position: relative; }
+.nt-drop-hint {
+  position: absolute; inset: 40px 8px 8px; z-index: 3;
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  border: 1px dashed var(--accent); border-radius: var(--radius-sm);
+  background: rgba(8, 16, 28, .88); backdrop-filter: blur(2px);
+  color: var(--accent); text-align: center; pointer-events: none;
+}
+.nt-edit-pane.is-dragover .nt-drop-hint { display: flex; }
+.nt-drop-hint .i-ico { width: 26px; height: 26px; }
+.nt-drop-hint strong { font: 600 14px var(--sans); }
+.nt-drop-hint span { font-size: 11px; color: var(--muted); }
+
 .nt-preview { flex: 1; padding: 16px 18px; overflow-y: auto; max-height: 560px; }
 
 .nt-editor-foot {

@@ -156,6 +156,122 @@
         state.flashTimer = global.setTimeout(function () { el.className = 'nt-flash mono'; }, 3200);
       }
 
+      /* ---------- 拖拽 / 选择上传媒体（图片压缩后以 data URI 随笔记同步） ---------- */
+      var MAX_IMAGE_RAW = 2 * 1024 * 1024;
+      var MAX_VIDEO = 4 * 1024 * 1024;
+      var MAX_BODY = 2 * 1024 * 1024;
+
+      function fileToDataUrl(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new global.FileReader();
+          reader.onload = function () { resolve(String(reader.result || '')); };
+          reader.onerror = function () { reject(new Error('读取文件失败')); };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function prepareMedia(file) {
+        var type = String(file.type || '').toLowerCase();
+        if (type.indexOf('image/') === 0) {
+          if (file.size > MAX_IMAGE_RAW) {
+            return Promise.reject(new Error('图片「' + file.name + '」超过 2MB，请先压缩'));
+          }
+          return fileToDataUrl(file).then(function (url) {
+            // GIF / SVG / 小图原样保留；大图压到 1600px、JPEG 0.82，避免撑爆同步体积
+            if (type === 'image/gif' || type === 'image/svg+xml' || file.size < 300 * 1024) {
+              return { url: url, name: file.name };
+            }
+            return new Promise(function (resolve) {
+              var img = new global.Image();
+              img.onload = function () {
+                try {
+                  var ratio = Math.min(1, 1600 / Math.max(img.width || 1, img.height || 1));
+                  var canvas = document.createElement('canvas');
+                  canvas.width = Math.max(1, Math.round((img.width || 1) * ratio));
+                  canvas.height = Math.max(1, Math.round((img.height || 1) * ratio));
+                  var c = canvas.getContext('2d');
+                  c.fillStyle = '#ffffff';
+                  c.fillRect(0, 0, canvas.width, canvas.height);
+                  c.drawImage(img, 0, 0, canvas.width, canvas.height);
+                  resolve({ url: canvas.toDataURL('image/jpeg', 0.82), name: file.name });
+                } catch (e) { resolve({ url: url, name: file.name }); }
+              };
+              img.onerror = function () { resolve({ url: url, name: file.name }); };
+              img.src = url;
+            });
+          });
+        }
+        if (type.indexOf('video/') === 0) {
+          if (file.size > MAX_VIDEO) {
+            return Promise.reject(new Error('视频「' + file.name + '」超过 4MB，请改用网络地址'));
+          }
+          return fileToDataUrl(file).then(function (url) { return { url: url, name: file.name }; });
+        }
+        return Promise.reject(new Error('只支持图片或视频文件'));
+      }
+
+      function insertSnippet(ta, snippet) {
+        var start = ta.selectionStart, end = ta.selectionEnd;
+        var lead = start > 0 && ta.value.charAt(start - 1) !== '\n' ? '\n' : '';
+        var tail = '\n';
+        ta.value = ta.value.slice(0, start) + lead + snippet + tail + ta.value.slice(end);
+        var caret = start + lead.length + snippet.length + tail.length;
+        ta.focus();
+        ta.setSelectionRange(caret, caret);
+      }
+
+      function handleFiles(fileList) {
+        var files = Array.prototype.slice.call(fileList || []);
+        var ta = root.querySelector('#nt-body');
+        if (!files.length || !ta) return;
+        var done = 0, errors = [];
+        var queue = Promise.resolve();
+        files.forEach(function (file) {
+          queue = queue.then(function () {
+            return prepareMedia(file).then(function (media) {
+              var name = String(media.name || '媒体').replace(/[\[\]\(\)\n]/g, '_');
+              var snippet = '![' + name + '](' + media.url + ')';
+              if (ta.value.length + snippet.length > MAX_BODY) {
+                throw new Error('这篇笔记已接近 2MB，无法再插入媒体');
+              }
+              insertSnippet(ta, snippet);
+              done++;
+            }).catch(function (e) { errors.push(e && e.message || String(e)); });
+          });
+        });
+        queue.then(function () {
+          updatePreview();
+          if (done) flash('已插入 ' + done + ' 个媒体文件' +
+            (errors.length ? '，' + errors.length + ' 个失败：' + errors[0] : ''));
+          else flash(errors[0] || '没有可插入的媒体文件', 'error');
+        });
+      }
+
+      function bindMediaUpload() {
+        var pane = root.querySelector('#nt-edit-pane');
+        var picker = root.querySelector('#nt-media-input');
+        if (!pane || !picker) return;
+        picker.addEventListener('change', function () {
+          handleFiles(picker.files);
+          picker.value = '';
+        });
+        ['dragenter', 'dragover'].forEach(function (type) {
+          pane.addEventListener(type, function (e) {
+            e.preventDefault();
+            if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+            pane.classList.add('is-dragover');
+          });
+        });
+        pane.addEventListener('dragleave', function (e) {
+          if (!pane.contains(e.relatedTarget)) pane.classList.remove('is-dragover');
+        });
+        pane.addEventListener('drop', function (e) {
+          e.preventDefault();
+          pane.classList.remove('is-dragover');
+          handleFiles(e.dataTransfer && e.dataTransfer.files);
+        });
+      }
+
       function render() {
         if (state.view === 'read') {
           var note = state.notes.filter(function (n) { return n.id === state.currentId; })[0];
@@ -167,6 +283,7 @@
           // 自定义下拉：真实值仍在隐藏 select，菜单由 DOM 渲染
           var catPill = root.querySelector('#nt-cat-pill');
           if (catPill && global.PortalSelect) global.PortalSelect.mount(catPill);
+          bindMediaUpload();
           return;
         }
         root.innerHTML = View.list(state, visibleNotes(), counts());
@@ -325,6 +442,11 @@
       function applyTool(tool) {
         var ta = root.querySelector('#nt-body');
         if (!ta) return;
+        if (tool === 'upload') {
+          var picker = root.querySelector('#nt-media-input');
+          if (picker) picker.click();
+          return;
+        }
         var lineStart, snippet;
         switch (tool) {
           case 'h2': lineStart = true; snippet = '## 小标题'; break;
@@ -353,6 +475,10 @@
       }
 
       // ---------- 事件 ----------
+      // 防止文件被拖到编辑区之外时浏览器直接打开它
+      root.addEventListener('dragover', function (e) { e.preventDefault(); });
+      root.addEventListener('drop', function (e) { e.preventDefault(); });
+
       root.addEventListener('click', function (e) {
         var t = e.target;
         var btn = t && t.closest ? t.closest('[data-act]') : null;

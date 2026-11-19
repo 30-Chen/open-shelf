@@ -152,8 +152,9 @@
       { k: 'bold', label: 'B', tip: '粗体' },
       { k: 'italic', label: 'I', tip: '斜体' },
       { k: 'link', label: '链接', tip: '链接' },
-      { k: 'image', label: '图片', tip: '图片' },
-      { k: 'video', label: '视频', tip: '视频 @video' },
+      { k: 'image', label: '图片', tip: '插入网络图片地址' },
+      { k: 'video', label: '视频', tip: '插入网络视频地址' },
+      { k: 'upload', label: '上传', tip: '选择或拖入本地图片 / 视频' },
       { k: 'code', label: '代码', tip: '代码块' },
       { k: 'list', label: '列表', tip: '无序列表' },
       { k: 'quote', label: '引用', tip: '引用' }
@@ -201,11 +202,18 @@
             '</label>' +
           '</div>' +
           '<div class="nt-editor-cols">' +
-            '<section class="nt-edit-pane">' +
+            '<section class="nt-edit-pane" id="nt-edit-pane">' +
               '<div class="nt-pane-head mono"><span>MARKDOWN</span>' +
                 '<div class="nt-tools">' + tools + '</div>' +
               '</div>' +
               '<textarea class="nt-textarea" id="nt-body" spellcheck="false" placeholder="# 从这里开始写…">' + esc(note.body) + '</textarea>' +
+              '<div class="nt-drop-hint" aria-hidden="true">' +
+                '<i class="i-ico i-cloud" aria-hidden="true"></i>' +
+                '<strong>松开即可插入</strong>' +
+                '<span>图片 / 视频会随笔记一起同步</span>' +
+              '</div>' +
+              '<input id="nt-media-input" class="nt-media-input" type="file" ' +
+                'accept="image/*,video/*" multiple hidden>' +
             '</section>' +
             '<section class="nt-preview-pane">' +
               '<div class="nt-pane-head mono"><span>预览 / PREVIEW</span></div>' +
@@ -213,7 +221,7 @@
             '</section>' +
           '</div>' +
           '<div class="nt-editor-foot">' +
-            '<span class="nt-hint mono">提示：正文里的图片与视频均来自网络地址，仅作展示引用。</span>' +
+            '<span class="nt-hint mono">提示：可把图片 / 视频拖进左侧编辑区，或点「上传」选择；图片会自动压缩后随笔记同步。</span>' +
             '<div>' +
               '<button class="btn" data-act="cancel">取消</button> ' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +

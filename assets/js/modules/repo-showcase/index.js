@@ -138,6 +138,7 @@
         snapshots: store.get('snapshots', {}) || {},
         items: {},
         ui: {},                  // 每张卡的平台筛选选择，纯本地视图状态
+        activeGroup: '__all__',  // 分类筛选：__all__ 表示全部目录
         demo: isDemo === true,
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
@@ -194,6 +195,17 @@
             '<button class="btn btn--primary" type="submit">+ 添加项目</button>' +
           '</form>' +
 
+          // 分类筛选条：与模块 02 的 .nt-filters 同一套视觉语言，目录入口常驻可见
+          '<div class="rs-filters">' +
+            '<div class="rs-filter-row" id="rs-filter-row"></div>' +
+            '<div class="rs-new-group" id="rs-new-group" hidden>' +
+              '<input class="field" id="rs-new-group-input" type="text" maxlength="24" ' +
+                'autocomplete="off" placeholder="新目录名称" aria-label="新目录名称">' +
+              '<button class="btn btn--primary" type="button" data-action="create-group">创建</button>' +
+              '<button class="btn" type="button" data-action="cancel-new-group">取消</button>' +
+            '</div>' +
+          '</div>' +
+
           '<div class="rs-suggest">' +
             '<span class="rs-hint" id="rs-msg" role="status"></span>' +
           '</div>' +
@@ -212,6 +224,9 @@
       var groupSelect = root.querySelector('#rs-group-select');
       var groupNew = root.querySelector('#rs-group-new');
       var catPill = root.querySelector('#rs-cat-pill');
+      var filterRow = root.querySelector('#rs-filter-row');
+      var newGroupBox = root.querySelector('#rs-new-group');
+      var newGroupInput = root.querySelector('#rs-new-group-input');
       // 自定义下拉：真实值仍在隐藏 select 中，菜单由 DOM 渲染，主题/跨平台一致
       var catSelect = global.PortalSelect ? global.PortalSelect.mount(catPill) : null;
       var msgEl = root.querySelector('#rs-msg');
@@ -274,6 +289,27 @@
         return name;
       }
 
+      /** 分类筛选条：全部 / 各目录（含空目录）/ 常驻新建入口 */
+      function renderFilterRow() {
+        if (!filterRow) return;
+        var total = allRepos(state.groups).length;
+        function item(key, label, count) {
+          var on = state.activeGroup === key;
+          return '<button class="rs-filter' + (on ? ' is-active' : '') + '" type="button" ' +
+            'data-action="filter-group" data-group="' + esc(key) + '">' +
+            esc(label) + '<span class="mono">' + count + '</span></button>';
+        }
+        filterRow.innerHTML = item('__all__', '全部', total) +
+          state.groups.map(function (g) { return item(g.name, g.name, g.repos.length); }).join('') +
+          '<button class="rs-filter rs-filter--new" type="button" data-action="new-group">＋ 新建目录</button>';
+      }
+      function setNewGroupOpen(open) {
+        if (!newGroupBox) return;
+        newGroupBox.hidden = !open;
+        if (open && newGroupInput) newGroupInput.focus();
+        if (!open && newGroupInput) newGroupInput.value = '';
+      }
+
       function render() {
         // 记住已展开的更新日志 + 已经播放过入场动画的卡片
         var openNotes = Object.create(null);
@@ -285,7 +321,9 @@
         var html = '';
         var index = 0;
         state.groups.forEach(function (g) {
-          if (!g.repos.length) return;             // 空目录不渲染
+          // 筛选条：只显示当前目录；「全部」时跳过空目录，单独选中空目录时给出空态
+          if (state.activeGroup !== '__all__' && g.name !== state.activeGroup) return;
+          if (!g.repos.length) return;
           var cards = g.repos.map(function (fullName) {
             var item = state.items[fullName] || {
               fullName: fullName,
@@ -312,6 +350,7 @@
         var total = allRepos(state.groups).length;
         countEl.textContent = total + (total === 1 ? ' REPO' : ' REPOS');
         renderGroupOptions(groupSelect.value);
+        renderFilterRow();
       }
 
       function load(fullName, force) {
@@ -372,6 +411,7 @@
         touch();
         saveGroups();
         input.value = '';
+        state.activeGroup = groupName; // 新增后自动切到该目录，立刻能看到结果
         if (groupSelect.value === '__new__') {
           groupSelect.value = groupName;
           groupNew.value = '';
@@ -403,6 +443,7 @@
         if (!fallback) { fallback = { name: DEFAULT_GROUP, repos: [] }; state.groups.unshift(fallback); }
         group.repos.forEach(function (r) { if (fallback.repos.indexOf(r) < 0) fallback.repos.push(r); });
         state.groups = state.groups.filter(function (g) { return g.name !== name; });
+        if (state.activeGroup === name) state.activeGroup = DEFAULT_GROUP;
         touch();
         saveGroups();
         render();
@@ -415,6 +456,16 @@
       });
 
       groupSelect.addEventListener('change', toggleNewInput);
+      if (newGroupInput) newGroupInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var create = root.querySelector('[data-action="create-group"]');
+          if (create) create.click();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setNewGroupOpen(false);
+        }
+      });
 
       root.addEventListener('click', function (e) {
         var target = e.target;
@@ -426,6 +477,38 @@
         if (action === 'refresh' && repo) { load(repo, true); return; }
         if (action === 'remove' && repo) { remove(repo); return; }
         if (action === 'delete-group') { deleteGroup(btn.dataset.group); return; }
+
+        if (action === 'filter-group') {
+          state.activeGroup = btn.dataset.group || '__all__';
+          render();
+          return;
+        }
+        if (action === 'new-group') { setNewGroupOpen(true); return; }
+        if (action === 'cancel-new-group') { setNewGroupOpen(false); return; }
+        if (action === 'create-group') {
+          var name = String(newGroupInput ? newGroupInput.value : '').trim().slice(0, 24);
+          if (!name) { flash('请输入新目录名称', 'error'); newGroupInput.focus(); return; }
+          if (name === '__new__') { flash('目录名称不可用', 'error'); return; }
+          if (state.groups.some(function (g) { return g.name === name; })) {
+            flash('目录「' + name + '」已存在', 'warn');
+            state.activeGroup = name;
+            groupSelect.value = name;
+            setNewGroupOpen(false);
+            render();
+            return;
+          }
+          state.groups.push({ name: name, repos: [] });
+          state.activeGroup = name;
+          touch();
+          saveGroups();
+          setNewGroupOpen(false);
+          // 先把新目录写进下拉选项，再渲染；否则此时 select 还没有该 option，
+          // 直接赋值会失败，下拉又退回「默认」。
+          renderGroupOptions(name);
+          flash('目录「' + name + '」已创建，接下来添加的项目会放进这里');
+          render();
+          return;
+        }
 
         if (action === 'platform' && repo) {
           var ui = state.ui[repo] || (state.ui[repo] = {});
@@ -507,6 +590,10 @@
         if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
         state.demo = false; // 云端数据优先于示例
         state.groups = sanitizeGroups(data);
+        if (state.activeGroup !== '__all__' &&
+            !state.groups.some(function (g) { return g.name === state.activeGroup; })) {
+          state.activeGroup = '__all__';
+        }
         state.snapshots = (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {};
         state.items = {};
         saveGroups();

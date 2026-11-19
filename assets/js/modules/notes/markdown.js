@@ -34,12 +34,24 @@
   }
 
   var VIDEO_EXT = /\.(mp4|webm|ogg|ogv|m4v|mov)(\?|#|$)/i;
+  // 拖拽上传的视频以 base64 data URI 随笔记一起同步
+  var VIDEO_DATA = /^data:video\/(?:mp4|webm|ogg|ogv|quicktime|x-m4v);base64,[a-z0-9+/=\s]+$/i;
+  function isVideoUrl(urlEscaped) {
+    var s = String(urlEscaped || '').trim();
+    return VIDEO_DATA.test(s) || VIDEO_EXT.test(s.replace(/&amp;/g, '&'));
+  }
 
   /** 把视频地址转成安全嵌入；识别不了就退回普通链接。 */
   function videoEmbed(urlEscaped, captionTextEscaped) {
     var raw = String(urlEscaped || '').trim();
     var cap = captionTextEscaped
       ? '<div class="nt-video-cap">' + inline(captionTextEscaped) + '</div>' : '';
+    // 本地上传的视频：直接交给 <video>，不经过外链白名单
+    if (VIDEO_DATA.test(raw)) {
+      return '<div class="nt-video">' +
+        '<video controls preload="metadata" playsinline src="' + raw + '"></video>' + cap +
+      '</div>';
+    }
     var http = safeHttpUrl(raw);
     if (!http) {
       return '<div class="nt-video-fallback">视频地址无效或不被支持</div>';
@@ -96,7 +108,7 @@
 
     // 图片 ![alt](url) —— 含视频直链时自动升级为播放器
     s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (_, alt, url) {
-      if (VIDEO_EXT.test(String(url).replace(/&amp;/g, '&'))) return hold(videoEmbed(url, ''));
+      if (isVideoUrl(url)) return hold(videoEmbed(url, ''));
       var u = safeImageUrl(url);
       return u
         ? hold('<img class="nt-img" loading="lazy" src="' + u + '" alt="' + alt + '">')
@@ -202,7 +214,10 @@
       var para = [line];
       i++;
       while (i < lines.length && !isBlockStart(lines[i])) para.push(lines[i++]);
-      out.push('<p class="nt-p">' + inline(esc(para.join('\n'))) + '</p>');
+      var paraHtml = inline(esc(para.join('\n')));
+      // 单独一行的播放器是块级元素，不能塞进 <p>，否则浏览器会自动拆段
+      out.push(/^<div class="nt-video">[\s\S]*<\/div>$/.test(paraHtml)
+        ? paraHtml : '<p class="nt-p">' + paraHtml + '</p>');
     }
 
     return out.join('\n');

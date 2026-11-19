@@ -166,11 +166,14 @@ html[data-theme="light"] .nt-tools-panel,
 html[data-theme="light"] .nt-flash { background: #fff; box-shadow: var(--th-shadow); }
 /* 选中态筛选/平台胶囊：改为浅色主题深绿，白色文字才清晰 */
 html[data-theme="light"] .nt-filter.is-active,
+html[data-theme="light"] .rs-filter.is-active,
 html[data-theme="light"] .rs-plat.is-active {
   color: #fff; border-color: transparent;
   background: linear-gradient(120deg, #16ae8c, #0e9c7e);
 }
-html[data-theme="light"] .nt-filter.is-active span { color: rgba(255, 255, 255, .78); }
+html[data-theme="light"] .nt-filter.is-active span,
+html[data-theme="light"] .rs-filter.is-active span { color: rgba(255, 255, 255, .78); }
+html[data-theme="light"] .nt-drop-hint { background: rgba(255, 255, 255, .94); }
 html[data-theme="light"] .nt-search-wrap,
 html[data-theme="light"] .nt-input,
 html[data-theme="light"] .nt-edit-pane,
