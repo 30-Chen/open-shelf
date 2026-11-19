@@ -164,6 +164,9 @@
         }
         if (state.view === 'edit') {
           root.innerHTML = View.editor(state.draft, state.categories, state.isNew);
+          // 自定义下拉：真实值仍在隐藏 select，菜单由 DOM 渲染
+          var catPill = root.querySelector('#nt-cat-pill');
+          if (catPill && global.PortalSelect) global.PortalSelect.mount(catPill);
           return;
         }
         root.innerHTML = View.list(state, visibleNotes(), counts());

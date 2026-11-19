@@ -227,10 +227,10 @@ img { max-width: 100%; }
 }
 .btn--primary:hover { color: #04130f; background: linear-gradient(120deg, #7bf3da, #56e2c7); border-color: transparent; }
 
-/* ---------- 按钮式下拉胶囊 ----------
-   与 .btn（设置 / 更多）同规格：相同高度、边框、圆角、背景、字色与 hover。
-   原生 <select> 透明铺满，箭头与前置图标用 .i-ico 的 mask + currentColor，
-   深浅主题、各平台外观一致，不再依赖硬编码颜色的 SVG 背景图。 */
+/* ---------- 按钮式下拉胶囊（自定义下拉，跨主题/跨平台一致） ----------
+   触发器与 .btn（设置 / 更多）同规格；选项浮层由 DOM 渲染，不再用原生
+   <select> 弹层——原生弹层由系统绘制，CSS 无法控制，是各平台样式不一致的根源。
+   真实值存放在隐藏的 <select> 里，业务逻辑照旧读取，兼容性不变。 */
 .sel-pill {
   position: relative;
   display: inline-flex; align-items: center; gap: 8px;
@@ -240,30 +240,59 @@ img { max-width: 100%; }
   font-size: 13px; letter-spacing: .2px;
   transition: border-color .18s, color .18s, background .18s;
 }
-.sel-pill:hover, .sel-pill:focus-within {
+.sel-pill:hover, .sel-pill.is-open {
   color: var(--text); border-color: var(--line-strong); background: rgba(255, 255, 255, .055);
 }
 .sel-pill > .i-ico.sel-lead { width: 15px; height: 15px; color: var(--accent); flex: 0 0 auto; }
-/* 箭头覆盖在 select 右缘：点击箭头区域仍能展开原生下拉，没有死区 */
-.sel-pill > .i-ico.sel-chev {
-  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-  width: 12px; height: 12px; color: var(--muted); pointer-events: none;
-}
-.sel-pill select {
-  flex: 1; min-width: 0; height: 100%; padding-right: 20px;
+/* 触发器：显示当前选中文本，点击展开菜单 */
+.sel-trigger {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; min-width: 0; height: 100%; padding: 0;
   border: 0; outline: 0; background: transparent; color: var(--text);
-  font: 12.5px var(--sans); cursor: pointer;
-  -webkit-appearance: none; appearance: none;
+  font: 12.5px var(--sans); text-align: left; cursor: pointer;
 }
-.sel-pill select option { background: #0d1523; color: var(--text); }
-/* 选中「新建分类」时，让输入框独占胶囊，隐藏 select 与箭头 */
-.sel-pill.is-new select, .sel-pill.is-new .sel-chev { display: none; }
-.sel-pill input {
+.sel-trigger:focus-visible { outline: 0; }
+.sel-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-trigger .i-ico.sel-chev {
+  width: 12px; height: 12px; color: var(--muted); flex: 0 0 auto;
+  transition: transform .18s ease;
+}
+.sel-pill.is-open .sel-trigger .i-ico.sel-chev { transform: rotate(180deg); }
+/* 值容器：隐藏的真实 select，仅供 JS 读写 value */
+.sel-pill > select[hidden] { display: none; }
+/* 选项浮层 */
+.sel-menu {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 60;
+  width: 100%; min-width: 100%; max-height: 280px; overflow-y: auto;
+  margin: 0; padding: 6px; list-style: none;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: #121d30;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
+  animation: sel-pop .14s ease both;
+}
+.sel-menu[hidden] { display: none; }
+@keyframes sel-pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.sel-option {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 8px 10px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--text-2);
+  font: 12.5px var(--sans); text-align: left; cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.sel-option:hover, .sel-option.is-active { color: var(--accent); background: var(--accent-dim); }
+.sel-option .i-ico { width: 13px; height: 13px; color: var(--accent); flex: 0 0 auto; }
+.sel-option.is-active .i-ico::after { content: ''; }
+.sel-option--new { color: var(--blue); border-top: 1px solid var(--line-soft); border-radius: 0 0 6px 6px; margin-top: 4px; padding-top: 10px; }
+.sel-option--new:hover { color: var(--blue); background: rgba(109, 156, 255, .1); }
+.sel-option--new .i-ico { color: var(--blue); }
+/* 输入新分类：新建态隐藏触发器与箭头，让输入框独占胶囊 */
+.sel-pill.is-new .sel-trigger { display: none; }
+.sel-pill input.sel-new {
   flex: 1; min-width: 0; height: 100%;
   border: 0; outline: 0; background: transparent; color: var(--text);
   font: 12.5px var(--sans);
 }
-.sel-pill input::placeholder { color: #5b6b83; }
+.sel-pill input.sel-new::placeholder { color: #5b6b83; }
 
 .field {
   width: 100%; height: 100%;

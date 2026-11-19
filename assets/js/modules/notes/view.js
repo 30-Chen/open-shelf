@@ -177,18 +177,24 @@
             '<span>标题</span>' +
             '<input class="nt-input" id="nt-title" type="text" maxlength="120" placeholder="给这篇笔记起个名字" value="' + esc(note.title) + '">' +
           '</label>' +
+          // 分类字段用 div 而非 label：label 会把内部点击转发给第一个可聚焦控件（触发器按钮），
+          // 导致选中选项后菜单被重新展开；样式由 .nt-field > span:first-child 提供，不依赖 label。
           '<div class="nt-form-grid">' +
-            '<label class="nt-field">' +
+            '<div class="nt-field">' +
               '<span>分类</span>' +
               '<span class="nt-cat-wrap sel-pill" id="nt-cat-pill">' +
                 '<i class="i-ico i-folder sel-lead" aria-hidden="true"></i>' +
-                '<select class="nt-select" id="nt-category">' + catOptions +
+                '<button class="sel-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="选择分类">' +
+                  '<span class="sel-value"></span>' +
+                  '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
+                '</button>' +
+                '<select id="nt-category" hidden>' + catOptions +
                   '<option value="__new__">＋ 新建分类…</option>' +
                 '</select>' +
-                '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
-                '<input class="nt-cat-new" id="nt-category-new" type="text" maxlength="24" placeholder="新分类名称" hidden>' +
+                '<ul class="sel-menu" role="listbox" aria-label="分类" hidden></ul>' +
+                '<input class="sel-new" id="nt-category-new" type="text" maxlength="24" placeholder="新分类名称" hidden>' +
               '</span>' +
-            '</label>' +
+            '</div>' +
             '<label class="nt-field">' +
               '<span>标签 <em>逗号分隔</em></span>' +
               '<input class="nt-input" id="nt-tags" type="text" placeholder="教程, Markdown" value="' + esc((note.tags || []).join(', ')) + '">' +

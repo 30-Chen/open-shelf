@@ -84,11 +84,15 @@ html[data-theme="light"] .btn {
   box-shadow: none;
 }
 html[data-theme="light"] .btn:hover { background: rgba(28, 46, 74, .08); }
-/* 按钮式下拉胶囊：与 .btn 保持同样的浅色底与 hover，选项浮层用白底深字 */
+/* 按钮式下拉胶囊：与 .btn 保持同样的浅色底与 hover，自定义浮层用白底深字 */
 html[data-theme="light"] .sel-pill { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .sel-pill:hover,
-html[data-theme="light"] .sel-pill:focus-within { background: rgba(28, 46, 74, .08); }
-html[data-theme="light"] .sel-pill select option { background: #fff; color: var(--text); }
+html[data-theme="light"] .sel-pill.is-open { background: rgba(28, 46, 74, .08); }
+html[data-theme="light"] .sel-menu {
+  background: #fff; border-color: rgba(16, 150, 122, .4); box-shadow: var(--th-shadow);
+}
+html[data-theme="light"] .sel-option:hover,
+html[data-theme="light"] .sel-option.is-active { background: var(--accent-dim); }
 /* 亮色下主按钮改用主题深绿渐变配白字，避免白字压在亮薄荷绿上几乎看不清 */
 html[data-theme="light"] .btn--primary {
   color: #fff; border-color: transparent;
@@ -103,7 +107,7 @@ html[data-theme="light"] .btn--primary:hover {
 html[data-theme="light"] .field::placeholder,
 html[data-theme="light"] .nt-input::placeholder,
 html[data-theme="light"] .nt-textarea::placeholder,
-html[data-theme="light"] .sel-pill input::placeholder,
+html[data-theme="light"] .sel-pill input.sel-new::placeholder,
 html[data-theme="light"] .sy-input::placeholder { color: #94a2b8; }
 html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
 

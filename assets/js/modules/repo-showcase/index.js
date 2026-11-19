@@ -182,9 +182,13 @@
             '</div>' +
             '<div class="rs-cat-wrap sel-pill" id="rs-cat-pill">' +
               '<i class="i-ico i-folder sel-lead" aria-hidden="true"></i>' +
-              '<select class="rs-cat-select" id="rs-group-select" aria-label="选择分类目录"></select>' +
-              '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
-              '<input class="rs-cat-new" id="rs-group-new" type="text" maxlength="24" autocomplete="off" ' +
+              '<button class="sel-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="选择分类目录">' +
+                '<span class="sel-value"></span>' +
+                '<i class="i-ico i-chev sel-chev" aria-hidden="true"></i>' +
+              '</button>' +
+              '<select id="rs-group-select" aria-label="选择分类目录" hidden></select>' +
+              '<ul class="sel-menu" role="listbox" aria-label="分类目录" hidden></ul>' +
+              '<input class="sel-new" id="rs-group-new" type="text" maxlength="24" autocomplete="off" ' +
                 'placeholder="新目录名称" aria-label="新分类目录名称" hidden>' +
             '</div>' +
             '<button class="btn btn--primary" type="submit">+ 添加项目</button>' +
@@ -208,6 +212,8 @@
       var groupSelect = root.querySelector('#rs-group-select');
       var groupNew = root.querySelector('#rs-group-new');
       var catPill = root.querySelector('#rs-cat-pill');
+      // 自定义下拉：真实值仍在隐藏 select 中，菜单由 DOM 渲染，主题/跨平台一致
+      var catSelect = global.PortalSelect ? global.PortalSelect.mount(catPill) : null;
       var msgEl = root.querySelector('#rs-msg');
       var countEl = root.querySelector('#rs-count');
       var rateEl = root.querySelector('#rs-rate');
@@ -249,6 +255,7 @@
         }).join('');
         groupSelect.innerHTML = options +
           '<option value="__new__"' + (chosen === '__new__' ? ' selected' : '') + '>＋ 新建目录…</option>';
+        if (catSelect) catSelect.rebuild();
         toggleNewInput();
       }
 
