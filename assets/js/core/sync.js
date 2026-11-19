@@ -809,7 +809,7 @@
             '<button class="btn btn--primary sy-btn" id="sy-pass-make" type="button">生成凭证</button>' +
           '</div>' +
           '<div class="sy-vault-seal" id="sy-vault-seal" hidden>' +
-            '<span class="sy-vault-seal-label mono">你的凭证 · 用户名 / 短码 / 口令</span>' +
+            '<span class="sy-vault-seal-label mono">你的恢复凭证 · 口令自己记牢</span>' +
             '<span class="sy-vault-seal-code mono" id="sy-vault-seal-code">——</span>' +
             '<div class="sy-seal-links">' +
               '<button class="sy-link" id="sy-code-copy" type="button">复制凭证</button>' +
