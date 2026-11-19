@@ -176,6 +176,7 @@
 
   /** 把模块数据写进 Gist（不存在则创建私有 Gist） */
   function writeGist(merged, localModules, mergedHash) {
+    var myEpoch = epoch; // 写入请求期间若用户断开，结果作废，不再写回配置
     var content = JSON.stringify({
       app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
     }, null, 2);
@@ -186,6 +187,7 @@
       : { description: DESC, public: false, files: {} };
     body.files[FILE] = { content: content };
     return request(method, path, body).then(function (g) {
+      if (myEpoch !== epoch) return { skipped: true, reason: 'disconnected' };
       cfg.gistId = g.id;
       cfg.syncedHash = mergedHash;
       cfg.localHash = hashModules(localModules);
@@ -197,6 +199,7 @@
 
   /* ---------- 调度器状态 ---------- */
   var syncing = false;
+  var epoch = 0; // 每次「断开关联」自增，使在途的读写结果失效
   var lastSeenLocalHash = null;
   var debounceTimer = null;
   var localTimer = null;
@@ -208,6 +211,7 @@
     reason = reason || 'manual';
     if (syncing) return Promise.resolve({ skipped: true });
     if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
+    var myEpoch = epoch;
     // 允许无 gistId：本地有数据时会自动新建私有 Gist（见下方 writeGist）
 
     syncing = true;
@@ -219,6 +223,7 @@
       if (e && e.status === 404) return null;
       throw e;
     }).then(function (remote) {
+      if (myEpoch !== epoch) return { skipped: true, reason: 'disconnected' };
       var localDirty = localHash !== cfg.localHash;
       var remoteHash = remote && remote.payload ? hashModules(remote.payload.modules) : '';
       var remoteChanged = !!cfg.gistId && remoteHash !== cfg.syncedHash;
@@ -685,14 +690,20 @@
       });
     },
 
-    /** 断开：清掉关联，保留 token 与自动开关，本地数据不动 */
+    /** 断开：清掉本机 Token 与关联，后台同步随之停止；本地数据不动 */
     disconnect: function () {
+      // 只清 gistId 不够：token 还在时 localTimer / visibilitychange 会触发 autoRun，
+      // 无 gistId 的 reconcile 会新建私有 Gist，等于「断开」后又静默关联了云端。
+      epoch++; // 在途请求的结果全部作废，避免断开后又把 gistId 写回来
+      cfg.token = '';
       cfg.gistId = '';
       cfg.syncedHash = '';
       cfg.localHash = '';
       cfg.syncedAt = 0;
       cfg.localChangedAt = 0;
       saveCfg();
+      lastAuto = { at: Date.now(), result: null, reason: 'disconnect' };
+      if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
     },
 
     makeRecovery: makeRecovery,
@@ -776,11 +787,14 @@
           '<input class="sy-input" id="sy-token" type="password" autocomplete="off" ' +
             'spellcheck="false" placeholder="ghp_…" value="' + esc(cfg.token) + '">' +
         '</label>' +
-        '<div class="sy-actions">' +
+        '<div class="sy-actions sy-actions--sync">' +
           '<button class="btn btn--primary sy-btn" id="sy-sync-now" type="button">↻ 立即同步</button>' +
+          '<button class="btn sy-btn sy-more-toggle" id="sy-more-toggle" type="button" ' +
+            'aria-expanded="false" aria-controls="sy-more-body">更多设置 ' +
+            '<i class="i-ico i-chev sy-more-chev" aria-hidden="true"></i>' +
+          '</button>' +
         '</div>' +
-        '<details class="sy-more">' +
-          '<summary class="sy-more-sum">更多设置</summary>' +
+        '<div class="sy-more-body" id="sy-more-body" hidden>' +
           '<label class="sy-label">Gist ID' +
             '<span class="sy-label-hint">首次同步后自动填写；换设备时也可手动填入</span>' +
             '<input class="sy-input" id="sy-gist" type="text" autocomplete="off" ' +
@@ -796,7 +810,7 @@
             '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
               'target="_blank" rel="noopener noreferrer">获取 Token ↗</a>' +
           '</div>' +
-        '</details>' +
+        '</div>' +
       '</section>' +
 
       // 第 2 步：换设备（两个场景用 Tab 分开：生成凭证 / 恢复配置）
@@ -874,6 +888,8 @@
     var tokenEl = panel.querySelector('#sy-token');
     var gistEl = panel.querySelector('#sy-gist');
     var autoBtn = panel.querySelector('#sy-auto');
+    var moreBtn = panel.querySelector('#sy-more-toggle');
+    var moreBody = panel.querySelector('#sy-more-body');
     var timer = null;
     var busy = false, popping = false;
 
@@ -916,6 +932,11 @@
     function pop() {
       popping = true; refresh();
       global.setTimeout(function () { popping = false; refresh(); }, 360);
+    }
+    function setMoreOpen(open) {
+      moreBody.hidden = !open;
+      moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      moreBtn.classList.toggle('is-open', open);
     }
 
     function commitConfig(silent) {
@@ -966,7 +987,10 @@
       msg('正在同步…');
       sync.reconcile('manual').then(function (r) {
         if (!r) return;
-        if (r.skipped) { msg('已有同步在进行中，请稍候', 'warn'); return; }
+        if (r.skipped) {
+          msg(r.reason === 'disconnected' ? '已断开关联，本次同步已取消' : '已有同步在进行中，请稍候', 'warn');
+          return;
+        }
         if (r.error) { msg(r.error, 'error'); return; }
         gistEl.value = cfg.gistId;
         if (r.note === 'in-sync') msg('已是最新', 'ok');
@@ -1012,14 +1036,19 @@
       msg(on ? '自动同步已开启' : '自动同步已关闭', on ? 'ok' : 'warn');
     });
     panel.querySelector('#sy-sync-now').addEventListener('click', runNow);
+    moreBtn.addEventListener('click', function () { setMoreOpen(moreBody.hidden); });
     panel.querySelector('#sy-push').addEventListener('click', function () { commitConfig(true); run('push'); });
     panel.querySelector('#sy-pull').addEventListener('click', function () { commitConfig(true); run('pull'); });
     panel.querySelector('#sy-disconnect').addEventListener('click', function () {
-      if (!global.confirm('断开后将不再关联云端，本地数据保持不变。确定继续？')) return;
+      if (!global.confirm('断开后将清除本机保存的 Token 与云端关联，并停止自动同步；本地数据保持不变。确定继续？')) return;
       sync.disconnect();
+      // 底层清掉 token 后，输入框也要同步清空，否则再次点「立即同步」会把旧 Token 写回去
+      tokenEl.value = '';
       gistEl.value = '';
+      setMoreOpen(false);
+      switchVTab('restore'); // 已无 Token，切回「恢复配置」更符合当前场景
       refresh();
-      msg('已断开关联', 'warn');
+      msg('已断开关联，自动同步已停止', 'warn');
     });
 
     // ---- 换设备：生成凭证 / 恢复配置（两个 Tab）----

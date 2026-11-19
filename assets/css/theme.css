@@ -206,6 +206,7 @@ html[data-theme="light"] .sy-status-pill.is-on { background: var(--accent-dim); 
 html[data-theme="light"] .sy-status-pill.is-dirty { background: rgba(181, 115, 15, .08); border-color: rgba(181, 115, 15, .35); }
 html[data-theme="light"] .sy-status-pill.is-error { background: rgba(216, 56, 90, .08); }
 html[data-theme="light"] .sy-input { background: var(--th-inset); }
+html[data-theme="light"] .sy-more-toggle.is-open { background: var(--accent-dim); border-color: rgba(14, 156, 126, .4); }
 html[data-theme="light"] .sy-vtabs { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .sy-vtab.is-active {
   background: rgba(47, 99, 201, .10); color: var(--accent);
