@@ -293,6 +293,21 @@ img { max-width: 100%; }
   font: 12.5px var(--sans);
 }
 .sel-pill input.sel-new::placeholder { color: #5b6b83; }
+/* 新建态的取消按钮：退出新建、回到进入前的原选择，不必被迫创建 */
+.sel-pill .sel-cancel {
+  flex: 0 0 auto; display: inline-flex; align-items: center;
+  height: 26px; padding: 0 9px; margin-left: 2px;
+  border: 1px solid var(--line); border-radius: 5px;
+  background: transparent; color: var(--muted);
+  font: 11.5px var(--sans); letter-spacing: .2px; cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.sel-pill .sel-cancel:hover,
+.sel-pill .sel-cancel:focus-visible {
+  color: var(--text); border-color: var(--line-strong);
+  background: rgba(255, 255, 255, .06);
+}
+.sel-pill .sel-cancel[hidden] { display: none; }
 
 .field {
   width: 100%; height: 100%;
