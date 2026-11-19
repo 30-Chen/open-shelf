@@ -185,6 +185,9 @@ html[data-theme="light"] .nt-search-wrap,
 html[data-theme="light"] .nt-input,
 html[data-theme="light"] .nt-edit-pane,
 html[data-theme="light"] .nt-preview-pane { background: var(--th-surface); }
+/* 体积监测条：亮色下用浅底，超限用淡红底 */
+html[data-theme="light"] .nt-size { background: var(--th-surface-2); }
+html[data-theme="light"] .nt-size[data-level="over"] { background: rgba(216, 56, 90, .06); }
 html[data-theme="light"] .nt-card {
   background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
   box-shadow: 0 8px 22px rgba(24, 42, 74, .07);

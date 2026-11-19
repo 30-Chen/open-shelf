@@ -247,6 +247,34 @@
 .nt-hint { font-size: 10px; color: var(--muted); letter-spacing: .3px; }
 .nt-editor-foot .btn { height: 38px; }
 
+/* 实时同步体积监测：进度条 + 数值，三档颜色随状态切换 */
+.nt-size {
+  display: flex; align-items: center; gap: 9px;
+  min-width: 168px; flex: 0 1 240px;
+  padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: rgba(10, 17, 29, .45);
+  transition: border-color .18s, background .18s;
+}
+.nt-size-track {
+  position: relative; flex: 1; height: 4px; min-width: 40px;
+  border-radius: 4px; background: var(--line); overflow: hidden;
+}
+.nt-size-fill {
+  display: block; height: 100%; width: 0;
+  border-radius: 4px; background: var(--accent);
+  transition: width .18s ease, background .18s;
+}
+.nt-size-text {
+  flex: 0 0 auto; font-size: 10px; color: var(--text-2);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.nt-size[data-level="warn"] { border-color: rgba(255, 196, 107, .45); }
+.nt-size[data-level="warn"] .nt-size-fill { background: var(--warn); }
+.nt-size[data-level="warn"] .nt-size-text { color: var(--warn); }
+.nt-size[data-level="over"] { border-color: var(--danger); background: rgba(255, 129, 151, .08); }
+.nt-size[data-level="over"] .nt-size-fill { background: var(--danger); }
+.nt-size[data-level="over"] .nt-size-text { color: var(--danger); }
+
 /* ---------- Markdown 正文排版 ---------- */
 .nt-markdown { color: var(--text-2); font-size: 14.5px; line-height: 1.85; overflow-wrap: anywhere; }
 .nt-markdown > *:first-child { margin-top: 0; }
@@ -329,4 +357,6 @@
   .nt-title { font-size: 21px; }
   .nt-grid { grid-template-columns: 1fr; }
   .nt-editor-foot .btn { flex: 1; }
+  /* 体积监测独占一行，避免与按钮、提示文字挤在同一行 */
+  .nt-size { flex: 1 1 100%; order: 3; }
 }

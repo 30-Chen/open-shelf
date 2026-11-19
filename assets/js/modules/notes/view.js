@@ -224,6 +224,10 @@
           '</div>' +
           '<div class="nt-editor-foot">' +
             '<span class="nt-hint mono">提示：仅支持图片，拖入或选择后自动压缩（约 260KB/张）；视频请用「视频」工具贴网络地址。正文只留短引用，图片随笔记同步。</span>' +
+            '<div class="nt-size" id="nt-size" data-level="ok" role="status" aria-live="polite">' +
+              '<span class="nt-size-track"><i class="nt-size-fill" id="nt-size-fill"></i></span>' +
+              '<span class="nt-size-text mono" id="nt-size-text">同步体积 0 / 950 KB</span>' +
+            '</div>' +
             '<div>' +
               '<button class="btn" data-act="cancel">取消</button> ' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +

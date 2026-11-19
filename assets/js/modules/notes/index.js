@@ -389,6 +389,8 @@
           var catPill = root.querySelector('#nt-cat-pill');
           if (catPill && global.PortalSelect) global.PortalSelect.mount(catPill);
           bindMediaUpload();
+          sizeWarned = false;
+          updateSizeMeter();
           return;
         }
         root.innerHTML = View.list(state, visibleNotes(), counts(), state.media);
@@ -450,6 +452,13 @@
       function save() {
         var note = collectDraft();
         if (!note.title) { flash('请填写标题', 'error'); root.querySelector('#nt-title').focus(); return; }
+        // 超限拦截：本地仍可保存，但明确警告云端同步会被拒绝，避免「假同步」
+        var est = overLimit();
+        if (est && est.ratio > 1) {
+          flash('数据已超同步上限（约 ' + Math.round(est.limit / 1024) + 'KB），本地能保存但无法同步；请删图片或改用网络图片地址', 'error');
+          sizeWarned = true;
+          return;
+        }
         if (state.categories.indexOf(note.category) < 0) state.categories.push(note.category);
         var idx = -1;
         state.notes.forEach(function (n, i) { if (n.id === note.id) idx = i; });
@@ -598,6 +607,61 @@
         var body = root.querySelector('#nt-body');
         var preview = root.querySelector('#nt-preview');
         if (body && preview) preview.innerHTML = MD.render(body.value, state.media);
+        updateSizeMeter(); // 工具栏插入 / 正文变更都会走到这里，统一刷新体积监测
+      }
+
+      /* ---------- 实时同步体积监测（与同步层 writeGist 同源阈值） ---------- */
+      var sizeWarned = false; // 避免持续超限时每次输入都弹警告
+
+      /** 用当前编辑草稿模拟「保存后」的笔记数据，供同步层精确估算体积 */
+      function draftForEstimate() {
+        var draft = collectDraft();
+        var notes = state.notes.slice();
+        var idx = -1;
+        notes.forEach(function (n, i) { if (n.id === draft.id) idx = i; });
+        if (idx >= 0) notes[idx] = draft; else notes.unshift(draft);
+        // 只保留被正文引用的媒体，与 save() 的 prune 结果一致，避免高估
+        var bodyAll = notes.map(function (n) { return n.body || ''; }).join('\n');
+        var media = {};
+        Object.keys(state.media).forEach(function (id) {
+          if (bodyAll.indexOf('media:' + id) >= 0) media[id] = state.media[id];
+        });
+        return { notes: notes, categories: state.categories, media: media };
+      }
+
+      /** 实时更新编辑器的体积指示器；超限立即警告 */
+      function updateSizeMeter() {
+        if (state.view !== 'edit') return;
+        var box = root.querySelector('#nt-size');
+        var fill = root.querySelector('#nt-size-fill');
+        var text = root.querySelector('#nt-size-text');
+        var sync = Portal.sync;
+        if (!box || !sync || typeof sync.estimate !== 'function') return;
+
+        var est = sync.estimate({ notes: draftForEstimate() });
+        var level = est.ratio > 1 ? 'over' : (est.ratio >= 0.8 ? 'warn' : 'ok');
+        box.setAttribute('data-level', level);
+        if (fill) fill.style.width = Math.min(100, est.ratio * 100).toFixed(1) + '%';
+        if (text) {
+          var used = Math.round(est.bytes / 1024);
+          var limit = Math.round(est.limit / 1024);
+          var pct = Math.round(est.ratio * 100);
+          text.textContent = level === 'over'
+            ? '同步体积 ' + used + ' KB · 已超出 ' + limit + ' KB 上限，无法同步'
+            : '同步体积 ' + used + ' / ' + limit + ' KB（' + pct + '%）';
+        }
+        if (level === 'over' && !sizeWarned) {
+          sizeWarned = true;
+          flash('体积已超同步上限，请删除部分图片或改用网络图片地址，否则无法同步到云端', 'error');
+        } else if (level !== 'over' && sizeWarned) {
+          sizeWarned = false;
+        }
+      }
+
+      /** 保存前拦截超限数据，避免用户以为已保存实则同步层拒绝写入 */
+      function overLimit() {
+        if (!Portal.sync || typeof Portal.sync.estimate !== 'function') return null;
+        return Portal.sync.estimate({ notes: draftForEstimate() });
       }
 
       // ---------- 事件 ----------
@@ -662,6 +726,7 @@
           if (cnt) cnt.textContent = notes.length + ' 篇笔记';
           return;
         }
+        if (state.view === 'edit' && (t.id === 'nt-title' || t.id === 'nt-tags')) updateSizeMeter();
         if (t.id === 'nt-body') updatePreview();
         if (t.id === 'nt-category') {
           var isNew = t.value === '__new__';

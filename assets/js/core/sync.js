@@ -213,17 +213,25 @@
     catch (e) { return unescape(encodeURIComponent(str)).length; }
   }
 
+  /** Gist 单文件安全上限（UTF-8 字节），给 1MB 硬限留余量 */
+  var SYNC_LIMIT = 950 * 1024;
+
+  /** 统一的同步文件序列化：写入与体积估算共用，保证阈值判断完全同源 */
+  function serializeGist(merged) {
+    return JSON.stringify({
+      app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
+    }, null, 2);
+  }
+
   /** 把模块数据写进 Gist（不存在则创建私有 Gist） */
   function writeGist(merged, localModules, mergedHash) {
     var myEpoch = epoch; // 写入请求期间若用户断开，结果作废，不再写回配置
-    var content = JSON.stringify({
-      app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
-    }, null, 2);
+    var content = serializeGist(merged);
     // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限，按 UTF-8 字节计）。
     // 必须按真实字节数判断：中文 1 字符 UTF-16 length=1 但 UTF-8 占 3 字节，
     // 用 .length 会把约 317KB 中文误判为安全，实际已达 950KB 而被云端截断。
     var bytes = utf8Len(content);
-    if (bytes > 950 * 1024) {
+    if (bytes > SYNC_LIMIT) {
       return Promise.reject(new Error(
         '本地数据 ' + Math.round(bytes / 1024) + 'KB 超过云同步单文件上限（约 950KB），' +
         '请删除部分图片或改用网络图片地址'
@@ -732,6 +740,25 @@
     hash: hash,
     reconcile: reconcile,
     lastAuto: function () { return lastAuto; },
+
+    /** 同步数据上限（字节），供编辑器等 UI 显示同一阈值 */
+    limitBytes: SYNC_LIMIT,
+
+    /**
+     * 估算「当前数据若同步到云端」的字节数，与 writeGist 完全同源。
+     * @param {Object} [override] 覆盖某个模块的内存草稿，如 { notes: {notes,media,categories} }
+     * @returns {{ bytes:number, limit:number, ratio:number }}
+     */
+    estimate: function (override) {
+      var modules = collectLocal();
+      if (override && typeof override === 'object') {
+        Object.keys(override).forEach(function (id) {
+          if (override[id] && typeof override[id] === 'object') modules[id] = override[id];
+        });
+      }
+      var bytes = utf8Len(serializeGist(modules));
+      return { bytes: bytes, limit: SYNC_LIMIT, ratio: bytes / SYNC_LIMIT };
+    },
 
     setAuto: function (on) {
       cfg.auto = !!on;
