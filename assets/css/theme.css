@@ -200,8 +200,11 @@ html[data-theme="light"] .sy-panel {
   background: linear-gradient(160deg, rgba(255, 255, 255, .99), rgba(244, 247, 252, .99));
   box-shadow: var(--th-shadow);
 }
-html[data-theme="light"] .sy-state { background: rgba(28, 46, 74, .03); }
-html[data-theme="light"] .sy-switch { background: rgba(28, 46, 74, .16); }
+html[data-theme="light"] .sy-auto-btn { background: rgba(28, 46, 74, .05); }
+html[data-theme="light"] .sy-auto-btn:hover,
+html[data-theme="light"] .sy-auto-btn.is-on { background: var(--accent-dim); }
+html[data-theme="light"] .sy-status-pill { background: rgba(28, 46, 74, .03); }
+html[data-theme="light"] .sy-status-pill.is-synced { background: var(--accent-dim); border-color: rgba(14, 156, 126, .35); }
 html[data-theme="light"] .sy-input { background: var(--th-inset); }
 html[data-theme="light"] .sy-vtabs { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .sy-vtab.is-active {

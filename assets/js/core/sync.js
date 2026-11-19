@@ -5,7 +5,7 @@
      2. 本地改动自动检测 → 防抖后自动上传；云端变化自动轮询 → 自动下载
      3. 冲突按「最后修改时间戳」裁决，不静默丢数据
      4. 上传前把「当前页面未挂载模块」的云端数据合并回去，避免覆盖
-     5. 页头 ☁ SYNC 触发按钮 + 下拉面板（三步）：连接云端、换设备、状态
+     5. 页头 ☁ SYNC 触发按钮 + 下拉面板（两步）：连接云端、换设备；同步状态在标题行
 
    数据只写进用户自己的私有 Gist，token 只存在本机 localStorage，
    不进入仓库、不经过任何第三方。模块之间仍互不引用，仅通过注册表通信。
@@ -749,39 +749,47 @@
     panel.hidden = true;
     panel.setAttribute('aria-label', '跨设备同步面板');
     panel.innerHTML = '' +
+      // 标题行：自动开关与同步状态都收在这里，面板内不再单列「状态」步骤
       '<div class="sy-head">' +
-        '<div>' +
+        '<div class="sy-head-main">' +
           '<span class="sy-kicker mono">AUTO SYNC / GIST</span>' +
-          '<h3 class="sy-title">跨设备同步</h3>' +
+          '<div class="sy-head-line">' +
+            '<h3 class="sy-title">跨设备同步</h3>' +
+            '<span class="sy-status-pill" id="sy-status">未配置</span>' +
+          '</div>' +
         '</div>' +
-        '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
+        '<div class="sy-head-actions">' +
+          '<button class="sy-auto-btn" id="sy-auto" type="button" role="switch" aria-checked="false" ' +
+            'title="自动同步：本地改动自动上传，云端变化自动下载">' +
+            '<i class="sy-auto-ico" aria-hidden="true"></i><span>自动</span>' +
+          '</button>' +
+          '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
+        '</div>' +
       '</div>' +
 
-      // 第 1 步：连接云端
+      // 第 1 步：连接云端（日常只需 Token + 立即同步；强制操作收进更多设置）
       '<section class="sy-step">' +
         '<div class="sy-step-head"><span class="sy-step-no mono">1</span><span>连接云端</span></div>' +
-        '<div class="sy-auto-row">' +
-          '<div class="sy-auto-label">自动同步<span>本地改动自动上传，云端变化自动下载</span></div>' +
-          '<button class="sy-switch" id="sy-auto" type="button" role="switch" aria-checked="false">' +
-            '<span class="sy-switch-knob"></span>' +
-          '</button>' +
-        '</div>' +
         '<label class="sy-label">GitHub Token' +
           '<span class="sy-label-hint">只需 gist 权限 · 仅存本机</span>' +
           '<input class="sy-input" id="sy-token" type="password" autocomplete="off" ' +
             'spellcheck="false" placeholder="ghp_…" value="' + esc(cfg.token) + '">' +
         '</label>' +
         '<div class="sy-actions">' +
-          '<button class="btn btn--primary sy-btn" id="sy-push" type="button">↑ 上传</button>' +
-          '<button class="btn sy-btn" id="sy-pull" type="button">↓ 下载</button>' +
+          '<button class="btn btn--primary sy-btn" id="sy-sync-now" type="button">↻ 立即同步</button>' +
         '</div>' +
         '<details class="sy-more">' +
           '<summary class="sy-more-sum">更多设置</summary>' +
           '<label class="sy-label">Gist ID' +
-            '<span class="sy-label-hint">首次上传后自动填写；换设备时也可手动填入</span>' +
+            '<span class="sy-label-hint">首次同步后自动填写；换设备时也可手动填入</span>' +
             '<input class="sy-input" id="sy-gist" type="text" autocomplete="off" ' +
               'spellcheck="false" placeholder="例如 0a1b2c3d…" value="' + esc(cfg.gistId) + '">' +
           '</label>' +
+          '<p class="sy-more-hint">强制操作仅在冲突恢复时使用；日常请用「立即同步」，它会自动判断上传或下载，不会静默覆盖数据。</p>' +
+          '<div class="sy-actions sy-actions--sub">' +
+            '<button class="sy-link" id="sy-push" type="button">强制上传</button>' +
+            '<button class="sy-link" id="sy-pull" type="button">强制下载</button>' +
+          '</div>' +
           '<div class="sy-actions sy-actions--sub">' +
             '<button class="sy-link" id="sy-disconnect" type="button">断开关联</button>' +
             '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
@@ -840,14 +848,8 @@
         '</div>' +
       '</section>' +
 
-      // 第 3 步：状态
-      '<section class="sy-step">' +
-        '<div class="sy-step-head"><span class="sy-step-no mono">3</span><span>状态</span></div>' +
-        '<div class="sy-state" id="sy-state"></div>' +
-      '</section>' +
-
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">私有同步 Gist 仅你自己可读写；自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
+      '<p class="sy-note">数据只存进你自己的私有 Gist；自动同步约每 15 秒检查云端，本地改动约 2 秒后上传。</p>';
 
     wrap.appendChild(fab);
     wrap.appendChild(panel);
@@ -867,7 +869,7 @@
     }
 
     var msgEl = panel.querySelector('#sy-msg');
-    var stateEl = panel.querySelector('#sy-state');
+    var statusEl = panel.querySelector('#sy-status');
     var tokenEl = panel.querySelector('#sy-token');
     var gistEl = panel.querySelector('#sy-gist');
     var autoBtn = panel.querySelector('#sy-auto');
@@ -894,38 +896,30 @@
       if (dot) dot.className = 'sy-trigger-dot' +
         (!ready || !cfg.auto ? '' : (hasError ? ' is-error' : (dirty ? ' is-dirty' : ' is-synced')));
 
-      autoBtn.className = 'sy-switch' + (cfg.auto ? ' is-on' : '');
+      autoBtn.className = 'sy-auto-btn' + (cfg.auto ? ' is-on' : '');
       autoBtn.setAttribute('aria-checked', cfg.auto ? 'true' : 'false');
+      autoBtn.title = cfg.auto
+        ? '自动同步已开启 · 点击暂停（本地改动自动上传，云端变化自动下载）'
+        : '自动同步已暂停 · 点击开启';
 
-      var providers = syncDefs();
-      var modules = providers.length
-        ? providers.map(function (d) {
-            return '<span class="sy-tag mono">' + esc(d.index || d.id) + ' ' + esc(d.title || d.id) + '</span>';
-          }).join('')
-        : '<span class="sy-tag sy-tag--warn mono">暂无模块</span>';
-
-      var stateText = !ready
-        ? (cfg.token ? '待关联 Gist' : '未配置')
-        : (!cfg.auto ? '自动已关闭' : (dirty ? '本地有改动' : '已同步'));
-
-      stateEl.innerHTML = '' +
-        '<div class="sy-state-row"><span>状态</span><b class="' +
-          (!ready || !cfg.auto ? 'sy-s0' : (hasError ? 'sy-s3' : (dirty ? 'sy-s2' : 'sy-s1'))) + '">' +
-          esc(stateText) + '</b></div>' +
-        '<div class="sy-state-row"><span>自动检查</span><b class="mono">' + esc(autoText()) + '</b></div>' +
-        '<div class="sy-state-row"><span>Gist</span><b class="mono">' +
-          (cfg.gistId ? esc(cfg.gistId.slice(0, 10)) + '…' : '—') + '</b></div>' +
-        '<div class="sy-state-row"><span>上次同步</span><b class="mono">' + fmtTime(cfg.syncedAt) + '</b></div>' +
-        '<div class="sy-tags">' + modules + '</div>';
+      // 标题行只保留一个同步状态；上次时间与最近检查结果放 tooltip，不占面板高度
+      var kind = !ready ? 'is-off' : (!cfg.auto ? 'is-off' : (hasError ? 'is-error' : (dirty ? 'is-dirty' : 'is-synced')));
+      var text = !ready ? (cfg.token ? '待关联' : '未配置')
+        : (!cfg.auto ? '自动已暂停' : (hasError ? '同步出错' : (dirty ? '有改动' : '已同步')));
+      statusEl.className = 'sy-status-pill ' + kind;
+      statusEl.textContent = text;
+      statusEl.title = (cfg.syncedAt ? '上次同步：' + fmtTime(cfg.syncedAt) + ' · ' : '尚未同步 · ') + autoText() +
+        (cfg.gistId ? ' · Gist ' + cfg.gistId.slice(0, 10) + '…' : '');
     }
 
-    function commitConfig() {
+    function commitConfig(silent) {
       cfg.token = tokenEl.value.trim();
       cfg.gistId = gistEl.value.trim().replace(/^.*gists\//, '').replace(/[/?#].*$/, '');
       if (gistEl.value !== cfg.gistId) gistEl.value = cfg.gistId;
       saveCfg();
       refresh();
-      if (cfg.token && cfg.auto) autoRun('config-change');
+      // 手动点同步时不要再触发一次后台对账，否则两次 reconcile 会互相跳过
+      if (!silent && cfg.token && cfg.auto) autoRun('config-change');
     }
 
     function run(action, force) {
@@ -956,7 +950,30 @@
       });
     }
 
-    // 自动同步结果只更新状态行；出错时在面板消息区提示
+    /** 立即同步：走与后台相同的智能对账，自动判断上传/下载，避免手动方向选错 */
+    function runNow() {
+      commitConfig(true);
+      var btn = panel.querySelector('#sy-sync-now');
+      btn.disabled = true;
+      msg('正在同步…');
+      sync.reconcile('manual').then(function (r) {
+        if (!r) return;
+        if (r.skipped) { msg('已有同步在进行中，请稍候', 'warn'); return; }
+        if (r.error) { msg(r.error, 'error'); return; }
+        gistEl.value = cfg.gistId;
+        if (r.note === 'in-sync') msg('已是最新', 'ok');
+        else if (r.applied) msg('已下载 · 更新 ' + r.applied.length + ' 个模块', 'ok');
+        else if (r.count) msg('已上传 · ' + r.count + ' 个模块', 'ok');
+        else msg('同步完成', 'ok');
+      }).catch(function (e) {
+        msg(e && e.message || String(e), 'error');
+      }).then(function () {
+        btn.disabled = false;
+        refresh();
+      });
+    }
+
+    // 后台同步结果只更新标题行状态；出错时在面板消息区提示
     if (Portal.bus && Portal.bus.on) {
       Portal.bus.on('sync:auto', function (info) {
         refresh();
@@ -986,8 +1003,9 @@
       refresh();
       msg(on ? '自动同步已开启' : '自动同步已关闭', on ? 'ok' : 'warn');
     });
-    panel.querySelector('#sy-push').addEventListener('click', function () { commitConfig(); run('push'); });
-    panel.querySelector('#sy-pull').addEventListener('click', function () { commitConfig(); run('pull'); });
+    panel.querySelector('#sy-sync-now').addEventListener('click', runNow);
+    panel.querySelector('#sy-push').addEventListener('click', function () { commitConfig(true); run('push'); });
+    panel.querySelector('#sy-pull').addEventListener('click', function () { commitConfig(true); run('pull'); });
     panel.querySelector('#sy-disconnect').addEventListener('click', function () {
       if (!global.confirm('断开后将不再关联云端，本地数据保持不变。确定继续？')) return;
       sync.disconnect();
