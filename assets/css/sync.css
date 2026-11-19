@@ -75,7 +75,7 @@
 .sy-wrap--floating .sy-trigger { width: 46px; height: 46px; justify-content: center; padding: 0; }
 .sy-wrap--floating .sy-panel { top: auto; bottom: calc(100% + 12px); right: 0; }
 
-/* 标题行：状态胶囊 + 自动开关 + 关闭，全部单行收拢 */
+/* 标题行：自动开关与同步状态合并为一颗可点击胶囊 */
 .sy-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .sy-head-main { min-width: 0; }
 .sy-kicker { font-size: 10px; letter-spacing: 1.4px; color: var(--accent); }
@@ -83,30 +83,39 @@
 .sy-title { margin: 0; font: 600 17px var(--sans); letter-spacing: .5px; white-space: nowrap; }
 .sy-status-pill {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px;
-  color: var(--muted); font: 10px var(--mono); white-space: nowrap;
+  height: 26px; padding: 0 9px;
+  border: 1px solid var(--line); border-radius: 999px;
+  background: rgba(255, 255, 255, .02); color: var(--muted);
+  font: 500 10px var(--mono); white-space: nowrap; cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s, transform .16s;
 }
-.sy-status-pill::before { content: ''; width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
+.sy-status-pill:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.sy-status-pill:active { transform: scale(.96); }
+.sy-status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sy-status-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
 .sy-status-pill.is-synced { color: var(--accent); border-color: rgba(85, 227, 194, .32); background: var(--accent-dim); }
-.sy-status-pill.is-dirty { color: var(--warn); border-color: rgba(255, 196, 107, .32); }
+.sy-status-pill.is-dirty { color: var(--warn); border-color: rgba(255, 196, 107, .34); }
 .sy-status-pill.is-error { color: var(--danger); border-color: rgba(216, 56, 90, .38); }
-.sy-head-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-.sy-auto-btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  height: 30px; padding: 0 9px;
-  border: 1px solid var(--line); border-radius: 8px;
-  background: rgba(0, 0, 0, .18); color: var(--muted);
-  font: 500 11px var(--mono); cursor: pointer;
-  transition: color .18s, border-color .18s, background .18s;
-}
-.sy-auto-btn:hover { color: var(--accent); border-color: var(--line-strong); }
-.sy-auto-btn.is-on { color: var(--accent); border-color: rgba(85, 227, 194, .4); background: var(--accent-dim); }
 .sy-auto-ico {
-  display: inline-block; flex: 0 0 auto; width: 14px; height: 14px;
+  display: inline-block; flex: 0 0 auto; width: 12px; height: 12px; opacity: .6;
   background: currentColor;
   -webkit-mask: var(--i-sync-img) no-repeat center / contain;
   mask: var(--i-sync-img) no-repeat center / contain;
 }
+/* 开着自动同步：图标缓慢旋转；已同步时圆点轻微呼吸 */
+.sy-status-pill.is-on .sy-auto-ico { opacity: 1; animation: sy-spin 3.4s linear infinite; }
+.sy-status-pill.is-on.is-synced .sy-status-dot { animation: sy-breathe 2.6s ease-in-out infinite; }
+.sy-status-pill.is-dirty .sy-status-dot { animation: sy-breathe 1.4s ease-in-out infinite; }
+/* 手动同步进行中：整体光圈 + 图标加速 + 圆点脉冲 */
+.sy-status-pill.is-busy { box-shadow: 0 0 0 2px rgba(85, 227, 194, .10); }
+.sy-status-pill.is-busy .sy-auto-ico { opacity: 1; animation-duration: .8s; }
+.sy-status-pill.is-busy .sy-status-dot { animation: sy-pulse .8s ease-in-out infinite; }
+.sy-status-pill.is-pop { animation: sy-pop .34s cubic-bezier(.2, .8, .3, 1); }
+@keyframes sy-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes sy-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.7); } }
+@keyframes sy-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.7); } }
+@keyframes sy-pop { 0% { transform: scale(1); } 45% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.sy-head-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 .sy-close {
   width: 30px; height: 30px; flex: 0 0 auto;
   border: 1px solid var(--line); border-radius: 8px;
@@ -230,8 +239,8 @@
   }
 }
 
-/* 极窄屏：自动按钮只留图标，给标题与状态胶囊让位 */
+/* 极窄屏：合并胶囊字号略收，避免与标题挤在一起 */
 @media (max-width: 360px) {
-  .sy-auto-btn { padding: 0 8px; }
-  .sy-auto-btn span { display: none; }
+  .sy-head-line { gap: 6px; }
+  .sy-status-pill { padding: 0 7px; font-size: 9px; }
 }

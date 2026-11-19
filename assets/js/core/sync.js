@@ -749,20 +749,21 @@
     panel.hidden = true;
     panel.setAttribute('aria-label', '跨设备同步面板');
     panel.innerHTML = '' +
-      // 标题行：自动开关与同步状态都收在这里，面板内不再单列「状态」步骤
+      // 标题行：自动开关与同步状态合并成一颗可点击胶囊，位置就是状态胶囊的位置
       '<div class="sy-head">' +
         '<div class="sy-head-main">' +
           '<span class="sy-kicker mono">AUTO SYNC / GIST</span>' +
           '<div class="sy-head-line">' +
             '<h3 class="sy-title">跨设备同步</h3>' +
-            '<span class="sy-status-pill" id="sy-status">未配置</span>' +
+            '<button class="sy-status-pill sy-combo" id="sy-auto" type="button" role="switch" ' +
+              'aria-checked="false" title="点击开启或暂停自动同步">' +
+              '<i class="sy-status-dot" aria-hidden="true"></i>' +
+              '<span id="sy-status">未配置</span>' +
+              '<i class="sy-auto-ico" aria-hidden="true"></i>' +
+            '</button>' +
           '</div>' +
         '</div>' +
         '<div class="sy-head-actions">' +
-          '<button class="sy-auto-btn" id="sy-auto" type="button" role="switch" aria-checked="false" ' +
-            'title="自动同步：本地改动自动上传，云端变化自动下载">' +
-            '<i class="sy-auto-ico" aria-hidden="true"></i><span>自动</span>' +
-          '</button>' +
           '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
         '</div>' +
       '</div>' +
@@ -874,6 +875,7 @@
     var gistEl = panel.querySelector('#sy-gist');
     var autoBtn = panel.querySelector('#sy-auto');
     var timer = null;
+    var busy = false, popping = false;
 
     function msg(text, kind) {
       msgEl.textContent = text || '';
@@ -896,20 +898,24 @@
       if (dot) dot.className = 'sy-trigger-dot' +
         (!ready || !cfg.auto ? '' : (hasError ? ' is-error' : (dirty ? ' is-dirty' : ' is-synced')));
 
-      autoBtn.className = 'sy-auto-btn' + (cfg.auto ? ' is-on' : '');
-      autoBtn.setAttribute('aria-checked', cfg.auto ? 'true' : 'false');
-      autoBtn.title = cfg.auto
-        ? '自动同步已开启 · 点击暂停（本地改动自动上传，云端变化自动下载）'
-        : '自动同步已暂停 · 点击开启';
-
-      // 标题行只保留一个同步状态；上次时间与最近检查结果放 tooltip，不占面板高度
-      var kind = !ready ? 'is-off' : (!cfg.auto ? 'is-off' : (hasError ? 'is-error' : (dirty ? 'is-dirty' : 'is-synced')));
+      // 自动开关与状态是同一颗胶囊：颜色/圆点表达状态，点击切换自动同步
+      var kind = !ready || !cfg.auto ? 'is-off' : (hasError ? 'is-error' : (dirty ? 'is-dirty' : 'is-synced'));
       var text = !ready ? (cfg.token ? '待关联' : '未配置')
-        : (!cfg.auto ? '自动已暂停' : (hasError ? '同步出错' : (dirty ? '有改动' : '已同步')));
-      statusEl.className = 'sy-status-pill ' + kind;
-      statusEl.textContent = text;
-      statusEl.title = (cfg.syncedAt ? '上次同步：' + fmtTime(cfg.syncedAt) + ' · ' : '尚未同步 · ') + autoText() +
+        : (!cfg.auto ? '自动已暂停'
+          : '自动 · ' + (hasError ? '同步出错' : (dirty ? '有改动' : '已同步')));
+      var detail = (cfg.syncedAt ? '上次同步：' + fmtTime(cfg.syncedAt) + ' · ' : '尚未同步 · ') + autoText() +
         (cfg.gistId ? ' · Gist ' + cfg.gistId.slice(0, 10) + '…' : '');
+      autoBtn.className = 'sy-status-pill sy-combo ' + kind + (cfg.auto ? ' is-on' : ' is-off') +
+        (busy ? ' is-busy' : '') + (popping ? ' is-pop' : '');
+      autoBtn.setAttribute('aria-checked', cfg.auto ? 'true' : 'false');
+      autoBtn.title = (cfg.auto ? '自动同步已开启 · 点击暂停' : '自动同步已暂停 · 点击开启') + '\n' + detail;
+      statusEl.textContent = text;
+    }
+
+    function setBusy(on) { busy = !!on; refresh(); }
+    function pop() {
+      popping = true; refresh();
+      global.setTimeout(function () { popping = false; refresh(); }, 360);
     }
 
     function commitConfig(silent) {
@@ -925,6 +931,7 @@
     function run(action, force) {
       var btn = action === 'push' ? panel.querySelector('#sy-push') : panel.querySelector('#sy-pull');
       btn.disabled = true;
+      setBusy(true);
       msg(action === 'push' ? '正在上传…' : '正在下载…');
       sync[action]({ force: !!force }).then(function (r) {
         if (r && r.needConfirm) {
@@ -946,7 +953,7 @@
         msg(e && e.message || String(e), 'error');
       }).then(function () {
         btn.disabled = false;
-        refresh();
+        setBusy(false);
       });
     }
 
@@ -955,6 +962,7 @@
       commitConfig(true);
       var btn = panel.querySelector('#sy-sync-now');
       btn.disabled = true;
+      setBusy(true);
       msg('正在同步…');
       sync.reconcile('manual').then(function (r) {
         if (!r) return;
@@ -969,7 +977,7 @@
         msg(e && e.message || String(e), 'error');
       }).then(function () {
         btn.disabled = false;
-        refresh();
+        setBusy(false);
       });
     }
 
@@ -1000,7 +1008,7 @@
     gistEl.addEventListener('change', commitConfig);
     autoBtn.addEventListener('click', function () {
       var on = sync.setAuto(!cfg.auto);
-      refresh();
+      pop();
       msg(on ? '自动同步已开启' : '自动同步已关闭', on ? 'ok' : 'warn');
     });
     panel.querySelector('#sy-sync-now').addEventListener('click', runNow);
