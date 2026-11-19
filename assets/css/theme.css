@@ -212,4 +212,5 @@ html[data-theme="light"] .sy-vtab.is-active {
   background: rgba(47, 99, 201, .10); color: var(--accent);
 }
 html[data-theme="light"] .sy-step-no { background: rgba(14, 156, 126, .08); }
+html[data-theme="light"] .sy-restore-choice { background: rgba(181, 115, 15, .06); border-color: rgba(181, 115, 15, .32); }
 html[data-theme="light"] .sy-note { border-top-color: var(--line); }

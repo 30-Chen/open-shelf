@@ -35,7 +35,11 @@
     auto: store.get('auto', true) !== false,
     vaultCode: store.get('vaultCode', '') || '',      // 恢复短码（6 位）
     vaultGistId: store.get('vaultGistId', '') || '',  // 存密文的公开保险箱 Gist ID
-    vaultOwner: store.get('vaultOwner', '') || ''     // 保险箱所属用户名，用于拼兜底链接
+    vaultOwner: store.get('vaultOwner', '') || '',    // 保险箱所属用户名，用于拼兜底链接
+    // 断开关联时的本地快照：用来识别「断开后又新增的内容」，恢复时不再静默覆盖
+    detachedHash: store.get('detachedHash', '') || '',
+    detachedHashes: store.get('detachedHashes', null) || null,
+    detachedAt: Number(store.get('detachedAt', 0)) || 0
   };
 
   function saveCfg() {
@@ -46,10 +50,13 @@
     store.set('syncedAt', cfg.syncedAt);
     store.set('localChangedAt', cfg.localChangedAt);
     store.set('auto', cfg.auto);
-    store.set('vaultCode', cfg.vaultCode);
-    store.set('vaultGistId', cfg.vaultGistId);
-    store.set('vaultOwner', cfg.vaultOwner);
-  }
+      store.set('vaultCode', cfg.vaultCode);
+      store.set('vaultGistId', cfg.vaultGistId);
+      store.set('vaultOwner', cfg.vaultOwner);
+      store.set('detachedHash', cfg.detachedHash);
+      store.set('detachedHashes', cfg.detachedHashes);
+      store.set('detachedAt', cfg.detachedAt);
+    }
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -68,6 +75,27 @@
     return ('00000000' + h.toString(16)).slice(-8);
   }
   function hashModules(modules) { return hash(JSON.stringify(modules || {})); }
+  /** 逐模块哈希：断开时记下快照，恢复时才知道是哪些模块后来被改过 */
+  function moduleHashes(modules) {
+    var out = {};
+    Object.keys(modules || {}).forEach(function (k) { out[k] = hashModules(modules[k]); });
+    return out;
+  }
+  function clearDetached() {
+    cfg.detachedHash = '';
+    cfg.detachedHashes = null;
+    cfg.detachedAt = 0;
+  }
+  function changedModuleIds(localModules) {
+    var before = cfg.detachedHashes || {};
+    var now = moduleHashes(localModules);
+    var ids = [];
+    Object.keys(now).forEach(function (k) { if (before[k] !== now[k]) ids.push(k); });
+    Object.keys(before).forEach(function (k) {
+      if (!Object.prototype.hasOwnProperty.call(now, k)) ids.push(k);
+    });
+    return ids;
+  }
 
   /* ---------- 模块数据聚合（热数据 + 冷数据） ---------- */
   function syncDefs() {
@@ -205,6 +233,7 @@
   var localTimer = null;
   var cloudTimer = null;
   var lastAuto = { at: 0, result: null, reason: '' };
+  var pendingRestore = null; // 恢复配置时检测到本地新增内容，等待用户选择上传/下载
 
   /** 单次对账：读云端 → 判定方向 → 上传/下载/无事 */
   function reconcile(reason) {
@@ -253,6 +282,26 @@
       // 「本地更新」从而上传，把新设备上的示例/空数据整包覆盖掉云端真实数据。
       // 首次关联时本地数据一律视为不可信，必须先把云端数据拉下来。
       var firstLink = !cfg.syncedHash;
+
+      // 同一台设备「断开关联 → 本地继续编辑 → 恢复配置」：
+      // 此时 syncedHash 已被清空，按普通首次关联会直接下载云端，把本地新增内容冲掉。
+      // 若断开时记下了本地快照，且现在确实变了，先交用户选择，不擅自覆盖任何一侧。
+      var hasDetached = !!(cfg.detachedHash || cfg.detachedHashes);
+      var changed = hasDetached ? changedModuleIds(localModules) : [];
+      if (firstLink && hasDetached && (localHash !== cfg.detachedHash || changed.length)) {
+        pendingRestore = {
+          remoteHash: remoteHash,
+          remoteTs: remoteTs,
+          localHash: localHash,
+          changed: changed,
+          at: Date.now()
+        };
+        return {
+          needConfirm: true, kind: 'local-after-disconnect',
+          changed: changed, remoteHash: remoteHash, localHash: localHash
+        };
+      }
+
       // 上传方向：仅本地变；或双方都变但本地时间更新；且不是首次关联。
       var localWins = !firstLink && localDirty &&
         (!remoteChanged || cfg.localChangedAt > remoteTs + SKEW);
@@ -693,11 +742,45 @@
       });
     },
 
+    /**
+     * 恢复配置时用户对「本地新增内容」的选择：
+     *   upload   —— 把断开后的本地改动上传（云端同模块内容会被替换）
+     *   download —— 以云端为准（本地断开后的改动会被替换）
+     *   later    —— 什么都不改，下次同步再问
+     */
+    resolveRestore: function (choice) {
+      var p = pendingRestore;
+      if (!p) return Promise.resolve({ error: '没有待确认的本地改动，或确认已过期' });
+      if (choice === 'upload') {
+        // 让下一次 reconcile 走「本地更新」方向：云端哈希视为已同步，本地基线视为断开时的快照
+        cfg.syncedHash = p.remoteHash || '';
+        cfg.localHash = cfg.detachedHash || '';
+        cfg.localChangedAt = Date.now();
+        clearDetached();
+        saveCfg();
+        pendingRestore = null;
+        return reconcile('restore-upload');
+      }
+      if (choice === 'download') {
+        clearDetached();
+        saveCfg();
+        pendingRestore = null;
+        return reconcile('restore-download');
+      }
+      pendingRestore = null; // 保留 detached 快照，下次同步仍会提醒
+      return Promise.resolve({ ok: true, note: 'postponed' });
+    },
+
     /** 断开：清掉本机 Token 与关联，后台同步随之停止；本地数据不动 */
     disconnect: function () {
       // 只清 gistId 不够：token 还在时 localTimer / visibilitychange 会触发 autoRun，
       // 无 gistId 的 reconcile 会新建私有 Gist，等于「断开」后又静默关联了云端。
       epoch++; // 在途请求的结果全部作废，避免断开后又把 gistId 写回来
+      // 记下此刻的本地快照，恢复时才能分辨「断开后新增的内容」
+      var detached = collectLocal();
+      cfg.detachedHash = hashModules(detached);
+      cfg.detachedHashes = moduleHashes(detached);
+      cfg.detachedAt = Date.now();
       cfg.token = '';
       cfg.gistId = '';
       cfg.syncedHash = '';
@@ -779,6 +862,17 @@
         '</div>' +
         '<div class="sy-head-actions">' +
           '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
+        '</div>' +
+      '</div>' +
+
+      // 恢复配置时发现本地新增内容的确认卡：紧贴标题行，出现即可见
+      '<div class="sy-restore-choice" id="sy-restore-choice" hidden>' +
+        '<div class="sy-restore-choice-head mono">本地有新增内容 · 请选择</div>' +
+        '<p class="sy-restore-choice-desc" id="sy-restore-desc"></p>' +
+        '<div class="sy-restore-choice-actions">' +
+          '<button class="btn btn--primary sy-btn" id="sy-restore-upload" type="button">上传本地</button>' +
+          '<button class="btn sy-btn" id="sy-restore-download" type="button">下载云端</button>' +
+          '<button class="sy-link" id="sy-restore-later" type="button">稍后处理</button>' +
         '</div>' +
       '</div>' +
 
@@ -893,6 +987,11 @@
     var autoBtn = panel.querySelector('#sy-auto');
     var moreBtn = panel.querySelector('#sy-more-toggle');
     var moreBody = panel.querySelector('#sy-more-body');
+    var choiceBox = panel.querySelector('#sy-restore-choice');
+    var choiceDesc = panel.querySelector('#sy-restore-desc');
+    var choiceUpload = panel.querySelector('#sy-restore-upload');
+    var choiceDownload = panel.querySelector('#sy-restore-download');
+    var choiceLater = panel.querySelector('#sy-restore-later');
     var timer = null;
     var busyDepth = 0, busy = false, popping = false;
 
@@ -947,6 +1046,36 @@
       moreBtn.classList.toggle('is-open', open);
     }
 
+    /** 恢复配置后检测到本地新增内容：给出明确选择，绝不静默覆盖任一侧 */
+    function showRestoreChoice(r) {
+      var ids = (r && r.changed) || [];
+      var defs = syncDefs();
+      var names = ids.map(function (id) {
+        var d = defs.filter(function (x) { return x.id === id; })[0];
+        return (d && d.title) || id;
+      });
+      choiceDesc.textContent = '检测到' + (names.length ? '「' + names.join('、') + '」' : '本地数据') +
+        '在断开关联后有改动。上传会用本地内容替换云端对应模块；下载会用云端内容替换本地改动。';
+      choiceBox.hidden = false;
+      msg('请先选择保留哪一侧的数据', 'warn');
+    }
+    function hideRestoreChoice() { choiceBox.hidden = true; }
+    function resolveChoice(choice) {
+      [choiceUpload, choiceDownload, choiceLater].forEach(function (b) { b.disabled = true; });
+      sync.resolveRestore(choice).then(function (r) {
+        hideRestoreChoice();
+        refresh();
+        if (r && r.error) msg(r.error, 'error');
+        else if (choice === 'upload') msg('本地改动已上传到云端', 'ok');
+        else if (choice === 'download') msg('已按云端数据恢复', 'ok');
+        else msg('已保留本地数据，暂未同步', 'warn');
+      }).catch(function (e) {
+        msg(e && e.message || String(e), 'error');
+      }).then(function () {
+        [choiceUpload, choiceDownload, choiceLater].forEach(function (b) { b.disabled = false; });
+      });
+    }
+
     function commitConfig(silent) {
       cfg.token = tokenEl.value.trim();
       cfg.gistId = gistEl.value.trim().replace(/^.*gists\//, '').replace(/[/?#].*$/, '');
@@ -995,6 +1124,10 @@
       msg('正在同步…');
       sync.reconcile('manual').then(function (r) {
         if (!r) return;
+        if (r.needConfirm && r.kind === 'local-after-disconnect') {
+          showRestoreChoice(r);
+          return;
+        }
         if (r.skipped) {
           msg(r.reason === 'disconnected' ? '已断开关联，本次同步已取消' : '已有同步在进行中，请稍候', 'warn');
           return;
@@ -1018,9 +1151,12 @@
       Portal.bus.on('sync:progress', function (info) { setBusy(!!(info && info.active)); });
       Portal.bus.on('sync:auto', function (info) {
         refresh();
-        if (info && info.result && info.result.error && !panel.hidden) {
-          msg('自动同步：' + info.result.error, 'error');
+        if (!info || !info.result || panel.hidden) return;
+        if (info.result.needConfirm && info.result.kind === 'local-after-disconnect') {
+          showRestoreChoice(info.result);
+          return;
         }
+        if (info.result.error) msg('自动同步：' + info.result.error, 'error');
       });
     }
 
@@ -1055,6 +1191,7 @@
       tokenEl.value = '';
       gistEl.value = '';
       setMoreOpen(false);
+      hideRestoreChoice();
       switchVTab('restore'); // 已无 Token，切回「恢复配置」更符合当前场景
       refresh();
       msg('已断开关联，自动同步已停止', 'warn');
@@ -1146,6 +1283,10 @@
         // 恢复后立即对账：新设备以云端为准下载
         return sync.reconcile('restore');
       }).then(function (r2) {
+        if (r2 && r2.needConfirm && r2.kind === 'local-after-disconnect') {
+          showRestoreChoice(r2);
+          return;
+        }
         if (r2 && r2.error) msg('配置已恢复，但拉取失败：' + r2.error, 'warn');
         else if (r2 && (r2.applied || r2.note === 'in-sync' || r2.count)) {
           msg('配置已恢复 · 云端数据已同步', 'ok');
@@ -1155,6 +1296,10 @@
         msg(e && e.message || String(e), 'error');
       }).then(function () { restoreBtn.disabled = false; });
     });
+
+    choiceUpload.addEventListener('click', function () { resolveChoice('upload'); });
+    choiceDownload.addEventListener('click', function () { resolveChoice('download'); });
+    choiceLater.addEventListener('click', function () { resolveChoice('later'); });
 
     // 复制凭证：一次性复制「用户名 / 短码」，口令自己记
     panel.querySelector('#sy-code-copy').addEventListener('click', function () {

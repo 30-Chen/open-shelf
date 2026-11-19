@@ -154,6 +154,17 @@
 .sy-msg--error { color: var(--danger); }
 .sy-msg--warn { color: var(--warn); }
 
+/* 恢复配置时发现本地新增内容：明确让用户在上传/下载之间选择，不静默覆盖 */
+.sy-restore-choice {
+  margin-top: 12px; padding: 11px 12px;
+  border: 1px solid rgba(255, 196, 107, .36); border-radius: 10px;
+  background: rgba(255, 196, 107, .05);
+}
+.sy-restore-choice-head { font-size: 11px; color: var(--warn); letter-spacing: .3px; }
+.sy-restore-choice-desc { margin: 6px 0 0; font-size: 10.5px; line-height: 1.55; color: var(--muted); }
+.sy-restore-choice-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.sy-restore-choice-actions .sy-btn { flex: 1 1 92px; }
+
 /* 两步引导：步骤标题 + 分组（状态已并入标题行） */
 .sy-step {
   margin-top: 14px; padding-top: 13px;
