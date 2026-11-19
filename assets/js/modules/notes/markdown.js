@@ -34,8 +34,24 @@
   }
 
   var VIDEO_EXT = /\.(mp4|webm|ogg|ogv|m4v|mov)(\?|#|$)/i;
-  // 拖拽上传的视频以 base64 data URI 随笔记一起同步
+  // 本地媒体以 data URI 存在笔记的 media 字典里，正文只保留 media:ID 短引用
   var VIDEO_DATA = /^data:video\/(?:mp4|webm|ogg|ogv|quicktime|x-m4v);base64,[a-z0-9+/=\s]+$/i;
+
+  function safeMediaData(data) {
+    var s = String(data || '').trim();
+    return safeImageUrl(s) || (VIDEO_DATA.test(s) ? s : null);
+  }
+
+  /** 把正文里的 ![名称](media:ID) 展开成真实 data URI；找不到或非法时原样保留 */
+  function expandMedia(source, media) {
+    var s = String(source == null ? '' : source);
+    if (!media || typeof media !== 'object') return s;
+    return s.replace(/!\[([^\]]*)\]\(media:([A-Za-z0-9_-]{6,24})\)/g, function (all, alt, id) {
+      var item = media[id];
+      var data = item && typeof item === 'object' ? safeMediaData(item.d || item.data) : null;
+      return data ? '![' + alt + '](' + data + ')' : all;
+    });
+  }
   function isVideoUrl(urlEscaped) {
     var s = String(urlEscaped || '').trim();
     return VIDEO_DATA.test(s) || VIDEO_EXT.test(s.replace(/&amp;/g, '&'));
@@ -136,9 +152,9 @@
     return s;
   }
 
-  /** 把 Markdown 源文渲染成安全 HTML。 */
-  function render(source) {
-    var lines = String(source == null ? '' : source).replace(/\r\n?/g, '\n').split('\n');
+  /** 把 Markdown 源文渲染成安全 HTML；media 为媒体字典（短引用 → data URI）。 */
+  function render(source, media) {
+    var lines = expandMedia(source, media).replace(/\r\n?/g, '\n').split('\n');
     var out = [];
     var i = 0;
 
@@ -190,7 +206,7 @@
       if (/^\s*>\s?/.test(line)) {
         var q = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ''));
-        out.push('<blockquote class="nt-quote">' + render(q.join('\n')) + '</blockquote>');
+        out.push('<blockquote class="nt-quote">' + render(q.join('\n'), media) + '</blockquote>');
         continue;
       }
 
@@ -238,9 +254,9 @@
   }
 
   /** 抽取第一张图片作为卡片封面。视频返回空。 */
-  function coverOf(source) {
-    var m = String(source == null ? '' : source).match(/!\[([^\]]*)\]\(([^)\s]+)\)/);
-    if (!m || VIDEO_EXT.test(m[2])) return '';
+  function coverOf(source, media) {
+    var m = expandMedia(source, media).match(/!\[([^\]]*)\]\(([^)\s]+)\)/);
+    if (!m || VIDEO_EXT.test(m[2]) || VIDEO_DATA.test(m[2])) return '';
     return safeImageUrl(esc(m[2])) || '';
   }
 
@@ -249,6 +265,7 @@
     render: render,
     excerpt: excerpt,
     coverOf: coverOf,
+    expandMedia: expandMedia,
     videoEmbed: videoEmbed
   };
 })(window);

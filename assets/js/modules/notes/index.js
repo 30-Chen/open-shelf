@@ -23,9 +23,13 @@
     if (!saved || !Array.isArray(saved.notes)) return null;
     // 内置示例是每个设备各自生成的演示数据，不是用户数据，绝不参与同步
     if (saved.demo === true) return null;
+    var media = normalizeMedia(saved.media);
+    var notes = saved.notes.map(normalizeNote).filter(Boolean);
+    migrateLegacyMedia(notes, media);
     return {
-      notes: saved.notes.map(normalizeNote).filter(Boolean),
-      categories: Array.isArray(saved.categories) ? saved.categories.slice() : []
+      notes: notes,
+      categories: Array.isArray(saved.categories) ? saved.categories.slice() : [],
+      media: media
     };
   };
   /** 冷写入：未挂载时把云端数据落盘，下次进入模块即生效 */
@@ -34,9 +38,13 @@
       throw new Error('笔记数据格式无效');
     }
     var notes = data.notes.map(normalizeNote).filter(Boolean);
+    var media = normalizeMedia(data.media);
+    migrateLegacyMedia(notes, media);
     var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
     notes.forEach(function (n) { if (cats.indexOf(n.category) < 0) cats.push(n.category); });
-    Portal.store.namespace('notes').set(STORE_KEY, { notes: notes, categories: cats, demo: false });
+    Portal.store.namespace('notes').set(STORE_KEY, {
+      notes: notes, categories: cats, media: media, demo: false
+    });
   };
 
   function uid() {
@@ -63,6 +71,62 @@
     };
   }
 
+  /* ---------- 媒体短引用：正文只写 ![名称](media:ID)，data URI 单独存 ---------- */
+  var LEGACY_MEDIA = /!\[([^\]]*)\]\((data:(?:image|video)\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+)\)/gi;
+  var MEDIA_REF = /!\[([^\]]*)\]\(media:([A-Za-z0-9_-]{6,24})\)/g;
+
+  function mediaId() {
+    return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function normalizeMedia(raw) {
+    var out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!/^m[A-Za-z0-9]{6,24}$/.test(id)) return;
+      var m = raw[id];
+      if (!m || typeof m !== 'object') return;
+      var data = String(m.d || m.data || '');
+      if (!/^data:(?:image\/[a-z0-9.+-]+|video\/[a-z0-9.+-]+);base64,[a-z0-9+/=\s]+$/i.test(data)) return;
+      out[id] = {
+        t: /^data:video/i.test(data) ? 'v' : 'i',
+        n: String(m.n || m.name || '媒体').slice(0, 80),
+        d: data
+      };
+    });
+    return out;
+  }
+
+  /** 旧版正文里的 data URI 自动搬到媒体字典，正文换成短引用 */
+  function migrateLegacyMedia(notes, media) {
+    var changed = false;
+    (notes || []).forEach(function (n) {
+      if (!n || typeof n.body !== 'string' || n.body.indexOf('data:') < 0) return;
+      var before = n.body;
+      n.body = before.replace(LEGACY_MEDIA, function (all, alt, data) {
+        var id = mediaId();
+        media[id] = {
+          t: /^data:video/i.test(data) ? 'v' : 'i',
+          n: String(alt || '媒体').slice(0, 80),
+          d: data
+        };
+        return '![' + alt + '](media:' + id + ')';
+      });
+      if (n.body !== before) changed = true;
+    });
+    return changed;
+  }
+
+  /** 清理不再被任何笔记引用的媒体，避免删除/取消编辑后残留占空间 */
+  function pruneMedia(media, notes) {
+    var used = {};
+    (notes || []).forEach(function (n) {
+      var re = new RegExp(MEDIA_REF.source, 'g'), m;
+      while ((m = re.exec(String(n && n.body || '')))) used[m[2]] = 1;
+    });
+    Object.keys(media).forEach(function (id) { if (!used[id]) delete media[id]; });
+  }
+
   Portal.registry.register({
     id: 'notes',
     index: '02',
@@ -85,6 +149,8 @@
       var state = {
         notes: [],
         categories: [],
+        media: {},          // 本地媒体字典：短引用 ID → { t, n, d(data URI) }
+        draftMedia: [],     // 本次编辑新插入的媒体 ID，取消时回收
         demo: isDemo === true,
         view: 'list',       // list | read | edit
         currentId: null,
@@ -106,6 +172,9 @@
         state.notes = saved.notes.map(normalizeNote).filter(Boolean);
         state.categories = Array.isArray(saved.categories)
           ? saved.categories.slice() : [];
+        state.media = normalizeMedia(saved.media);
+        // 旧版本把 data URI 直接写进正文；首次打开时自动迁移成短引用
+        if (migrateLegacyMedia(state.notes, state.media)) persist();
       } else {
         var seeded = seed();
         state.notes = seeded.notes;
@@ -118,7 +187,8 @@
 
       function persist() {
         store.set(STORE_KEY, {
-          notes: state.notes, categories: state.categories, demo: state.demo === true
+          notes: state.notes, categories: state.categories,
+          media: state.media, demo: state.demo === true
         });
       }
       /** 用户真正增删改后调用：此后数据属于用户，允许参与同步 */
@@ -229,12 +299,21 @@
         files.forEach(function (file) {
           queue = queue.then(function () {
             return prepareMedia(file).then(function (media) {
-              var name = String(media.name || '媒体').replace(/[\[\]\(\)\n]/g, '_');
-              var snippet = '![' + name + '](' + media.url + ')';
+              var name = String(media.name || '媒体').replace(/[\[\]\(\)\n]/g, '_').slice(0, 80);
+              var id = mediaId();
+              // 正文只插入短引用；data URI 存进媒体字典，不污染编辑器源码
+              var snippet = '![' + name + '](media:' + id + ')';
               if (ta.value.length + snippet.length > MAX_BODY) {
-                throw new Error('这篇笔记已接近 2MB，无法再插入媒体');
+                throw new Error('这篇笔记内容过长，无法再插入媒体');
               }
+              state.media[id] = {
+                t: /^data:video/i.test(media.url) ? 'v' : 'i',
+                n: name, d: media.url
+              };
               insertSnippet(ta, snippet);
+              if (state.draftMedia.indexOf(id) < 0) state.draftMedia.push(id);
+              touch();      // 上传即视为用户数据，允许参与同步
+              persist();    // 立即落盘，刷新/切页不丢媒体
               done++;
             }).catch(function (e) { errors.push(e && e.message || String(e)); });
           });
@@ -275,21 +354,28 @@
       function render() {
         if (state.view === 'read') {
           var note = state.notes.filter(function (n) { return n.id === state.currentId; })[0];
-          root.innerHTML = note ? View.reader(note) : View.list(state, visibleNotes(), counts());
+          root.innerHTML = note ? View.reader(note, state.media)
+            : View.list(state, visibleNotes(), counts(), state.media);
           return;
         }
         if (state.view === 'edit') {
-          root.innerHTML = View.editor(state.draft, state.categories, state.isNew);
+          root.innerHTML = View.editor(state.draft, state.categories, state.isNew, state.media);
           // 自定义下拉：真实值仍在隐藏 select，菜单由 DOM 渲染
           var catPill = root.querySelector('#nt-cat-pill');
           if (catPill && global.PortalSelect) global.PortalSelect.mount(catPill);
           bindMediaUpload();
           return;
         }
-        root.innerHTML = View.list(state, visibleNotes(), counts());
+        root.innerHTML = View.list(state, visibleNotes(), counts(), state.media);
       }
 
       function goList() {
+        // 取消编辑：回收本次上传但未保存进笔记的媒体
+        if (state.draftMedia.length) {
+          state.draftMedia.forEach(function (id) { delete state.media[id]; });
+          state.draftMedia = [];
+          persist();
+        }
         state.view = 'list';
         state.currentId = null;
         state.draft = null;
@@ -310,6 +396,7 @@
         if (!src) return;
         state.isNew = !!isNew;
         state.currentId = src.id;
+        state.draftMedia = [];
         // 深拷贝，取消编辑不污染原数据
         state.draft = {
           id: src.id, title: src.title, category: src.category,
@@ -342,6 +429,12 @@
         var idx = -1;
         state.notes.forEach(function (n, i) { if (n.id === note.id) idx = i; });
         if (idx >= 0) state.notes[idx] = note; else state.notes.unshift(note);
+        // 草稿里上传但最终没写进正文的媒体要回收；再全局清理无引用的媒体
+        state.draftMedia.forEach(function (id) {
+          if (note.body.indexOf('media:' + id) < 0) delete state.media[id];
+        });
+        state.draftMedia = [];
+        pruneMedia(state.media, state.notes);
         touch();
         persist();
         goList();
@@ -353,6 +446,7 @@
         if (!note) return;
         if (!global.confirm('确定删除《' + (note.title || '无标题') + '》？此操作不可撤销。')) return;
         state.notes = state.notes.filter(function (n) { return n.id !== id; });
+        pruneMedia(state.media, state.notes);
         touch();
         persist();
         if (state.currentId === id) goList(); else render();
@@ -363,8 +457,8 @@
       function exportAll() {
         try {
           var data = JSON.stringify({
-            app: 'open-shelf/notes', version: 1, exportedAt: new Date().toISOString(),
-            notes: state.notes, categories: state.categories
+            app: 'open-shelf/notes', version: 2, exportedAt: new Date().toISOString(),
+            notes: state.notes, categories: state.categories, media: state.media
           }, null, 2);
           var blob = new global.Blob([data], { type: 'application/json' });
           var url = global.URL.createObjectURL(blob);
@@ -387,6 +481,12 @@
         catch (e) { flash('文件不是有效的 JSON', 'error'); return; }
         var incoming = Array.isArray(data) ? data : (data && data.notes);
         if (!Array.isArray(incoming)) { flash('文件里没有找到笔记列表', 'error'); return; }
+        // 导入自带媒体字典；旧版导出文件正文里的 data URI 也自动转成短引用
+        var importedMedia = normalizeMedia(data && data.media);
+        Object.keys(importedMedia).forEach(function (id) {
+          if (!state.media[id]) state.media[id] = importedMedia[id];
+        });
+        migrateLegacyMedia(incoming, state.media);
         var added = 0, merged = 0;
         incoming.forEach(function (raw) {
           var n = normalizeNote(raw);
@@ -406,6 +506,7 @@
             if (c && state.categories.indexOf(c) < 0) state.categories.push(c);
           });
         }
+        pruneMedia(state.media, state.notes);
         touch();
         persist();
         goList();
@@ -471,7 +572,7 @@
       function updatePreview() {
         var body = root.querySelector('#nt-body');
         var preview = root.querySelector('#nt-preview');
-        if (body && preview) preview.innerHTML = MD.render(body.value);
+        if (body && preview) preview.innerHTML = MD.render(body.value, state.media);
       }
 
       // ---------- 事件 ----------
@@ -508,6 +609,8 @@
           var seeded = seed();
           state.notes = seeded.notes;
           state.categories = seeded.categories;
+          state.media = {};
+          state.draftMedia = [];
           state.demo = true; // 又回到纯示例态：不把示例同步到云端
           state.category = ALL;
           state.query = '';
@@ -526,7 +629,9 @@
           var grid = root.querySelector('.nt-grid');
           var notes = visibleNotes();
           if (grid) {
-            grid.innerHTML = notes.length ? notes.map(View.card).join('') : View.empty(true);
+            grid.innerHTML = notes.length
+              ? notes.map(function (n) { return View.card(n, state.media); }).join('')
+              : View.empty(true);
           }
           var cnt = root.querySelector('#nt-count');
           if (cnt) cnt.textContent = notes.length + ' 篇笔记';
@@ -558,7 +663,7 @@
       syncBridge.getState = function () {
         // 纯内置示例不上传：每个设备应各自展示自己的示例，而不是把它同步到云端
         if (state.demo) return null;
-        return { notes: state.notes, categories: state.categories };
+        return { notes: state.notes, categories: state.categories, media: state.media };
       };
       syncBridge.applyState = function (data) {
         if (!data || typeof data !== 'object') throw new Error('笔记数据格式无效');
@@ -568,6 +673,9 @@
         if (!incoming) throw new Error('笔记数据缺少 notes 列表');
         state.demo = false; // 云端数据优先于示例
         state.notes = incoming;
+        state.media = normalizeMedia(data.media);
+        migrateLegacyMedia(state.notes, state.media); // 兼容旧云端数据
+        state.draftMedia = [];
         var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
         state.notes.forEach(function (n) {
           if (cats.indexOf(n.category) < 0) cats.push(n.category);

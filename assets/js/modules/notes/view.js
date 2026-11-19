@@ -23,8 +23,8 @@
   }
 
   /** 列表卡片 */
-  function card(note) {
-    var cover = MD.coverOf(note.body);
+  function card(note, media) {
+    var cover = MD.coverOf(note.body, media);
     var excerpt = MD.excerpt(note.body, 108);
     return '' +
       '<article class="nt-card" data-id="' + esc(note.id) + '">' +
@@ -83,7 +83,7 @@
   }
 
   /** 列表视图整体 */
-  function list(state, notes, counts) {
+  function list(state, notes, counts, media) {
     return '' +
       '<div class="nt">' +
         head(state, notes.length) +
@@ -92,7 +92,9 @@
           '<span><i class="nt-led"></i> LOCAL STORAGE · 仅保存在当前浏览器</span>' +
           '<span id="nt-count">' + notes.length + ' 篇笔记</span>' +
         '</div>' +
-        '<div class="nt-grid">' + (notes.length ? notes.map(card).join('') : empty(state.query || state.category !== '__all__')) + '</div>' +
+        '<div class="nt-grid">' + (notes.length
+          ? notes.map(function (n) { return card(n, media); }).join('')
+          : empty(state.query || state.category !== '__all__')) + '</div>' +
       '</div>';
   }
 
@@ -121,7 +123,7 @@
   }
 
   /** 阅读视图 */
-  function reader(note) {
+  function reader(note, media) {
     return '' +
       '<div class="nt nt--reader">' +
         '<div class="nt-reader-bar">' +
@@ -140,13 +142,13 @@
             '<h1 class="nt-article-title">' + esc(note.title || '无标题') + '</h1>' +
             tagList(note.tags) +
           '</div>' +
-          '<div class="nt-markdown">' + MD.render(note.body) + '</div>' +
+          '<div class="nt-markdown">' + MD.render(note.body, media) + '</div>' +
         '</article>' +
       '</div>';
   }
 
-  /** 编辑器：左输入 + 右实时预览 */
-  function editor(note, categories, isNew) {
+  /** 编辑器：左输入 + 右实时预览（正文保留短引用，媒体单独存储） */
+  function editor(note, categories, isNew, media) {
     var tools = [
       { k: 'h2', label: 'H2', tip: '二级标题' },
       { k: 'bold', label: 'B', tip: '粗体' },
@@ -217,11 +219,11 @@
             '</section>' +
             '<section class="nt-preview-pane">' +
               '<div class="nt-pane-head mono"><span>预览 / PREVIEW</span></div>' +
-              '<div class="nt-markdown nt-preview" id="nt-preview">' + MD.render(note.body) + '</div>' +
+              '<div class="nt-markdown nt-preview" id="nt-preview">' + MD.render(note.body, media) + '</div>' +
             '</section>' +
           '</div>' +
           '<div class="nt-editor-foot">' +
-            '<span class="nt-hint mono">提示：可把图片 / 视频拖进左侧编辑区，或点「上传」选择；图片会自动压缩后随笔记同步。</span>' +
+            '<span class="nt-hint mono">提示：图片 / 视频可拖进左侧编辑区；正文只保留简短引用，媒体单独保存并随笔记同步。</span>' +
             '<div>' +
               '<button class="btn" data-act="cancel">取消</button> ' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +
