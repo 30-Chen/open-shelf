@@ -104,7 +104,7 @@
 
   /**
    * 归一化仓库 +  releases。release 既兼容旧的单条对象，也接受多条数组。
-   * d.release 永远指向最新版本（供旧视图/只读分享页使用），d.releases 保存全部版本。
+   * d.release 永远指向最新版本，d.releases 保存全部版本。
    */
   function normalize(repo, releases, meta) {
     var fullName = repo.full_name;

@@ -203,20 +203,6 @@ html[data-theme="light"] .sy-panel {
 html[data-theme="light"] .sy-state { background: rgba(28, 46, 74, .03); }
 html[data-theme="light"] .sy-switch { background: rgba(28, 46, 74, .16); }
 html[data-theme="light"] .sy-input { background: var(--th-inset); }
-html[data-theme="light"] .sy-share,
 html[data-theme="light"] .sy-pass { background: rgba(47, 99, 201, .04); }
+html[data-theme="light"] .sy-step-no { background: rgba(14, 156, 126, .08); }
 html[data-theme="light"] .sy-note { border-top-color: var(--line); }
-
-/* ---------- 只读分享页 ---------- */
-html[data-theme="light"] .sh-banner {
-  background: linear-gradient(135deg, rgba(14, 156, 126, .07), rgba(47, 99, 201, .05));
-}
-html[data-theme="light"] .sh-banner-icon {
-  border-color: rgba(14, 156, 126, .35);
-  background: rgba(14, 156, 126, .08);
-}
-html[data-theme="light"] .sh-tab { background: rgba(28, 46, 74, .04); }
-html[data-theme="light"] .sh-tab.is-active {
-  border-color: rgba(14, 156, 126, .45);
-  background: rgba(14, 156, 126, .10);
-}

@@ -5,7 +5,7 @@
      2. 本地改动自动检测 → 防抖后自动上传；云端变化自动轮询 → 自动下载
      3. 冲突按「最后修改时间戳」裁决，不静默丢数据
      4. 上传前把「当前页面未挂载模块」的云端数据合并回去，避免覆盖
-     5. 页头 ☁ SYNC 触发按钮 + 下拉面板：自动开关、配置、状态、手动上传/下载、公开分享
+     5. 页头 ☁ SYNC 触发按钮 + 下拉面板（三步）：连接云端、换设备、状态
 
    数据只写进用户自己的私有 Gist，token 只存在本机 localStorage，
    不进入仓库、不经过任何第三方。模块之间仍互不引用，仅通过注册表通信。
@@ -33,9 +33,6 @@
     syncedAt: Number(store.get('syncedAt', 0)) || 0,
     localChangedAt: Number(store.get('localChangedAt', 0)) || 0,
     auto: store.get('auto', true) !== false,
-    shareGistId: store.get('shareGistId', '') || '',  // 公开分享用的独立 Gist（与私有同步 Gist 分开）
-    shareOwner: store.get('shareOwner', '') || '',    // 公开 Gist 所属用户名，用于拼 raw 链接
-    shareAt: Number(store.get('shareAt', 0)) || 0,
     vaultCode: store.get('vaultCode', '') || '',      // 恢复短码（6 位）
     vaultGistId: store.get('vaultGistId', '') || '',  // 存密文的公开保险箱 Gist ID
     vaultOwner: store.get('vaultOwner', '') || ''     // 保险箱所属用户名，用于拼兜底链接
@@ -49,9 +46,6 @@
     store.set('syncedAt', cfg.syncedAt);
     store.set('localChangedAt', cfg.localChangedAt);
     store.set('auto', cfg.auto);
-    store.set('shareGistId', cfg.shareGistId);
-    store.set('shareOwner', cfg.shareOwner);
-    store.set('shareAt', cfg.shareAt);
     store.set('vaultCode', cfg.vaultCode);
     store.set('vaultGistId', cfg.vaultGistId);
     store.set('vaultOwner', cfg.vaultOwner);
@@ -332,58 +326,6 @@
     }
   }
 
-  /* ---------- 公开只读分享（与私有同步 Gist 完全分开） ---------- */
-  var SHARE_DESC = 'Open Shelf · 公开只读分享（自动生成，请勿手动修改）';
-
-  function buildShareUrl() {
-    if (!cfg.shareGistId) return '';
-    var base = './';
-    try {
-      var href = (global.location && global.location.href) || '';
-      base = href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
-    } catch (e) { /* 保持默认 */ }
-    return base + 'share.html?id=' + encodeURIComponent(cfg.shareGistId) +
-      (cfg.shareOwner ? '&owner=' + encodeURIComponent(cfg.shareOwner) : '');
-  }
-
-  /** 采集所有模块数据（含未挂载模块的冷数据），写进公开 Gist。绝不写入 token / 本地偏好。 */
-  function publishShare() {
-    if (!cfg.token) return Promise.resolve({ error: '请先填写 GitHub Token' });
-    var modules = collectLocal();
-    if (!Object.keys(modules).length) return Promise.resolve({ error: '本地还没有可分享的数据，请先添加项目或笔记' });
-    var content = JSON.stringify({
-      app: 'open-shelf-share', version: 1, updatedAt: Date.now(), modules: modules
-    }, null, 2);
-    var method = cfg.shareGistId ? 'PATCH' : 'POST';
-    var path = cfg.shareGistId ? '/gists/' + encodeURIComponent(cfg.shareGistId) : '/gists';
-    var body = cfg.shareGistId
-      ? { files: {} }
-      : { description: SHARE_DESC, public: true, files: {} };
-    body.files[FILE] = { content: content };
-    return request(method, path, body).then(function (g) {
-      cfg.shareGistId = g.id;
-      cfg.shareOwner = (g.owner && g.owner.login) || cfg.shareOwner || '';
-      cfg.shareAt = Date.now();
-      saveCfg();
-      return { ok: true, id: g.id, owner: cfg.shareOwner, count: Object.keys(modules).length, url: buildShareUrl() };
-    }).catch(function (e) {
-      return { error: e && e.message || String(e) };
-    });
-  }
-
-  /** 停止分享：清本地关联；removeRemote=true 时同时删除远端公开 Gist */
-  function unpublishShare(removeRemote) {
-    var id = cfg.shareGistId;
-    cfg.shareGistId = '';
-    cfg.shareOwner = '';
-    cfg.shareAt = 0;
-    saveCfg();
-    if (!removeRemote || !id) return Promise.resolve({ ok: true });
-    return request('DELETE', '/gists/' + encodeURIComponent(id))
-      .then(function () { return { ok: true }; })
-      .catch(function (e) { return { error: e && e.message || String(e) }; });
-  }
-
   /* ---------- 配置口令 / 恢复码（Web Crypto：PBKDF2 + AES-GCM） ----------
      目的：把难记的 token + gistId 用用户自设口令加密成一串「恢复码」。
      换设备时只输入同一个口令 + 粘贴恢复码即可还原配置，口令本身不落盘、不上传。
@@ -422,7 +364,7 @@
       });
   }
 
-  /** 把当前同步配置（含分享 Gist）用口令加密成恢复码。口令不落盘。 */
+  /** 把当前同步配置用口令加密成恢复码。口令不落盘。 */
   function makeRecovery(passphrase) {
     passphrase = String(passphrase || '');
     if (passphrase.length < 6) return Promise.resolve({ error: '口令至少 6 位，越长越安全' });
@@ -434,9 +376,7 @@
     var payload = {
       v: 1,
       token: cfg.token,
-      gistId: cfg.gistId || '',
-      shareGistId: cfg.shareGistId || '',
-      shareOwner: cfg.shareOwner || ''
+      gistId: cfg.gistId || ''
     };
     var salt = new Uint8Array(16), iv = new Uint8Array(12);
     c.getRandomValues(salt);
@@ -481,15 +421,13 @@
       if (!payload || !payload.token) throw new Error('恢复码内没有有效的 Token');
       cfg.token = String(payload.token);
       cfg.gistId = String(payload.gistId || '');
-      cfg.shareGistId = String(payload.shareGistId || '');
-      cfg.shareOwner = String(payload.shareOwner || '');
       // 新设备以云端为准：清空同步哈希，让下次对账走下载方向
       cfg.syncedHash = '';
       cfg.localHash = '';
       cfg.localChangedAt = 0;
       cfg.auto = true;
       saveCfg();
-      return { ok: true, gistId: cfg.gistId, shareGistId: cfg.shareGistId };
+      return { ok: true, gistId: cfg.gistId };
     }).catch(function (e) {
       var m = e && e.message || String(e);
       if (/OperationError|InvalidAccess|The operation failed|auth/i.test(m)) {
@@ -544,9 +482,7 @@
     var payload = {
       v: 2,
       token: cfg.token,
-      gistId: cfg.gistId || '',
-      shareGistId: cfg.shareGistId || '',
-      shareOwner: cfg.shareOwner || ''
+      gistId: cfg.gistId || ''
     };
     var salt = new Uint8Array(16), iv = new Uint8Array(12);
     c.getRandomValues(salt);
@@ -662,8 +598,6 @@
       if (!payload || !payload.token) throw new Error('保险箱内没有有效的 Token');
       cfg.token = String(payload.token);
       cfg.gistId = String(payload.gistId || '');
-      cfg.shareGistId = String(payload.shareGistId || '');
-      cfg.shareOwner = String(payload.shareOwner || '');
       cfg.vaultCode = cfg.vaultCode || (code.length === 6 ? code : '');
       if (resolvedOwner) cfg.vaultOwner = resolvedOwner;
       cfg.syncedHash = '';
@@ -671,7 +605,7 @@
       cfg.localChangedAt = 0;
       cfg.auto = true;
       saveCfg();
-      return { ok: true, gistId: cfg.gistId, shareGistId: cfg.shareGistId };
+      return { ok: true, gistId: cfg.gistId };
     }).catch(function (e) {
       var m = e && e.message || String(e);
       if (/OperationError|InvalidAccess|The operation failed/i.test(m)) {
@@ -761,9 +695,6 @@
       saveCfg();
     },
 
-    publishShare: publishShare,
-    unpublishShare: unpublishShare,
-    shareUrl: buildShareUrl,
     makeRecovery: makeRecovery,
     restoreRecovery: restoreRecovery,
     makeVault: makeVault,
@@ -826,33 +757,43 @@
         '<button class="sy-close" id="sy-close" type="button" aria-label="关闭">×</button>' +
       '</div>' +
 
-      '<div class="sy-state" id="sy-state"></div>' +
-
-      '<div class="sy-auto-row">' +
-        '<div class="sy-auto-label">自动同步<span>本地改动自动上传，云端变化自动下载</span></div>' +
-        '<button class="sy-switch" id="sy-auto" type="button" role="switch" aria-checked="false">' +
-          '<span class="sy-switch-knob"></span>' +
-        '</button>' +
-      '</div>' +
-
-      '<div class="sy-fields">' +
+      // 第 1 步：连接云端
+      '<section class="sy-step">' +
+        '<div class="sy-step-head"><span class="sy-step-no mono">1</span><span>连接云端</span></div>' +
+        '<div class="sy-auto-row">' +
+          '<div class="sy-auto-label">自动同步<span>本地改动自动上传，云端变化自动下载</span></div>' +
+          '<button class="sy-switch" id="sy-auto" type="button" role="switch" aria-checked="false">' +
+            '<span class="sy-switch-knob"></span>' +
+          '</button>' +
+        '</div>' +
         '<label class="sy-label">GitHub Token' +
           '<span class="sy-label-hint">只需 gist 权限 · 仅存本机</span>' +
           '<input class="sy-input" id="sy-token" type="password" autocomplete="off" ' +
             'spellcheck="false" placeholder="ghp_…" value="' + esc(cfg.token) + '">' +
         '</label>' +
-        '<label class="sy-label">Gist ID' +
-          '<span class="sy-label-hint">首次上传后自动填写，换设备时手动填入</span>' +
-          '<input class="sy-input" id="sy-gist" type="text" autocomplete="off" ' +
-            'spellcheck="false" placeholder="例如 0a1b2c3d…" value="' + esc(cfg.gistId) + '">' +
-        '</label>' +
-      '</div>' +
-
-      '<div class="sy-pass">' +
-        '<div class="sy-pass-head">' +
-          '<span class="sy-kicker mono">VAULT CODE / 换设备免记 Token</span>' +
+        '<div class="sy-actions">' +
+          '<button class="btn btn--primary sy-btn" id="sy-push" type="button">↑ 上传</button>' +
+          '<button class="btn sy-btn" id="sy-pull" type="button">↓ 下载</button>' +
         '</div>' +
-        '<p class="sy-pass-desc">设一个口令，把 Token 加密存进你的<strong>云端保险箱</strong>，只记「用户名 + 6 位短码 + 口令」。换设备时填这三项即可自动配好，无需再找长 Token。用户名与短码是地址（泄露无妨），口令是钥匙（忘了无法找回）。</p>' +
+        '<details class="sy-more">' +
+          '<summary class="sy-more-sum">更多设置</summary>' +
+          '<label class="sy-label">Gist ID' +
+            '<span class="sy-label-hint">首次上传后自动填写；换设备时也可手动填入</span>' +
+            '<input class="sy-input" id="sy-gist" type="text" autocomplete="off" ' +
+              'spellcheck="false" placeholder="例如 0a1b2c3d…" value="' + esc(cfg.gistId) + '">' +
+          '</label>' +
+          '<div class="sy-actions sy-actions--sub">' +
+            '<button class="sy-link" id="sy-disconnect" type="button">断开关联</button>' +
+            '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
+              'target="_blank" rel="noopener noreferrer">获取 Token ↗</a>' +
+          '</div>' +
+        '</details>' +
+      '</section>' +
+
+      // 第 2 步：换设备
+      '<section class="sy-step">' +
+        '<div class="sy-step-head"><span class="sy-step-no mono">2</span><span>换设备</span></div>' +
+        '<p class="sy-step-desc">设一个口令，把 Token 加密存进云端保险箱，只记「用户名 + 6 位短码 + 口令」。换设备填这三项即可自动配好，无需再找长 Token。</p>' +
         '<label class="sy-label">配置口令' +
           '<span class="sy-label-hint">至少 6 位，自己记牢；忘了无法找回</span>' +
           '<input class="sy-input" id="sy-pass" type="password" autocomplete="new-password" ' +
@@ -881,36 +822,16 @@
           '<button class="sy-link" id="sy-code-copy" type="button">复制短码</button>' +
           '<button class="sy-link" id="sy-vault-link-copy" type="button">复制保险箱链接（备用）</button>' +
         '</div>' +
-      '</div>' +
+      '</section>' +
 
-      '<div class="sy-actions">' +
-        '<button class="btn btn--primary sy-btn" id="sy-push" type="button">↑ 上传</button>' +
-        '<button class="btn sy-btn" id="sy-pull" type="button">↓ 下载</button>' +
-      '</div>' +
-      '<div class="sy-actions sy-actions--sub">' +
-        '<button class="sy-link" id="sy-disconnect" type="button">断开关联</button>' +
-        '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
-          'target="_blank" rel="noopener noreferrer">获取 Token <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
-      '</div>' +
-
-      '<div class="sy-share">' +
-        '<div class="sy-share-head">' +
-          '<span class="sy-kicker mono">PUBLIC VIEW / 只读分享</span>' +
-          '<span class="sy-share-pill mono" id="sy-share-pill">未发布</span>' +
-        '</div>' +
-        '<p class="sy-share-desc">把当前内容复制到一个<strong>公开</strong> Gist，生成只读链接。任何人可查看，但无法修改；与上面的私有同步 Gist 完全分开。</p>' +
-        '<div class="sy-share-url" id="sy-share-url" hidden>' +
-          '<input class="sy-input" id="sy-share-link" type="text" readonly value="">' +
-          '<button class="sy-link" id="sy-share-copy" type="button">复制链接</button>' +
-        '</div>' +
-        '<div class="sy-actions sy-share-actions">' +
-          '<button class="btn btn--primary sy-btn" id="sy-share-publish" type="button">⇧ 发布 / 更新分享</button>' +
-          '<button class="btn sy-btn" id="sy-share-stop" type="button" hidden>停止分享</button>' +
-        '</div>' +
-      '</div>' +
+      // 第 3 步：状态
+      '<section class="sy-step">' +
+        '<div class="sy-step-head"><span class="sy-step-no mono">3</span><span>状态</span></div>' +
+        '<div class="sy-state" id="sy-state"></div>' +
+      '</section>' +
 
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">换设备不用重新申请 Token：设一个口令生成 <strong>6 位短码</strong>，只记「GitHub 用户名 + 短码 + 口令」。用户名与短码用于在云端定位你的保险箱（一个公开 Gist，但里面只有密文，看不到明文 Token），口令经 PBKDF2 派生密钥、用 AES-GCM 加密，口令本身不保存也不上传。用户名/短码泄露无妨（别人没口令解不开），但口令忘了就无法找回。若登录的 GitHub 账号无法列出保险箱，可改贴「保险箱链接」直接恢复，建议一并保存。私有同步 Gist 仅你自己可读写。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
+      '<p class="sy-note">私有同步 Gist 仅你自己可读写；自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。用户名与短码只是「地址」，口令才是「钥匙」——泄露无妨，忘了无法找回。</p>';
 
     wrap.appendChild(fab);
     wrap.appendChild(panel);
@@ -980,24 +901,6 @@
           (cfg.gistId ? esc(cfg.gistId.slice(0, 10)) + '…' : '—') + '</b></div>' +
         '<div class="sy-state-row"><span>上次同步</span><b class="mono">' + fmtTime(cfg.syncedAt) + '</b></div>' +
         '<div class="sy-tags">' + modules + '</div>';
-
-      // 公开分享区：发布状态、链接、停止按钮
-      var pill = panel.querySelector('#sy-share-pill');
-      var urlBox = panel.querySelector('#sy-share-url');
-      var linkInput = panel.querySelector('#sy-share-link');
-      var stopBtn = panel.querySelector('#sy-share-stop');
-      if (cfg.shareGistId) {
-        pill.textContent = '已发布';
-        pill.className = 'sy-share-pill mono is-live';
-        urlBox.hidden = false;
-        linkInput.value = buildShareUrl();
-        stopBtn.hidden = false;
-      } else {
-        pill.textContent = '未发布';
-        pill.className = 'sy-share-pill mono';
-        urlBox.hidden = true;
-        stopBtn.hidden = true;
-      }
     }
 
     function commitConfig() {
@@ -1077,49 +980,6 @@
       msg('已断开关联', 'warn');
     });
 
-    // ---- 公开只读分享 ----
-    var sharePublishBtn = panel.querySelector('#sy-share-publish');
-    var shareStopBtn = panel.querySelector('#sy-share-stop');
-    var shareLinkInput = panel.querySelector('#sy-share-link');
-
-    sharePublishBtn.addEventListener('click', function () {
-      commitConfig(); // 确保 token 已保存
-      if (!cfg.token) { msg('请先填写 GitHub Token', 'error'); tokenEl.focus(); return; }
-      sharePublishBtn.disabled = true;
-      msg('正在发布到公开 Gist…');
-      sync.publishShare().then(function (r) {
-        if (r && r.error) { msg(r.error, 'error'); return; }
-        refresh();
-        msg('已发布 · ' + (r.count || 0) + ' 个模块 · 链接已生成', 'ok');
-      }).catch(function (e) {
-        msg(e && e.message || String(e), 'error');
-      }).then(function () { sharePublishBtn.disabled = false; });
-    });
-
-    panel.querySelector('#sy-share-copy').addEventListener('click', function () {
-      var text = shareLinkInput.value;
-      if (!text) return;
-      function done() { msg('分享链接已复制', 'ok'); }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(function () {
-          shareLinkInput.select(); document.execCommand && document.execCommand('copy'); done();
-        });
-      } else {
-        shareLinkInput.select(); document.execCommand && document.execCommand('copy'); done();
-      }
-    });
-
-    shareStopBtn.addEventListener('click', function () {
-      if (!global.confirm('停止分享会删除这个公开 Gist，已发出的分享链接将立即失效。确定继续？')) return;
-      shareStopBtn.disabled = true;
-      sync.unpublishShare(true).then(function (r) {
-        if (r && r.error) { msg('本地已停止，但远端删除失败：' + r.error, 'warn'); }
-        else { msg('已停止分享，公开 Gist 已删除', 'ok'); }
-        refresh();
-        shareStopBtn.disabled = false;
-      });
-    });
-
     // ---- 恢复短码 / 保险箱 ----
     var passEl = panel.querySelector('#sy-pass');
     var codeEl = panel.querySelector('#sy-code');
@@ -1186,10 +1046,7 @@
         if (cfg.vaultOwner) ownerEl.value = cfg.vaultOwner;
         showSeal(cfg.vaultCode, cfg.vaultOwner);
         refresh();
-        var bits = ['配置已恢复'];
-        if (r.gistId) bits.push('Gist 已关联');
-        if (r.shareGistId) bits.push('分享链接已恢复');
-        msg(bits.join(' · ') + ' · 正在从云端拉取最新数据…', 'ok');
+        msg('配置已恢复 · 正在从云端拉取最新数据…', 'ok');
         // 恢复后立即对账：新设备以云端为准下载
         return sync.reconcile('restore');
       }).then(function (r2) {

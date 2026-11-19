@@ -126,8 +126,8 @@
 .sy-switch.is-on { border-color: var(--line-strong); background: rgba(85, 227, 194, .18); }
 .sy-switch.is-on .sy-switch-knob { transform: translateX(18px); background: var(--accent); box-shadow: 0 0 8px rgba(85, 227, 194, .6); }
 
-.sy-fields { margin-top: 16px; display: flex; flex-direction: column; gap: 12px; }
 .sy-label { display: block; font-size: 12px; color: var(--text-2); }
+.sy-auto-row + .sy-label { margin-top: 14px; }
 .sy-label-hint { display: block; margin: 2px 0 6px; font-size: 10.5px; color: var(--muted); }
 .sy-input {
   width: 100%; height: 38px; padding: 0 12px;
@@ -154,24 +154,33 @@
 .sy-msg--error { color: var(--danger); }
 .sy-msg--warn { color: var(--warn); }
 
-.sy-share {
-  margin-top: 14px; padding: 13px 14px;
-  border: 1px solid var(--line); border-radius: 10px;
-  background: rgba(122, 162, 247, .035);
+/* 三步引导：步骤标题 + 分组 */
+.sy-step {
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid var(--line-soft);
 }
-.sy-share-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sy-share-head .sy-kicker { color: var(--accent-2, #7aa2f7); }
-.sy-share-pill {
-  padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px;
-  font-size: 10px; color: var(--muted);
+.sy-head + .sy-step { margin-top: 16px; }
+.sy-step-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; font-size: 13px; color: var(--text); font-weight: 600; }
+.sy-step-no {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex: 0 0 auto;
+  border: 1px solid rgba(85, 227, 194, .4); border-radius: 6px;
+  background: rgba(85, 227, 194, .08); color: var(--accent);
+  font-size: 11px; font-weight: 600;
 }
-.sy-share-pill.is-live { color: var(--accent); border-color: rgba(85, 227, 194, .4); background: rgba(85, 227, 194, .08); }
-.sy-share-desc { margin: 9px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.sy-share-desc strong { color: var(--warn); font-weight: 600; }
-.sy-share-url { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.sy-share-url .sy-input { flex: 1; min-width: 0; font-size: 11px; }
-.sy-share-actions { margin-top: 10px; }
-.sy-share-actions .sy-btn { height: 36px; font-size: 12px; }
+.sy-step-desc { margin: -2px 0 12px; font-size: 11px; line-height: 1.6; color: var(--muted); }
+/* 更多设置：折叠次要项（Gist ID / 断开关联 / 获取 Token） */
+.sy-more { margin-top: 12px; }
+.sy-more-sum {
+  list-style: none; cursor: pointer;
+  font-size: 11px; color: var(--muted);
+  padding: 4px 0; transition: color .18s;
+}
+.sy-more-sum::-webkit-details-marker { display: none; }
+.sy-more-sum::before { content: '›'; display: inline-block; margin-right: 6px; transition: transform .18s; }
+.sy-more[open] .sy-more-sum::before { transform: rotate(90deg); }
+.sy-more-sum:hover { color: var(--accent); }
+.sy-more[open] .sy-label { margin-top: 12px; }
 
 /* 配置口令 / 恢复码 */
 .sy-pass {
@@ -179,9 +188,6 @@
   border: 1px solid var(--line); border-radius: 10px;
   background: rgba(122, 162, 247, .035);
 }
-.sy-pass-head .sy-kicker { color: var(--accent-2, #7aa2f7); }
-.sy-pass-desc { margin: 9px 0 12px; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.sy-pass-desc strong { color: var(--accent); font-weight: 600; }
 .sy-code-input { letter-spacing: 2px; text-transform: uppercase; }
 /* 短码封印：生成后醒目展示 6 位短码 */
 .sy-vault-seal {
