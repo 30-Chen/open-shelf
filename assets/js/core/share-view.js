@@ -116,9 +116,6 @@
     meta.push('<span title="Star 数">★ ' + esc(compact(d.stars)) + '</span>');
     if (d.license) meta.push('<span>' + esc(d.license) + '</span>');
     if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 <i class="i-ico i-ext" aria-hidden="true"></i></a>');
-    var topics = (d.topics || []).length
-      ? '<div class="rs-topics">' + d.topics.map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div>'
-      : '';
     var num = String(index + 1).padStart(2, '0');
     return '<article class="rs-card" data-repo="' + esc(fullName) + '" style="animation-delay:' + Math.min(index, 8) * 55 + 'ms">' +
       '<span class="rs-card-line"></span>' +
@@ -132,7 +129,7 @@
         '<div class="rs-repo-main"><h3 class="rs-name">' + esc(d.name || fullName) + '</h3>' +
           '<div class="rs-meta mono">' + meta.join('') + '</div></div>' +
       '</div>' +
-      '<p class="rs-description">' + esc(d.description) + '</p>' + topics +
+      '<p class="rs-description">' + esc(d.description) + '</p>' +
       releaseBlock(d) +
       '<div class="rs-card-foot mono"><span>' +
         (d.offline ? '静态快照 · ' + esc(date(d.generatedAt)) : '分享快照 · ' + esc(date(d.fetchedAt))) +

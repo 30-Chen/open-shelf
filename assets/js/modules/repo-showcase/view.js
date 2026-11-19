@@ -83,10 +83,6 @@
     if (d.license) meta.push('<span>' + esc(d.license) + '</span>');
     if (d.homepage) meta.push('<a href="' + safeUrl(d.homepage) + '" target="_blank" rel="noopener noreferrer">官网 <i class="i-ico i-ext" aria-hidden="true"></i></a>');
 
-    var topics = (d.topics || []).length
-      ? '<div class="rs-topics">' + d.topics.map(function (t) { return '<span>#' + esc(t) + '</span>'; }).join('') + '</div>'
-      : '';
-
     return '' +
       '<div class="rs-repo">' +
         (d.avatar ? '<img class="rs-avatar" src="' +
@@ -97,8 +93,7 @@
           '<div class="rs-meta mono">' + meta.join('') + '</div>' +
         '</div>' +
       '</div>' +
-      '<p class="rs-description">' + esc(d.description) + '</p>' +
-      topics;
+      '<p class="rs-description">' + esc(d.description) + '</p>';
   }
 
   function assetRow(a) {
@@ -121,7 +116,7 @@
   };
   var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios', 'other'];
 
-  // ui: { version: number, platform: ''|'auto'|windows|macos|... }  由 index.js 维护
+  // ui: { platform: 'windows|macos|...' }  由 index.js 维护（仅平台筛选，无版本状态）
   function assetScore(a, device) {
     var name = String(a.name || '');
     var s = 0;
@@ -137,13 +132,15 @@
     return s;
   }
 
+  // 始终只展示最新的一个 Release（版本号 + 发布时间），不再提供版本切换。
   function releaseBlock(d, ui) {
     ui = ui || {};
-    var releases = (Array.isArray(d.releases) && d.releases.length) ? d.releases : (d.release ? [d.release] : []);
-    if (!releases.length) {
+    // d.release 由数据层固定指向最新版本（稳定版优先、按发布时间倒序）
+    var r = d.release || null;
+    if (!r) {
       return '' +
         '<div class="rs-release rs-release--empty">' +
-          '<div class="rs-release-head"><span class="rs-kicker mono">RELEASES</span>' +
+          '<div class="rs-release-head"><span class="rs-kicker mono">RELEASE</span>' +
           '<span class="rs-tag rs-tag--none mono">暂无发布版本</span></div>' +
           '<p class="rs-no-assets">该仓库还没有正式 Release，可直接前往仓库查看源码或预发布版本。</p>' +
           '<div class="rs-source mono"><a href="' + safeUrl(d.htmlUrl + '/releases') +
@@ -151,8 +148,6 @@
         '</div>';
     }
 
-    var vIndex = Math.max(0, Math.min(Number(ui.version) || 0, releases.length - 1));
-    var r = releases[vIndex];
     var device = NS.github ? NS.github.currentPlatform() : '';
 
     // 该版本实际包含的平台，按「当前设备优先 + 固定顺序」排列
@@ -167,11 +162,11 @@
       return PLATFORM_ORDER.indexOf(a) - PLATFORM_ORDER.indexOf(b);
     });
 
-    var wanted = ui.platform || 'auto';
-    var active = wanted === 'auto'
-      ? (present.indexOf(device) >= 0 ? device : '')
-      : wanted;
-    if (active && present.indexOf(active) < 0) active = ''; // 该版本无此平台时回退到全部
+    // 默认选中当前设备平台；识别不到设备或无对应安装包时取第一个平台。
+    var wanted = ui.platform || '';
+    var active = (wanted && present.indexOf(wanted) >= 0)
+      ? wanted
+      : (present.indexOf(device) >= 0 ? device : (present[0] || ''));
 
     var MAX = 3;
     var pool = r.assets.filter(function (a) {
@@ -186,30 +181,12 @@
             '" target="_blank" rel="noopener noreferrer">还有 ' + rest + ' 个文件 · 前往 Release 页面查看全部 <i class="i-ico i-ext" aria-hidden="true"></i></a>' : '') +
         '</div>'
       : '<p class="rs-no-assets">' + (active
-          ? '该版本没有 ' + esc(PLATFORM_LABEL[active] || active) + ' 平台的安装包，试试切换平台或版本。'
+          ? '该版本没有 ' + esc(PLATFORM_LABEL[active] || active) + ' 平台的安装包，试试切换平台。'
           : '该版本没有上传安装包，可下载源码归档或查看 Release 页面。') + '</p>';
 
-    // 版本切换：超过 1 个版本才显示下拉
-    var versionBar = releases.length > 1
-      ? '<div class="rs-version-bar mono">' +
-          '<span class="rs-kicker">VERSION</span>' +
-          '<select class="rs-version-select mono" data-action="version" data-repo="' + attrRepo(d.fullName) +
-            '" aria-label="选择下载版本">' +
-            releases.map(function (x, i) {
-              return '<option value="' + i + '"' + (i === vIndex ? ' selected' : '') + '>' +
-                esc(x.tag || ('#' + (i + 1))) + (x.prerelease ? ' · 预览' : '') +
-                (i === 0 ? ' · 最新' : '') + '</option>';
-            }).join('') +
-          '</select>' +
-        '</div>'
-      : '';
-
-    // 平台筛选条：至少两个平台（含「全部」）时才显示
+    // 平台筛选条：至少两个平台时才显示，不再有「全部」（只显示 3 行时无意义）
     var platBar = present.length > 1
       ? '<div class="rs-platform-bar mono" role="group" aria-label="按平台筛选下载">' +
-          '<button type="button" class="rs-plat' + (!active ? ' is-active' : '') +
-            '" data-action="platform" data-repo="' + attrRepo(d.fullName) +
-            '" data-platform="auto" title="显示全部平台">全部</button>' +
           present.map(function (p) {
             var label = PLATFORM_LABEL[p] || p;
             if (p === device) label += ' · 本机';
@@ -229,13 +206,11 @@
     return '' +
       '<div class="rs-release">' +
         '<div class="rs-release-head">' +
-          '<span class="rs-kicker mono">RELEASE</span>' +
+          '<span class="rs-kicker mono">LATEST RELEASE</span>' +
           '<span class="rs-tag mono">' + esc(r.tag) + '</span>' +
           (r.prerelease ? '<span class="rs-tag rs-tag--pre mono">预览版</span>' : '') +
           '<span class="rs-date mono">' + esc(date(r.publishedAt)) + '</span>' +
         '</div>' +
-        versionBar +
-        (r.name && r.name !== r.tag ? '<div class="rs-release-name">' + esc(r.name) + '</div>' : '') +
         platBar +
         assets +
         '<div class="rs-source mono">' +

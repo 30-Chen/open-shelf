@@ -130,10 +130,13 @@ html[data-theme="light"] .rs-settings-panel {
   box-shadow: var(--th-shadow);
 }
 html[data-theme="light"] .rs-setting-input { background: var(--th-inset) !important; }
-html[data-theme="light"] .rs-cat-select option,
-html[data-theme="light"] .rs-version-select option { background: #fff; }
+html[data-theme="light"] .rs-cat-select option { background: #fff; }
 html[data-theme="light"] .rs-input-wrap,
 html[data-theme="light"] .rs-cat-wrap { background: var(--th-surface); }
+/* 浅色下分类下拉箭头用深灰，保证对比度 */
+html[data-theme="light"] .rs-cat-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='%236b7c98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 2 6 6 6-6'/%3E%3C/svg%3E");
+}
 html[data-theme="light"] .rs-statusbar { background: rgba(28, 46, 74, .03); }
 html[data-theme="light"] .rs-card {
   background: linear-gradient(160deg, #ffffff, var(--th-surface-2));
@@ -142,9 +145,7 @@ html[data-theme="light"] .rs-card {
 html[data-theme="light"] .rs-card:hover {
   box-shadow: var(--th-shadow), 0 0 0 1px rgba(14, 156, 126, .12);
 }
-html[data-theme="light"] .rs-topics span { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .rs-release { background: var(--th-surface-3); }
-html[data-theme="light"] .rs-version-select { background: var(--th-inset); }
 html[data-theme="light"] .rs-asset { background: rgba(28, 46, 74, .03); }
 html[data-theme="light"] .rs-asset:hover { background: var(--accent-dim); }
 html[data-theme="light"] .rs-notes pre { background: var(--th-inset); }
@@ -168,6 +169,10 @@ html[data-theme="light"] .nt-search-wrap,
 html[data-theme="light"] .nt-input,
 html[data-theme="light"] .nt-edit-pane,
 html[data-theme="light"] .nt-preview-pane { background: var(--th-surface); }
+/* nt-input 的 background 简写会清掉箭头，这里补回深灰箭头 */
+html[data-theme="light"] .nt-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 10' fill='none' stroke='%236b7c98' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2 2 6 6 6-6'/%3E%3C/svg%3E");
+}
 html[data-theme="light"] .nt-select option { background: #fff; }
 html[data-theme="light"] .nt-card {
   background: linear-gradient(155deg, #ffffff, var(--th-surface-2));

@@ -137,7 +137,7 @@
         groups: normalizeGroups(rawGroups, legacy),
         snapshots: store.get('snapshots', {}) || {},
         items: {},
-        ui: {},                  // 每张卡的版本 / 平台选择，纯本地视图状态
+        ui: {},                  // 每张卡的平台筛选选择，纯本地视图状态
         demo: isDemo === true,
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
@@ -405,17 +405,6 @@
       });
 
       groupSelect.addEventListener('change', toggleNewInput);
-
-      // 版本下拉切换：只重渲染，不发请求（数据已随仓库一起拉回）
-      root.addEventListener('change', function (e) {
-        var el = e.target;
-        if (!el || el.dataset.action !== 'version') return;
-        var repo = el.dataset.repo;
-        if (!repo) return;
-        var ui = state.ui[repo] || (state.ui[repo] = {});
-        ui.version = Math.max(0, Number(el.value) || 0);
-        render();
-      });
 
       root.addEventListener('click', function (e) {
         var target = e.target;
