@@ -230,7 +230,12 @@
       }
 
       var remoteModules = remote.payload.modules || {};
-      var remoteTs = Date.parse(remote.gist.updated_at) || Number(remote.payload.updatedAt) || 0;
+      // 时间戳必须同一时钟域：cfg.localChangedAt 是本机 Date.now()，
+      // 因此云端时间优先取写入方写进 payload 的 updatedAt（同为客户端时钟）；
+      // 不能拿 GitHub 服务器的 updated_at 跟本机时钟比——设备时钟稍慢，
+      // 本地的「删除」就永远判输，云端旧示例会被反复下载回来。
+      var remoteTs = Number(remote.payload.updatedAt) ||
+        Date.parse(remote.gist.updated_at) || 0;
 
       if (!localDirty && !remoteChanged) {
         return { ok: true, note: 'in-sync', remoteHash: remoteHash };

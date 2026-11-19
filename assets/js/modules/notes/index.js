@@ -17,10 +17,12 @@
   // 内核只通过注册表的 sync 字段访问，本模块不引用其它模块。
   var syncBridge = { ready: function () { return false; } };
 
-  /** 冷读取：未挂载时从 localStorage 取笔记；无数据返回 null（不参与同步） */
+  /** 冷读取：未挂载时从 localStorage 取笔记；无数据或纯示例返回 null（不参与同步） */
   syncBridge.cold = function () {
     var saved = Portal.store.namespace('notes').get(STORE_KEY, null);
     if (!saved || !Array.isArray(saved.notes)) return null;
+    // 内置示例是每个设备各自生成的演示数据，不是用户数据，绝不参与同步
+    if (saved.demo === true) return null;
     return {
       notes: saved.notes.map(normalizeNote).filter(Boolean),
       categories: Array.isArray(saved.categories) ? saved.categories.slice() : []
@@ -34,7 +36,7 @@
     var notes = data.notes.map(normalizeNote).filter(Boolean);
     var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
     notes.forEach(function (n) { if (cats.indexOf(n.category) < 0) cats.push(n.category); });
-    Portal.store.namespace('notes').set(STORE_KEY, { notes: notes, categories: cats });
+    Portal.store.namespace('notes').set(STORE_KEY, { notes: notes, categories: cats, demo: false });
   };
 
   function uid() {
@@ -75,9 +77,15 @@
 
       // 数据：首次访问用内置示例，之后完全用本地存储
       var saved = store.get(STORE_KEY, null);
+      // demo=true 表示当前展示的是内置示例（用户尚未增删改），这类数据不参与同步。
+      // 首次访问（无任何本地数据）时用示例；以后以持久化的 demo 标记为准。
+      var isDemo = saved && Array.isArray(saved.notes) ? (saved.demo === true) : null;
+      // 无数据或数据损坏（即将重新 seed）→ 示例态；老用户的有效数据无标记 → 用户数据
+      if (isDemo === null) isDemo = !saved || !Array.isArray(saved.notes);
       var state = {
         notes: [],
         categories: [],
+        demo: isDemo === true,
         view: 'list',       // list | read | edit
         currentId: null,
         draft: null,
@@ -109,8 +117,12 @@
       });
 
       function persist() {
-        store.set(STORE_KEY, { notes: state.notes, categories: state.categories });
+        store.set(STORE_KEY, {
+          notes: state.notes, categories: state.categories, demo: state.demo === true
+        });
       }
+      /** 用户真正增删改后调用：此后数据属于用户，允许参与同步 */
+      function touch() { if (state.demo) { state.demo = false; } }
 
       function counts() {
         var c = {};
@@ -210,6 +222,7 @@
         var idx = -1;
         state.notes.forEach(function (n, i) { if (n.id === note.id) idx = i; });
         if (idx >= 0) state.notes[idx] = note; else state.notes.unshift(note);
+        touch();
         persist();
         goList();
         flash(state.isNew ? '笔记已创建' : '笔记已保存');
@@ -220,6 +233,7 @@
         if (!note) return;
         if (!global.confirm('确定删除《' + (note.title || '无标题') + '》？此操作不可撤销。')) return;
         state.notes = state.notes.filter(function (n) { return n.id !== id; });
+        touch();
         persist();
         if (state.currentId === id) goList(); else render();
         flash('笔记已删除');
@@ -272,6 +286,7 @@
             if (c && state.categories.indexOf(c) < 0) state.categories.push(c);
           });
         }
+        touch();
         persist();
         goList();
         flash('导入完成：新增 ' + added + ' 篇，更新 ' + merged + ' 篇');
@@ -364,6 +379,7 @@
           var seeded = seed();
           state.notes = seeded.notes;
           state.categories = seeded.categories;
+          state.demo = true; // 又回到纯示例态：不把示例同步到云端
           state.category = ALL;
           state.query = '';
           persist();
@@ -409,6 +425,8 @@
       // ---------- 同步钩子 ----------
       syncBridge.ready = function () { return true; };
       syncBridge.getState = function () {
+        // 纯内置示例不上传：每个设备应各自展示自己的示例，而不是把它同步到云端
+        if (state.demo) return null;
         return { notes: state.notes, categories: state.categories };
       };
       syncBridge.applyState = function (data) {
@@ -417,6 +435,7 @@
           ? data.notes.map(normalizeNote).filter(Boolean)
           : null;
         if (!incoming) throw new Error('笔记数据缺少 notes 列表');
+        state.demo = false; // 云端数据优先于示例
         state.notes = incoming;
         var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
         state.notes.forEach(function (n) {

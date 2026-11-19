@@ -35,11 +35,13 @@
     return incoming;
   }
 
-  /** 冷读取：未挂载时从 localStorage 取用户数据；无数据返回 null（不参与同步） */
+  /** 冷读取：未挂载时从 localStorage 取用户数据；无数据或纯示例返回 null（不参与同步） */
   syncBridge.cold = function () {
     var ns = Portal.store.namespace('repo-showcase');
     var groups = ns.get('groups', null);
     if (!Array.isArray(groups)) return null;
+    // 内置示例是每个设备各自生成的演示数据，不是用户数据，绝不参与同步
+    if (ns.get('demo', false) === true) return null;
     return { groups: sanitizeGroups({ groups: groups }), snapshots: ns.get('snapshots', {}) || {} };
   };
   /** 冷写入：未挂载时把云端数据落盘，下次进入模块即生效 */
@@ -48,6 +50,7 @@
     var ns = Portal.store.namespace('repo-showcase');
     ns.set('groups', sanitizeGroups(data));
     ns.set('snapshots', (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {});
+    ns.set('demo', false); // 云端数据已覆盖示例
   };
 
   /** 简单并发池：避免一次性打出 2N 个请求触发 GitHub 限流 */
@@ -126,11 +129,16 @@
       // 迁移：旧版本用 projects 数组，新版本用 groups:[{name,repos}]
       var legacy = store.get('projects', null);
       var rawGroups = store.get('groups', null);
+      // demo=true 表示当前展示的是内置示例（用户尚未增删改），这类数据不参与同步。
+      // 首次访问（无任何本地数据）时用示例；以后以持久化的 demo 标记为准。
+      var isDemo = store.get('demo', null);
+      if (isDemo === null) isDemo = (rawGroups === null && legacy === null);
       var state = {
         groups: normalizeGroups(rawGroups, legacy),
         snapshots: store.get('snapshots', {}) || {},
         items: {},
         ui: {},                  // 每张卡的版本 / 平台选择，纯本地视图状态
+        demo: isDemo === true,
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
         busyAll: false
@@ -224,6 +232,11 @@
 
       function saveGroups() {
         store.set('groups', state.groups);
+        store.set('demo', state.demo);
+      }
+      /** 用户真正增删改后调用：此后数据属于用户，允许参与同步 */
+      function touch() {
+        if (state.demo) { state.demo = false; }
       }
 
       function renderGroupOptions(keep) {
@@ -346,6 +359,7 @@
         var group = state.groups.filter(function (g) { return g.name === groupName; })[0];
         if (!group) { group = { name: groupName, repos: [] }; state.groups.push(group); }
         group.repos.unshift(fullName);
+        touch();
         saveGroups();
         input.value = '';
         if (groupSelect.value === '__new__') {
@@ -364,6 +378,7 @@
         });
         delete state.snapshots[fullName];
         delete state.items[fullName];
+        touch();
         saveGroups();
         store.set('snapshots', state.snapshots);
         render();
@@ -378,6 +393,7 @@
         if (!fallback) { fallback = { name: DEFAULT_GROUP, repos: [] }; state.groups.unshift(fallback); }
         group.repos.forEach(function (r) { if (fallback.repos.indexOf(r) < 0) fallback.repos.push(r); });
         state.groups = state.groups.filter(function (g) { return g.name !== name; });
+        touch();
         saveGroups();
         render();
         flash('目录「' + name + '」已删除，项目已移入默认目录');
@@ -484,10 +500,13 @@
       // 只暴露用户数据（分类 + 项目清单 + 快照），不暴露 token 等本地偏好。
       syncBridge.ready = function () { return true; };
       syncBridge.getState = function () {
+        // 纯内置示例不上传：每个设备应各自展示自己的示例，而不是把它同步到云端
+        if (state.demo) return null;
         return { groups: state.groups, snapshots: state.snapshots };
       };
       syncBridge.applyState = function (data) {
         if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
+        state.demo = false; // 云端数据优先于示例
         state.groups = sanitizeGroups(data);
         state.snapshots = (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {};
         state.items = {};
