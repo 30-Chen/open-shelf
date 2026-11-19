@@ -199,13 +199,18 @@
     if (!cfg.gistId) return Promise.resolve(null);
     return request('GET', '/gists/' + encodeURIComponent(cfg.gistId)).then(function (g) {
       // Gist API 对单个文件只返回最多 1MB；被截断的 JSON 不能当作「云端无数据」，
-      // 否则会把本地内容误判为更新并覆盖云端。这里直接报错，保护已有数据。
+      // 否则会把本地内容误判为更新并静默覆盖云端。标记为 truncated，交给上层
+      // 走「用本地重建云端」的确认流程——既不静默覆盖，也不让同步彻底死锁。
       var file = g && g.files && g.files[FILE];
-      if (file && file.truncated) {
-        throw new Error('云端数据超过 Gist 单文件 1MB 上限已被截断，请清理大体积媒体后再同步');
-      }
+      if (file && file.truncated) return { gist: g, payload: null, truncated: true };
       return { gist: g, payload: parseGist(g) };
     });
+  }
+
+  /** UTF-8 字节数：GitHub 的 1MB 上限按字节算，JS 的 .length 会严重低估中文体积 */
+  function utf8Len(str) {
+    try { return new global.TextEncoder().encode(str).length; }
+    catch (e) { return unescape(encodeURIComponent(str)).length; }
   }
 
   /** 把模块数据写进 Gist（不存在则创建私有 Gist） */
@@ -214,13 +219,31 @@
     var content = JSON.stringify({
       app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
     }, null, 2);
-    // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限）
-    if (content.length > 950 * 1024) {
+    // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限，按 UTF-8 字节计）。
+    // 必须按真实字节数判断：中文 1 字符 UTF-16 length=1 但 UTF-8 占 3 字节，
+    // 用 .length 会把约 317KB 中文误判为安全，实际已达 950KB 而被云端截断。
+    var bytes = utf8Len(content);
+    if (bytes > 950 * 1024) {
       return Promise.reject(new Error(
-        '本地数据 ' + Math.round(content.length / 1024) + 'KB 超过云同步单文件上限（约 950KB），' +
-        '请删除部分图片/视频或改用网络地址'
+        '本地数据 ' + Math.round(bytes / 1024) + 'KB 超过云同步单文件上限（约 950KB），' +
+        '请删除部分图片或改用网络图片地址'
       ));
     }
+
+    function finish(g, rebuilt) {
+      if (myEpoch !== epoch) return { skipped: true, reason: 'disconnected' };
+      cfg.gistId = g.id;
+      cfg.syncedHash = mergedHash;
+      cfg.localHash = hashModules(localModules);
+      cfg.syncedAt = Date.now();
+      clearDetached(); // 成功上传后，断开快照已过期，避免下次恢复误报「本地新增」
+      saveCfg();
+      return {
+        ok: true, id: g.id, htmlUrl: g.html_url,
+        count: Object.keys(merged).length, rebuilt: !!rebuilt
+      };
+    }
+
     var method = cfg.gistId ? 'PATCH' : 'POST';
     var path = cfg.gistId ? '/gists/' + encodeURIComponent(cfg.gistId) : '/gists';
     var body = cfg.gistId
@@ -228,13 +251,19 @@
       : { description: DESC, public: false, files: {} };
     body.files[FILE] = { content: content };
     return request(method, path, body).then(function (g) {
-      if (myEpoch !== epoch) return { skipped: true, reason: 'disconnected' };
-      cfg.gistId = g.id;
-      cfg.syncedHash = mergedHash;
-      cfg.localHash = hashModules(localModules);
-      cfg.syncedAt = Date.now();
-      saveCfg();
-      return { ok: true, id: g.id, htmlUrl: g.html_url, count: Object.keys(merged).length };
+      return finish(g, method === 'POST');
+    }).catch(function (e) {
+      // 自救：PATCH 一个已被删除或无权访问的 Gist 会返回 404。清空旧 ID 改用
+      // POST 新建，自动重建关联——否则「Gist 丢失后所有同步路径全部失败」死锁。
+      if (method === 'PATCH' && e && e.status === 404 && myEpoch === epoch) {
+        cfg.gistId = '';
+        var fresh = { description: DESC, public: false, files: {} };
+        fresh.files[FILE] = { content: content };
+        return request('POST', '/gists', fresh).then(function (g) {
+          return finish(g, true);
+        });
+      }
+      throw e;
     });
   }
 
@@ -268,6 +297,17 @@
       throw e;
     }).then(function (remote) {
       if (myEpoch !== epoch) return { skipped: true, reason: 'disconnected' };
+
+      // 云端文件被截断（历史超限数据）：内容不可信，绝不静默覆盖。
+      // 返回确认请求，让用户在面板选择「用本地重建云端」或「稍后处理」。
+      if (remote && remote.truncated) {
+        return {
+          needConfirm: true, kind: 'cloud-truncated',
+          rebuildable: !!Object.keys(localModules).length,
+          gistUrl: remote.gist && remote.gist.html_url
+        };
+      }
+
       var localDirty = localHash !== cfg.localHash;
       var remoteHash = remote && remote.payload ? hashModules(remote.payload.modules) : '';
       var remoteChanged = !!cfg.gistId && remoteHash !== cfg.syncedHash;
@@ -784,6 +824,28 @@
       return Promise.resolve({ ok: true, note: 'postponed' });
     },
 
+    /**
+     * 云端数据被截断/损坏后的自救：明确用本地数据覆盖重建云端 Gist。
+     * 仅由用户在确认卡里主动触发，绝不自动调用。绕过 readRemote 的截断判定，
+     * 直接把本地模块写成一个全新的 payload；体积仍受 writeGist 保护。
+     */
+    rebuildCloud: function () {
+      var localModules = collectLocal();
+      if (!Object.keys(localModules).length) {
+        return Promise.resolve({ error: '本地没有数据，无法重建云端。请先在模块里添加内容。' });
+      }
+      // 先清掉旧 Gist ID：截断文件无法增量修复，直接新建一份干净的私有 Gist，
+      // 旧的可疑 Gist 保留在用户账号里（不会删除用户任何数据），由用户自行处理。
+      epoch++; // 作废在途请求，避免旧结果把 gistId 写回
+      cfg.gistId = '';
+      cfg.syncedHash = '';
+      cfg.localHash = '';
+      cfg.detachedHash = '';
+      cfg.detachedHashes = null;
+      saveCfg();
+      return writeGist(localModules, localModules, hashModules(localModules));
+    },
+
     /** 断开：清掉本机 Token 与关联，后台同步随之停止；本地数据不动 */
     disconnect: function () {
       // 只清 gistId 不够：token 还在时 localTimer / visibilitychange 会触发 autoRun，
@@ -880,7 +942,7 @@
 
       // 恢复配置时发现本地新增内容的确认卡：紧贴标题行，出现即可见
       '<div class="sy-restore-choice" id="sy-restore-choice" hidden>' +
-        '<div class="sy-restore-choice-head mono">本地有新增内容 · 请选择</div>' +
+        '<div class="sy-restore-choice-head mono" id="sy-restore-head">本地有新增内容 · 请选择</div>' +
         '<p class="sy-restore-choice-desc" id="sy-restore-desc"></p>' +
         '<div class="sy-restore-choice-actions">' +
           '<button class="btn btn--primary sy-btn" id="sy-restore-upload" type="button">上传本地</button>' +
@@ -1004,6 +1066,8 @@
     var moreBtn = panel.querySelector('#sy-more-toggle');
     var moreBody = panel.querySelector('#sy-more-body');
     var choiceBox = panel.querySelector('#sy-restore-choice');
+    var choiceKind = 'local-after-disconnect'; // 当前确认卡类型，决定「上传」按钮的语义
+    var choiceHead = panel.querySelector('#sy-restore-head');
     var choiceDesc = panel.querySelector('#sy-restore-desc');
     var choiceUpload = panel.querySelector('#sy-restore-upload');
     var choiceDownload = panel.querySelector('#sy-restore-download');
@@ -1064,24 +1128,45 @@
 
     /** 恢复配置后检测到本地新增内容：给出明确选择，绝不静默覆盖任一侧 */
     function showRestoreChoice(r) {
-      var ids = (r && r.changed) || [];
-      var defs = syncDefs();
-      var names = ids.map(function (id) {
-        var d = defs.filter(function (x) { return x.id === id; })[0];
-        return (d && d.title) || id;
-      });
-      choiceDesc.textContent = '检测到' + (names.length ? '「' + names.join('、') + '」' : '本地数据') +
+      var kind = r && r.kind;
+      choiceKind = kind || 'local-after-disconnect';
+      if (kind === 'cloud-truncated') {
+        choiceHead.textContent = '云端数据已损坏 · 需要处理';
+        choiceDesc.textContent = '云端同步文件超过 Gist 单文件 1MB 上限，内容已被截断、无法安全读取。' +
+          (r.rebuildable
+            ? '为保护数据没有自动覆盖。可用本地数据重建一份干净的云端备份（旧文件会保留在你的 Gist 列表里，不会删除）。'
+            : '当前本地也没有数据，请先在模块里添加内容，或到 GitHub 手动删除超限的 Gist 文件后重试。');
+        choiceUpload.textContent = '用本地重建云端';
+        choiceUpload.hidden = !r.rebuildable;
+        choiceDownload.hidden = true;
+        choiceLater.textContent = '稍后处理';
+        choiceBox.hidden = false;
+        msg('云端数据超限被截断，已暂停同步以避免覆盖', 'warn');
+        return;
+      }
+      choiceHead.textContent = '本地有新增内容 · 请选择';
+      choiceDesc.textContent = '检测到' +
+        ((r && r.changed || []).length ? '「' + r.changed.map(function (id) {
+          var d = syncDefs().filter(function (x) { return x.id === id; })[0];
+          return (d && d.title) || id;
+        }).join('、') + '」' : '本地数据') +
         '在断开关联后有改动。上传会用本地内容替换云端对应模块；下载会用云端内容替换本地改动。';
+      choiceUpload.textContent = '上传本地';
+      choiceUpload.hidden = false;
+      choiceDownload.hidden = false;
+      choiceLater.textContent = '稍后处理';
       choiceBox.hidden = false;
       msg('请先选择保留哪一侧的数据', 'warn');
     }
     function hideRestoreChoice() { choiceBox.hidden = true; }
     function resolveChoice(choice) {
       [choiceUpload, choiceDownload, choiceLater].forEach(function (b) { b.disabled = true; });
-      sync.resolveRestore(choice).then(function (r) {
+      var action = choice === 'rebuild' ? sync.rebuildCloud() : sync.resolveRestore(choice);
+      action.then(function (r) {
         hideRestoreChoice();
         refresh();
         if (r && r.error) msg(r.error, 'error');
+        else if (choice === 'rebuild') msg('已用本地数据重建云端备份', 'ok');
         else if (choice === 'upload') msg('本地改动已上传到云端', 'ok');
         else if (choice === 'download') msg('已按云端数据恢复', 'ok');
         else msg('已保留本地数据，暂未同步', 'warn');
@@ -1140,7 +1225,7 @@
       msg('正在同步…');
       sync.reconcile('manual').then(function (r) {
         if (!r) return;
-        if (r.needConfirm && r.kind === 'local-after-disconnect') {
+        if (r.needConfirm && (r.kind === 'local-after-disconnect' || r.kind === 'cloud-truncated')) {
           showRestoreChoice(r);
           return;
         }
@@ -1168,7 +1253,8 @@
       Portal.bus.on('sync:auto', function (info) {
         refresh();
         if (!info || !info.result || panel.hidden) return;
-        if (info.result.needConfirm && info.result.kind === 'local-after-disconnect') {
+        if (info.result.needConfirm &&
+            (info.result.kind === 'local-after-disconnect' || info.result.kind === 'cloud-truncated')) {
           showRestoreChoice(info.result);
           return;
         }
@@ -1313,7 +1399,9 @@
       }).then(function () { restoreBtn.disabled = false; });
     });
 
-    choiceUpload.addEventListener('click', function () { resolveChoice('upload'); });
+    choiceUpload.addEventListener('click', function () {
+      resolveChoice(choiceKind === 'cloud-truncated' ? 'rebuild' : 'upload');
+    });
     choiceDownload.addEventListener('click', function () { resolveChoice('download'); });
     choiceLater.addEventListener('click', function () { resolveChoice('later'); });
 
