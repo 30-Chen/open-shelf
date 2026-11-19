@@ -197,20 +197,25 @@
         '</div>'
       : '';
 
-    var notes = r.body.trim()
-      ? '<details class="rs-notes"><summary class="mono">更新日志 / RELEASE NOTES</summary><pre>' +
+    // 原顶部「LATEST RELEASE / 版本 / 日期」下沉，与底部更新日志合并为同一行：
+    // 下载动作优先呈现，版本与更新日志等元信息统一收在 Release 区底部。
+    var releaseMeta =
+      '<span class="rs-kicker mono">LATEST RELEASE</span>' +
+      '<span class="rs-tag mono">' + esc(r.tag) + '</span>' +
+      (r.prerelease ? '<span class="rs-tag rs-tag--pre mono">预览版</span>' : '') +
+      '<span class="rs-date mono">' + esc(date(r.publishedAt)) + '</span>';
+
+    var foot = r.body.trim()
+      ? '<details class="rs-notes rs-release-foot"><summary class="rs-release-foot-sum">' +
+          '<span class="rs-release-meta mono">' + releaseMeta + '</span>' +
+          '<span class="rs-notes-toggle mono">更新日志 <i class="i-ico i-chev" aria-hidden="true"></i></span>' +
+        '</summary><pre>' +
           esc(r.body.trim().slice(0, 1600)) + (r.body.length > 1600 ? '\n…' : '') +
         '</pre></details>'
-      : '';
+      : '<div class="rs-release-foot"><span class="rs-release-meta mono">' + releaseMeta + '</span></div>';
 
     return '' +
       '<div class="rs-release">' +
-        '<div class="rs-release-head">' +
-          '<span class="rs-kicker mono">LATEST RELEASE</span>' +
-          '<span class="rs-tag mono">' + esc(r.tag) + '</span>' +
-          (r.prerelease ? '<span class="rs-tag rs-tag--pre mono">预览版</span>' : '') +
-          '<span class="rs-date mono">' + esc(date(r.publishedAt)) + '</span>' +
-        '</div>' +
         platBar +
         assets +
         '<div class="rs-source mono">' +
@@ -218,7 +223,7 @@
           '<a href="' + safeUrl(r.sourceTar) + '" target="_blank" rel="noopener noreferrer">↓ 源码 .tar.gz</a>' +
           '<a href="' + safeUrl(r.url) + '" target="_blank" rel="noopener noreferrer">查看 Release <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
         '</div>' +
-        notes +
+        foot +
       '</div>';
   }
 
