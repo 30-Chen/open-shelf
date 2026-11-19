@@ -35,7 +35,10 @@
     auto: store.get('auto', true) !== false,
     shareGistId: store.get('shareGistId', '') || '',  // 公开分享用的独立 Gist（与私有同步 Gist 分开）
     shareOwner: store.get('shareOwner', '') || '',    // 公开 Gist 所属用户名，用于拼 raw 链接
-    shareAt: Number(store.get('shareAt', 0)) || 0
+    shareAt: Number(store.get('shareAt', 0)) || 0,
+    vaultCode: store.get('vaultCode', '') || '',      // 恢复短码（6 位）
+    vaultGistId: store.get('vaultGistId', '') || '',  // 存密文的公开保险箱 Gist ID
+    vaultOwner: store.get('vaultOwner', '') || ''     // 保险箱所属用户名，用于拼兜底链接
   };
 
   function saveCfg() {
@@ -49,6 +52,9 @@
     store.set('shareGistId', cfg.shareGistId);
     store.set('shareOwner', cfg.shareOwner);
     store.set('shareAt', cfg.shareAt);
+    store.set('vaultCode', cfg.vaultCode);
+    store.set('vaultGistId', cfg.vaultGistId);
+    store.set('vaultOwner', cfg.vaultOwner);
   }
 
   function esc(v) {
@@ -487,6 +493,188 @@
     });
   }
 
+  /* ---------- 恢复短码 / 保险箱（6 位短码 + 口令，密文存公开 Gist） ----------
+     思路：把 token + gistId 等配置用口令加密成密文，存进用户自己的【公开】Gist
+     「保险箱」。对外只暴露 6 位短码（写在 Gist description 里），换设备时：
+       短码 → 搜索定位保险箱 → 拉密文 → 口令解密 → 回填配置。
+     安全模型：短码只是「地址」（泄露无妨），口令才是「钥匙」；保险箱内只有密文，
+     GitHub / 他人均看不到明文 token。另支持直接贴保险箱链接作为搜索兜底。
+     兼容：仍可输入旧版 OS1. 恢复码，自动转交旧逻辑处理。 */
+  var VAULT_FILE = 'open-shelf-vault.txt';
+  var VAULT_TAG = 'OSVAULT';
+  var VAULT_PREFIX = 'OSV1';
+  var CODE_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 去掉 0/O/1/I/l 等易混字符
+
+  function randomCode(len) {
+    var c = getCrypto();
+    if (!c || !c.getRandomValues) return '';
+    var bytes = new Uint8Array(len);
+    c.getRandomValues(bytes);
+    var out = '';
+    for (var i = 0; i < bytes.length; i++) out += CODE_CHARS[bytes[i] % CODE_CHARS.length];
+    return out;
+  }
+
+  function parseGistId(input) {
+    var s = String(input || '').trim();
+    // gist.github.com/<owner>/<id>、api.github.com/gists/<id> 或纯 32 位 id
+    // 统一取文本里的第一段 32 位十六进制串；短码只有 6 位，不会误匹配。
+    var m = s.match(/([0-9a-fA-F]{32})/);
+    return m ? m[1] : '';
+  }
+  function cleanCode(input) {
+    return String(input || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+  }
+
+  /** 生成 / 更新短码保险箱。返回短码与保险箱链接。 */
+  function makeVault(passphrase) {
+    passphrase = String(passphrase || '');
+    if (passphrase.length < 6) return Promise.resolve({ error: '口令至少 6 位，越长越安全' });
+    var s = subtle(), c = getCrypto();
+    if (!s || !c || !c.getRandomValues || !hasCodec()) {
+      return Promise.resolve({ error: '当前环境不支持加密，请在 HTTPS 或 localhost 下使用' });
+    }
+    if (!cfg.token) return Promise.resolve({ error: '请先填入 GitHub Token，再生成恢复短码' });
+    var payload = {
+      v: 2,
+      token: cfg.token,
+      gistId: cfg.gistId || '',
+      shareGistId: cfg.shareGistId || '',
+      shareOwner: cfg.shareOwner || ''
+    };
+    var salt = new Uint8Array(16), iv = new Uint8Array(12);
+    c.getRandomValues(salt);
+    c.getRandomValues(iv);
+    var code = cfg.vaultCode || randomCode(6);
+    if (!code) return Promise.resolve({ error: '无法生成短码：随机数不可用' });
+    var desc = VAULT_TAG + '-' + code + ' · Open Shelf 恢复保险箱（自动生成，请勿删除）';
+    return deriveKey(passphrase, salt).then(function (key) {
+      return s.encrypt({ name: 'AES-GCM', iv: iv }, key, new global.TextEncoder().encode(JSON.stringify(payload)));
+    }).then(function (buf) {
+      var content = VAULT_PREFIX + '.' + b64urlEncode(salt) + '.' + b64urlEncode(iv) + '.' +
+        b64urlEncode(new Uint8Array(buf));
+      var method = cfg.vaultGistId ? 'PATCH' : 'POST';
+      var path = cfg.vaultGistId ? '/gists/' + encodeURIComponent(cfg.vaultGistId) : '/gists';
+      var body = cfg.vaultGistId
+        ? { description: desc, files: {} }
+        : { description: desc, public: true, files: {} };
+      body.files[VAULT_FILE] = { content: content };
+      return request(method, path, body).then(function (g) {
+        cfg.vaultCode = code;
+        cfg.vaultGistId = g.id;
+        cfg.vaultOwner = (g.owner && g.owner.login) || cfg.vaultOwner || '';
+        saveCfg();
+        return {
+          ok: true, code: code, gistUrl: g.html_url, owner: cfg.vaultOwner,
+          renewed: method === 'PATCH'
+        };
+      });
+    }).catch(function (e) {
+      return { error: '生成失败：' + (e && e.message || String(e)) };
+    });
+  }
+
+  function findVaultByCode(code, owner) {
+    // GitHub 没有「按描述搜索 Gist」的 API（/search/gists 不存在），
+    // 但 GET /users/{owner}/gists 可免 token 列出某人的公开 Gist。
+    // 因此短码定位需要「用户名 + 短码」两个短标识，都记在密码管理器即可。
+    owner = String(owner || '').trim().replace(/^@/, '');
+    if (!owner) return Promise.resolve(null);
+    var markers = [VAULT_TAG + '-' + code];
+    return request('GET', '/users/' + encodeURIComponent(owner) + '/gists?per_page=100')
+      .then(function (items) {
+        var list = Array.isArray(items) ? items : [];
+        var hits = list.filter(function (g) {
+          var d = String(g.description || '');
+          return markers.some(function (m) { return d.indexOf(m) >= 0; }) &&
+            g.files && g.files[VAULT_FILE];
+        });
+        return hits.length ? hits[0] : null;
+      }).catch(function () { return null; });
+  }
+
+  function parseVaultContent(gist) {
+    var file = gist && gist.files && gist.files[VAULT_FILE];
+    var raw = file && file.content;
+    if (!raw) return null;
+    var parts = String(raw).trim().split('.');
+    if (parts.length !== 4 || parts[0] !== VAULT_PREFIX) return null;
+    try {
+      return { salt: b64urlDecode(parts[1]), iv: b64urlDecode(parts[2]), data: b64urlDecode(parts[3]) };
+    } catch (e) { return null; }
+  }
+
+  /** 恢复：input 可为 6 位短码、保险箱链接/Gist ID，或旧版 OS1. 恢复码。
+      owner 为生成保险箱的 GitHub 用户名（短码定位需要用户名 + 短码两个短标识）。 */
+  function restoreVault(passphrase, input, owner) {
+    passphrase = String(passphrase || '');
+    input = String(input || '').trim();
+    if (passphrase.length < 6) return Promise.resolve({ error: '口令至少 6 位' });
+    if (!input) return Promise.resolve({ error: '请输入恢复短码或保险箱链接' });
+    if (input.indexOf('OS1.') === 0) return restoreRecovery(passphrase, input); // 兼容旧恢复码
+
+    var s = subtle();
+    if (!s || !hasCodec()) {
+      return Promise.resolve({ error: '当前环境不支持解密，请在 HTTPS 或 localhost 下使用' });
+    }
+
+    var gistId = parseGistId(input);
+    var code = cleanCode(input);
+    var resolvedOwner = '';
+    var locate;
+    if (gistId) {
+      // 保险箱链接自带 Gist ID，无需用户名即可直接读取
+      locate = Promise.resolve({ id: gistId });
+    } else if (code.length === 6) {
+      var own = String(owner || cfg.vaultOwner || '').trim().replace(/^@/, '');
+      if (!own) return Promise.resolve({ error: '用短码恢复还需填写生成保险箱时的 GitHub 用户名' });
+      locate = findVaultByCode(code, own).then(function (g) {
+        if (!g) return null;
+        resolvedOwner = (g.owner && g.owner.login) || own;
+        return { id: g.id, owner: resolvedOwner };
+      });
+    } else {
+      return Promise.resolve({ error: '请输入 6 位恢复短码，或粘贴保险箱链接' });
+    }
+
+    return locate.then(function (hit) {
+      if (!hit) return Promise.reject(new Error('没找到保险箱：请确认「用户名 + 短码」是否正确，且保险箱 Gist 仍为公开状态；也可直接粘贴保险箱链接恢复'));
+      resolvedOwner = hit.owner || resolvedOwner;
+      return request('GET', '/gists/' + encodeURIComponent(hit.id)).then(function (g) {
+        return g;
+      });
+    }).then(function (g) {
+      var box = parseVaultContent(g);
+      if (!box) throw new Error('保险箱内容为空或格式不正确');
+      return deriveKey(passphrase, box.salt).then(function (key) {
+        return s.decrypt({ name: 'AES-GCM', iv: box.iv }, key, box.data);
+      });
+    }).then(function (buf) {
+      var payload;
+      try { payload = JSON.parse(new global.TextDecoder().decode(buf)); }
+      catch (e) { throw new Error('恢复内容无法解析'); }
+      if (!payload || !payload.token) throw new Error('保险箱内没有有效的 Token');
+      cfg.token = String(payload.token);
+      cfg.gistId = String(payload.gistId || '');
+      cfg.shareGistId = String(payload.shareGistId || '');
+      cfg.shareOwner = String(payload.shareOwner || '');
+      cfg.vaultCode = cfg.vaultCode || (code.length === 6 ? code : '');
+      if (resolvedOwner) cfg.vaultOwner = resolvedOwner;
+      cfg.syncedHash = '';
+      cfg.localHash = '';
+      cfg.localChangedAt = 0;
+      cfg.auto = true;
+      saveCfg();
+      return { ok: true, gistId: cfg.gistId, shareGistId: cfg.shareGistId };
+    }).catch(function (e) {
+      var m = e && e.message || String(e);
+      if (/OperationError|InvalidAccess|The operation failed/i.test(m)) {
+        return { error: '口令错误，或保险箱已被篡改' };
+      }
+      return { error: '恢复失败：' + m };
+    });
+  }
+
   /* ---------- 对外操作 ---------- */
   var sync = {
     config: cfg,
@@ -571,7 +759,9 @@
     unpublishShare: unpublishShare,
     shareUrl: buildShareUrl,
     makeRecovery: makeRecovery,
-    restoreRecovery: restoreRecovery
+    restoreRecovery: restoreRecovery,
+    makeVault: makeVault,
+    restoreVault: restoreVault
   };
 
   function collectLocalModulesCount() { return Object.keys(collectLocal()).length; }
@@ -654,25 +844,36 @@
 
       '<div class="sy-pass">' +
         '<div class="sy-pass-head">' +
-          '<span class="sy-kicker mono">PASSPHRASE / 换设备免记 Token</span>' +
+          '<span class="sy-kicker mono">VAULT CODE / 换设备免记 Token</span>' +
         '</div>' +
-        '<p class="sy-pass-desc">设一个好记的口令，把上面的 Token 加密成一串<strong>恢复码</strong>。换设备时只需输入同一个口令 + 粘贴恢复码，token / Gist ID 自动填好，无需再找那串长 Token。口令不保存、不上传。</p>' +
+        '<p class="sy-pass-desc">设一个口令，把 Token 加密存进你的<strong>云端保险箱</strong>，只记「用户名 + 6 位短码 + 口令」。换设备时填这三项即可自动配好，无需再找长 Token。用户名与短码是地址（泄露无妨），口令是钥匙（忘了无法找回）。</p>' +
         '<label class="sy-label">配置口令' +
           '<span class="sy-label-hint">至少 6 位，自己记牢；忘了无法找回</span>' +
           '<input class="sy-input" id="sy-pass" type="password" autocomplete="new-password" ' +
             'spellcheck="false" placeholder="自己设一个好记的口令">' +
         '</label>' +
-        '<label class="sy-label sy-pass-code-label">恢复码' +
-          '<span class="sy-label-hint">生成后复制保存；换设备时粘贴到这里</span>' +
-          '<textarea class="sy-input sy-textarea" id="sy-code" rows="3" spellcheck="false" ' +
-            'placeholder="OS1.…"></textarea>' +
+        '<div class="sy-vault-seal" id="sy-vault-seal" hidden>' +
+          '<span class="sy-vault-seal-label mono">你的恢复凭证</span>' +
+          '<span class="sy-vault-seal-code mono" id="sy-vault-seal-code">——</span>' +
+          '<span class="sy-vault-seal-tip" id="sy-vault-seal-tip">记牢「用户名 + 短码 + 口令」</span>' +
+        '</div>' +
+        '<label class="sy-label">GitHub 用户名' +
+          '<span class="sy-label-hint">保险箱所属账号；生成后自动填好</span>' +
+          '<input class="sy-input" id="sy-owner" type="text" autocomplete="off" ' +
+            'spellcheck="false" placeholder="例如 octocat" value="' + esc(cfg.vaultOwner) + '">' +
+        '</label>' +
+        '<label class="sy-label sy-pass-code-label">恢复短码 / 保险箱链接' +
+          '<span class="sy-label-hint">换设备时填 6 位短码，或粘贴保险箱链接</span>' +
+          '<input class="sy-input sy-code-input" id="sy-code" type="text" spellcheck="false" ' +
+            'autocomplete="off" placeholder="例如 K7M2QX">' +
         '</label>' +
         '<div class="sy-actions sy-pass-actions">' +
-          '<button class="btn sy-btn" id="sy-pass-make" type="button">生成恢复码</button>' +
-          '<button class="btn btn--primary sy-btn" id="sy-pass-restore" type="button">用恢复码恢复</button>' +
+          '<button class="btn sy-btn" id="sy-pass-make" type="button">生成短码</button>' +
+          '<button class="btn btn--primary sy-btn" id="sy-pass-restore" type="button">用短码恢复</button>' +
         '</div>' +
         '<div class="sy-actions sy-actions--sub">' +
-          '<button class="sy-link" id="sy-code-copy" type="button">复制恢复码</button>' +
+          '<button class="sy-link" id="sy-code-copy" type="button">复制短码</button>' +
+          '<button class="sy-link" id="sy-vault-link-copy" type="button">复制保险箱链接（备用）</button>' +
         '</div>' +
       '</div>' +
 
@@ -703,7 +904,7 @@
       '</div>' +
 
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">换设备不用重新申请 Token：设一个口令生成恢复码，妥善保存这段码；新设备粘贴恢复码 + 输入同一口令即可自动配好。恢复码用 AES-GCM 加密、口令经 PBKDF2 派生，口令本身不保存也不上传——忘了口令或泄露了恢复码都可能导致配置无法恢复或被他人使用，请像保管密码一样对待。私有同步 Gist 仅你自己可读写；公开分享 Gist 任何人可读、仅你可写。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
+      '<p class="sy-note">换设备不用重新申请 Token：设一个口令生成 <strong>6 位短码</strong>，只记「GitHub 用户名 + 短码 + 口令」。用户名与短码用于在云端定位你的保险箱（一个公开 Gist，但里面只有密文，看不到明文 Token），口令经 PBKDF2 派生密钥、用 AES-GCM 加密，口令本身不保存也不上传。用户名/短码泄露无妨（别人没口令解不开），但口令忘了就无法找回。若登录的 GitHub 账号无法列出保险箱，可改贴「保险箱链接」直接恢复，建议一并保存。私有同步 Gist 仅你自己可读写。自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
 
     wrap.appendChild(fab);
     wrap.appendChild(panel);
@@ -913,21 +1114,51 @@
       });
     });
 
-    // ---- 配置口令 / 恢复码 ----
+    // ---- 恢复短码 / 保险箱 ----
     var passEl = panel.querySelector('#sy-pass');
     var codeEl = panel.querySelector('#sy-code');
+    var ownerEl = panel.querySelector('#sy-owner');
     var makeBtn = panel.querySelector('#sy-pass-make');
     var restoreBtn = panel.querySelector('#sy-pass-restore');
+    var seal = panel.querySelector('#sy-vault-seal');
+    var sealCode = panel.querySelector('#sy-vault-seal-code');
+    var sealTip = panel.querySelector('#sy-vault-seal-tip');
+
+    function vaultLink() {
+      if (!cfg.vaultGistId) return '';
+      return 'https://gist.github.com/' +
+        (cfg.vaultOwner ? cfg.vaultOwner + '/' : '') + cfg.vaultGistId;
+    }
+    function showSeal(code, owner) {
+      var who = String(owner || cfg.vaultOwner || ownerEl.value || '').trim();
+      if (!code && !who) { seal.hidden = true; return; }
+      seal.hidden = false;
+      sealCode.textContent = (who ? who + ' / ' : '') +
+        (code ? code.replace(/(.{3})/g, '$1 ').trim() : '——');
+      sealTip.textContent = '记牢「' + (who || '用户名') + ' + ' +
+        (code || '短码') + ' + 口令」，换设备时填下方即可';
+    }
+    showSeal(cfg.vaultCode, cfg.vaultOwner);
+
+    ownerEl.addEventListener('change', function () {
+      cfg.vaultOwner = ownerEl.value.trim().replace(/^@/, '');
+      saveCfg();
+      showSeal(cfg.vaultCode, cfg.vaultOwner);
+    });
 
     makeBtn.addEventListener('click', function () {
       commitConfig(); // 确保 token/gist 已保存
-      if (!cfg.token) { msg('请先填入 GitHub Token，再生成恢复码', 'error'); tokenEl.focus(); return; }
+      if (!cfg.token) { msg('请先填入 GitHub Token，再生成恢复短码', 'error'); tokenEl.focus(); return; }
+      if (passEl.value.length < 6) { msg('请先设一个至少 6 位的配置口令', 'error'); passEl.focus(); return; }
       makeBtn.disabled = true;
-      msg('正在生成恢复码…');
-      sync.makeRecovery(passEl.value).then(function (r) {
+      msg('正在创建云端保险箱…');
+      sync.makeVault(passEl.value).then(function (r) {
         if (r && r.error) { msg(r.error, 'error'); return; }
         codeEl.value = r.code;
-        msg('恢复码已生成 · 复制并妥善保存', 'ok');
+        if (r.owner) ownerEl.value = r.owner;
+        showSeal(r.code, r.owner);
+        passEl.value = '';
+        msg('短码已生成 · ' + r.code + ' · 记牢「用户名 + 短码 + 口令」即可换设备', 'ok');
       }).catch(function (e) {
         msg(e && e.message || String(e), 'error');
       }).then(function () { makeBtn.disabled = false; });
@@ -935,16 +1166,19 @@
 
     restoreBtn.addEventListener('click', function () {
       var code = codeEl.value.trim();
-      if (!code) { msg('请先粘贴恢复码', 'error'); codeEl.focus(); return; }
-      if (!passEl.value) { msg('请输入生成恢复码时用的口令', 'error'); passEl.focus(); return; }
+      if (!code) { msg('请填写恢复短码或保险箱链接', 'error'); codeEl.focus(); return; }
+      if (!passEl.value) { msg('请输入生成短码时用的口令', 'error'); passEl.focus(); return; }
       restoreBtn.disabled = true;
-      msg('正在用口令恢复配置…');
-      sync.restoreRecovery(passEl.value, code).then(function (r) {
+      msg('正在打开保险箱恢复配置…');
+      sync.restoreVault(passEl.value, code, ownerEl.value).then(function (r) {
         if (r && r.error) { msg(r.error, 'error'); return; }
-        // 回填输入框，让状态与底层配置一致
+        // 回填输入框与短码封印，让状态与底层配置一致
         tokenEl.value = cfg.token;
         gistEl.value = cfg.gistId;
         passEl.value = '';
+        codeEl.value = cfg.vaultCode || '';
+        if (cfg.vaultOwner) ownerEl.value = cfg.vaultOwner;
+        showSeal(cfg.vaultCode, cfg.vaultOwner);
         refresh();
         var bits = ['配置已恢复'];
         if (r.gistId) bits.push('Gist 已关联');
@@ -964,16 +1198,21 @@
     });
 
     panel.querySelector('#sy-code-copy').addEventListener('click', function () {
-      var text = codeEl.value;
-      if (!text) { msg('还没有可复制的恢复码', 'warn'); return; }
-      function done() { msg('恢复码已复制 · 妥善保管', 'ok'); }
+      var text = (cfg.vaultCode || codeEl.value || '').replace(/\s/g, '');
+      if (!text) { msg('还没有可复制的短码', 'warn'); return; }
+      function done() { msg('短码已复制 · 配合口令使用', 'ok'); }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(function () {
-          codeEl.select(); document.execCommand && document.execCommand('copy'); done();
-        });
-      } else {
-        codeEl.select(); document.execCommand && document.execCommand('copy'); done();
-      }
+        navigator.clipboard.writeText(text).then(done).catch(function () { done(); });
+      } else { done(); }
+    });
+
+    panel.querySelector('#sy-vault-link-copy').addEventListener('click', function () {
+      var text = vaultLink();
+      if (!text) { msg('本地还没有保险箱链接；可先用短码恢复一次', 'warn'); return; }
+      function done() { msg('保险箱链接已复制 · 作备用保存', 'ok'); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { done(); });
+      } else { done(); }
     });
 
     refresh();
