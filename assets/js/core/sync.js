@@ -790,37 +790,53 @@
         '</details>' +
       '</section>' +
 
-      // 第 2 步：换设备
+      // 第 2 步：换设备（两个场景用 Tab 分开：生成凭证 / 恢复配置）
       '<section class="sy-step">' +
         '<div class="sy-step-head"><span class="sy-step-no mono">2</span><span>换设备</span></div>' +
-        '<p class="sy-step-desc">设一个口令，把 Token 加密存进云端保险箱，只记「用户名 + 6 位短码 + 口令」。换设备填这三项即可自动配好，无需再找长 Token。</p>' +
-        '<label class="sy-label">配置口令' +
-          '<span class="sy-label-hint">至少 6 位，自己记牢；忘了无法找回</span>' +
-          '<input class="sy-input" id="sy-pass" type="password" autocomplete="new-password" ' +
-            'spellcheck="false" placeholder="自己设一个好记的口令">' +
-        '</label>' +
-        '<div class="sy-vault-seal" id="sy-vault-seal" hidden>' +
-          '<span class="sy-vault-seal-label mono">你的恢复凭证</span>' +
-          '<span class="sy-vault-seal-code mono" id="sy-vault-seal-code">——</span>' +
-          '<span class="sy-vault-seal-tip" id="sy-vault-seal-tip">记牢「用户名 + 短码 + 口令」</span>' +
+        '<p class="sy-step-desc">设一次口令生成凭证；在其它设备填凭证即可恢复，无需再抄长 Token。</p>' +
+        '<div class="sy-vtabs" role="tablist">' +
+          '<button class="sy-vtab is-active" id="sy-vtab-make" type="button" role="tab" aria-selected="true">生成凭证</button>' +
+          '<button class="sy-vtab" id="sy-vtab-restore" type="button" role="tab" aria-selected="false">恢复配置</button>' +
         '</div>' +
-        '<label class="sy-label">GitHub 用户名' +
-          '<span class="sy-label-hint">保险箱所属账号；生成后自动填好</span>' +
-          '<input class="sy-input" id="sy-owner" type="text" autocomplete="off" ' +
-            'spellcheck="false" placeholder="例如 octocat" value="' + esc(cfg.vaultOwner) + '">' +
-        '</label>' +
-        '<label class="sy-label sy-pass-code-label">恢复短码 / 保险箱链接' +
-          '<span class="sy-label-hint">换设备时填 6 位短码，或粘贴保险箱链接</span>' +
-          '<input class="sy-input sy-code-input" id="sy-code" type="text" spellcheck="false" ' +
-            'autocomplete="off" placeholder="例如 K7M2QX">' +
-        '</label>' +
-        '<div class="sy-actions sy-pass-actions">' +
-          '<button class="btn sy-btn" id="sy-pass-make" type="button">生成短码</button>' +
-          '<button class="btn btn--primary sy-btn" id="sy-pass-restore" type="button">用短码恢复</button>' +
+        // 场景 A：生成凭证（只需设口令）
+        '<div class="sy-vpanel" id="sy-vpanel-make">' +
+          '<label class="sy-label">设置口令' +
+            '<span class="sy-label-hint">至少 6 位，自己记牢；忘了无法找回</span>' +
+            '<input class="sy-input" id="sy-pass" type="password" autocomplete="new-password" ' +
+              'spellcheck="false" placeholder="自己设一个好记的口令">' +
+          '</label>' +
+          '<div class="sy-actions sy-pass-actions">' +
+            '<button class="btn btn--primary sy-btn" id="sy-pass-make" type="button">生成凭证</button>' +
+          '</div>' +
+          '<div class="sy-vault-seal" id="sy-vault-seal" hidden>' +
+            '<span class="sy-vault-seal-label mono">你的凭证 · 用户名 / 短码 / 口令</span>' +
+            '<span class="sy-vault-seal-code mono" id="sy-vault-seal-code">——</span>' +
+            '<div class="sy-seal-links">' +
+              '<button class="sy-link" id="sy-code-copy" type="button">复制凭证</button>' +
+              '<button class="sy-link sy-link--sub" id="sy-vault-link-copy" type="button">复制备用链接</button>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
-        '<div class="sy-actions sy-actions--sub">' +
-          '<button class="sy-link" id="sy-code-copy" type="button">复制短码</button>' +
-          '<button class="sy-link" id="sy-vault-link-copy" type="button">复制保险箱链接（备用）</button>' +
+        // 场景 B：恢复配置（用户名 + 短码 + 口令）
+        '<div class="sy-vpanel" id="sy-vpanel-restore" hidden>' +
+          '<label class="sy-label">GitHub 用户名' +
+            '<span class="sy-label-hint">凭证所属账号；用备用链接时可留空</span>' +
+            '<input class="sy-input" id="sy-owner" type="text" autocomplete="off" ' +
+              'spellcheck="false" placeholder="例如 octocat" value="' + esc(cfg.vaultOwner) + '">' +
+          '</label>' +
+          '<label class="sy-label">恢复短码' +
+            '<span class="sy-label-hint">6 位短码，也可粘贴备用链接</span>' +
+            '<input class="sy-input sy-code-input" id="sy-code" type="text" spellcheck="false" ' +
+              'autocomplete="off" placeholder="例如 K7M2QX">' +
+          '</label>' +
+          '<label class="sy-label">口令' +
+            '<span class="sy-label-hint">生成凭证时设的同一个</span>' +
+            '<input class="sy-input" id="sy-restore-pass" type="password" autocomplete="off" ' +
+              'spellcheck="false" placeholder="你的配置口令">' +
+          '</label>' +
+          '<div class="sy-actions sy-pass-actions">' +
+            '<button class="btn btn--primary sy-btn" id="sy-pass-restore" type="button">恢复配置</button>' +
+          '</div>' +
         '</div>' +
       '</section>' +
 
@@ -831,7 +847,7 @@
       '</section>' +
 
       '<p class="sy-msg mono" id="sy-msg" role="status"></p>' +
-      '<p class="sy-note">私有同步 Gist 仅你自己可读写；自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。用户名与短码只是「地址」，口令才是「钥匙」——泄露无妨，忘了无法找回。</p>';
+      '<p class="sy-note">私有同步 Gist 仅你自己可读写；自动同步每 15 秒检查云端一次，本地改动约 2 秒后自动上传。</p>';
 
     wrap.appendChild(fab);
     wrap.appendChild(panel);
@@ -980,15 +996,33 @@
       msg('已断开关联', 'warn');
     });
 
-    // ---- 恢复短码 / 保险箱 ----
-    var passEl = panel.querySelector('#sy-pass');
+    // ---- 换设备：生成凭证 / 恢复配置（两个 Tab）----
+    var passEl = panel.querySelector('#sy-pass');            // 生成口令
+    var restorePassEl = panel.querySelector('#sy-restore-pass'); // 恢复口令
     var codeEl = panel.querySelector('#sy-code');
     var ownerEl = panel.querySelector('#sy-owner');
     var makeBtn = panel.querySelector('#sy-pass-make');
     var restoreBtn = panel.querySelector('#sy-pass-restore');
     var seal = panel.querySelector('#sy-vault-seal');
     var sealCode = panel.querySelector('#sy-vault-seal-code');
-    var sealTip = panel.querySelector('#sy-vault-seal-tip');
+    var tabMake = panel.querySelector('#sy-vtab-make');
+    var tabRestore = panel.querySelector('#sy-vtab-restore');
+    var panelMake = panel.querySelector('#sy-vpanel-make');
+    var panelRestore = panel.querySelector('#sy-vpanel-restore');
+
+    // 切换场景；新设备（未配置）默认进「恢复配置」，本机已配好默认进「生成凭证」
+    function switchVTab(which) {
+      var make = which === 'make';
+      tabMake.classList.toggle('is-active', make);
+      tabRestore.classList.toggle('is-active', !make);
+      tabMake.setAttribute('aria-selected', make ? 'true' : 'false');
+      tabRestore.setAttribute('aria-selected', make ? 'false' : 'true');
+      panelMake.hidden = !make;
+      panelRestore.hidden = make;
+    }
+    tabMake.addEventListener('click', function () { switchVTab('make'); });
+    tabRestore.addEventListener('click', function () { switchVTab('restore'); });
+    switchVTab(cfg.token && cfg.gistId ? 'make' : 'restore');
 
     function vaultLink() {
       if (!cfg.vaultGistId) return '';
@@ -1001,8 +1035,6 @@
       seal.hidden = false;
       sealCode.textContent = (who ? who + ' / ' : '') +
         (code ? code.replace(/(.{3})/g, '$1 ').trim() : '——');
-      sealTip.textContent = '记牢「' + (who || '用户名') + ' + ' +
-        (code || '短码') + ' + 口令」，换设备时填下方即可';
     }
     showSeal(cfg.vaultCode, cfg.vaultOwner);
 
@@ -1014,17 +1046,16 @@
 
     makeBtn.addEventListener('click', function () {
       commitConfig(); // 确保 token/gist 已保存
-      if (!cfg.token) { msg('请先填入 GitHub Token，再生成恢复短码', 'error'); tokenEl.focus(); return; }
-      if (passEl.value.length < 6) { msg('请先设一个至少 6 位的配置口令', 'error'); passEl.focus(); return; }
+      if (!cfg.token) { switchVTab('make'); msg('请先在第 1 步填入 GitHub Token', 'error'); tokenEl.focus(); return; }
+      if (passEl.value.length < 6) { msg('请设置至少 6 位的口令', 'error'); passEl.focus(); return; }
       makeBtn.disabled = true;
-      msg('正在创建云端保险箱…');
+      msg('正在生成凭证…');
       sync.makeVault(passEl.value).then(function (r) {
         if (r && r.error) { msg(r.error, 'error'); return; }
-        codeEl.value = r.code;
         if (r.owner) ownerEl.value = r.owner;
         showSeal(r.code, r.owner);
         passEl.value = '';
-        msg('短码已生成 · ' + r.code + ' · 记牢「用户名 + 短码 + 口令」即可换设备', 'ok');
+        msg('凭证已生成 · 点「复制凭证」保存后即可换设备', 'ok');
       }).catch(function (e) {
         msg(e && e.message || String(e), 'error');
       }).then(function () { makeBtn.disabled = false; });
@@ -1032,16 +1063,17 @@
 
     restoreBtn.addEventListener('click', function () {
       var code = codeEl.value.trim();
-      if (!code) { msg('请填写恢复短码或保险箱链接', 'error'); codeEl.focus(); return; }
-      if (!passEl.value) { msg('请输入生成短码时用的口令', 'error'); passEl.focus(); return; }
+      if (!code) { msg('请填写恢复短码或备用链接', 'error'); codeEl.focus(); return; }
+      var pass = restorePassEl.value;
+      if (!pass) { msg('请输入生成凭证时设的口令', 'error'); restorePassEl.focus(); return; }
       restoreBtn.disabled = true;
-      msg('正在打开保险箱恢复配置…');
-      sync.restoreVault(passEl.value, code, ownerEl.value).then(function (r) {
+      msg('正在恢复配置…');
+      sync.restoreVault(pass, code, ownerEl.value).then(function (r) {
         if (r && r.error) { msg(r.error, 'error'); return; }
-        // 回填输入框与短码封印，让状态与底层配置一致
+        // 回填输入框与凭证卡，让状态与底层配置一致
         tokenEl.value = cfg.token;
         gistEl.value = cfg.gistId;
-        passEl.value = '';
+        restorePassEl.value = '';
         codeEl.value = cfg.vaultCode || '';
         if (cfg.vaultOwner) ownerEl.value = cfg.vaultOwner;
         showSeal(cfg.vaultCode, cfg.vaultOwner);
@@ -1060,10 +1092,13 @@
       }).then(function () { restoreBtn.disabled = false; });
     });
 
+    // 复制凭证：一次性复制「用户名 / 短码」，口令自己记
     panel.querySelector('#sy-code-copy').addEventListener('click', function () {
-      var text = (cfg.vaultCode || codeEl.value || '').replace(/\s/g, '');
-      if (!text) { msg('还没有可复制的短码', 'warn'); return; }
-      function done() { msg('短码已复制 · 配合口令使用', 'ok'); }
+      var who = (cfg.vaultOwner || ownerEl.value || '').trim();
+      var code = (cfg.vaultCode || '').replace(/\s/g, '');
+      if (!who && !code) { msg('还没有可复制的凭证，请先生成', 'warn'); return; }
+      var text = (who ? who + ' / ' : '') + code;
+      function done() { msg('凭证已复制 · 口令需自己记牢', 'ok'); }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done).catch(function () { done(); });
       } else { done(); }
@@ -1071,8 +1106,8 @@
 
     panel.querySelector('#sy-vault-link-copy').addEventListener('click', function () {
       var text = vaultLink();
-      if (!text) { msg('本地还没有保险箱链接；可先用短码恢复一次', 'warn'); return; }
-      function done() { msg('保险箱链接已复制 · 作备用保存', 'ok'); }
+      if (!text) { msg('本地还没有备用链接；可先在其它设备恢复一次', 'warn'); return; }
+      function done() { msg('备用链接已复制 · 短码失效时可用它恢复', 'ok'); }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(done).catch(function () { done(); });
       } else { done(); }
