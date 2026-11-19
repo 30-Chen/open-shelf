@@ -156,7 +156,7 @@
       { k: 'link', label: '链接', tip: '链接' },
       { k: 'image', label: '图片', tip: '插入网络图片地址' },
       { k: 'video', label: '视频', tip: '插入网络视频地址' },
-      { k: 'upload', label: '上传', tip: '选择或拖入本地图片 / 视频' },
+      { k: 'upload', label: '上传', tip: '选择或拖入本地图片（自动压缩）' },
       { k: 'code', label: '代码', tip: '代码块' },
       { k: 'list', label: '列表', tip: '无序列表' },
       { k: 'quote', label: '引用', tip: '引用' }
@@ -212,10 +212,10 @@
               '<div class="nt-drop-hint" aria-hidden="true">' +
                 '<i class="i-ico i-cloud" aria-hidden="true"></i>' +
                 '<strong>松开即可插入</strong>' +
-                '<span>图片自动压缩，媒体随笔记同步</span>' +
+                '<span>仅支持图片，自动压缩后随笔记同步</span>' +
               '</div>' +
               '<input id="nt-media-input" class="nt-media-input" type="file" ' +
-                'accept="image/*,video/*" multiple hidden>' +
+                'accept="image/*" multiple hidden>' +
             '</section>' +
             '<section class="nt-preview-pane">' +
               '<div class="nt-pane-head mono"><span>预览 / PREVIEW</span></div>' +
@@ -223,7 +223,7 @@
             '</section>' +
           '</div>' +
           '<div class="nt-editor-foot">' +
-            '<span class="nt-hint mono">提示：拖入图片会自动压缩（约 200KB/张）；本地视频限 600KB，更大请用网络地址。正文只留短引用，媒体随笔记同步。</span>' +
+            '<span class="nt-hint mono">提示：仅支持图片，拖入或选择后自动压缩（约 260KB/张）；视频请用「视频」工具贴网络地址。正文只留短引用，图片随笔记同步。</span>' +
             '<div>' +
               '<button class="btn" data-act="cancel">取消</button> ' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +

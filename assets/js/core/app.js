@@ -41,6 +41,8 @@
       if (n) n.textContent = String(def.index || '01').padStart(2, '0') + ' / MODULE';
       document.title = (def.title || def.id) + ' · OPEN / SHELF';
     }
+    // 页头 MODULE 图标的二级菜单：按注册表自动生成入口
+    if (Portal.mountModuleSwitch) Portal.mountModuleSwitch(null, null, id);
     Portal.boot(document.getElementById('modules'), id || null);
   }
 

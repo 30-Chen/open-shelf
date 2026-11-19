@@ -50,21 +50,22 @@
     }
   };
 
+  /* ---------- 通用工具 ---------- */
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function safePath(p) {
+    var s = String(p || '');
+    return /^(https?:\/\/|\/|\.\/|\.\.\/)/.test(s) ? esc(s) : esc('./' + s);
+  }
+
   /* ---------- 引导页目录 ---------- */
   /** 把已注册模块渲染成入口卡片，供首页引导使用。 */
   Portal.renderCatalog = function (mountRoot) {
     var root = mountRoot || document.getElementById('catalog');
     if (!root) return;
-
-    function esc(v) {
-      return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-      });
-    }
-    function safePath(p) {
-      var s = String(p || '');
-      return /^(https?:\/\/|\/|\.\/|\.\.\/)/.test(s) ? esc(s) : esc('./' + s);
-    }
 
     root.innerHTML = defs.map(function (def, i) {
       var num = String(def.index || (i + 1)).padStart(2, '0');
@@ -80,6 +81,47 @@
     }).join('');
 
     Portal.bus.emit('catalog:ready', { modules: defs.map(function (d) { return d.id; }) });
+  };
+
+  /* ---------- 页头 MODULE 状态图标的二级菜单 ---------- */
+  /** 根据注册表自动生成菜单项（新增模块无需改 HTML），并绑定打开/关闭。 */
+  Portal.mountModuleSwitch = function (btn, menu, currentId) {
+    btn = btn || document.getElementById('module-switch-btn');
+    menu = menu || document.getElementById('module-switch-menu');
+    if (!btn || !menu) return;
+
+    menu.innerHTML =
+      '<li class="msw-head" aria-hidden="true">MODULES / 切换模块</li>' +
+      defs.map(function (def, i) {
+        var num = String(def.index || (i + 1)).padStart(2, '0');
+        var href = def.path || ('module.html?id=' + encodeURIComponent(def.id));
+        var current = def.id === currentId;
+        return '<li role="none">' +
+          '<a class="msw-item' + (current ? ' is-current' : '') + '" role="menuitem" ' +
+            'href="' + safePath(href) + '"' + (current ? ' aria-current="page"' : '') + '>' +
+            '<span class="msw-num">' + esc(num) + '</span>' +
+            '<span class="msw-body">' +
+              '<span class="msw-name">' + esc(def.title || def.id) + '</span>' +
+              '<span class="msw-desc">' + esc(def.desc || '') + '</span>' +
+            '</span>' +
+            '<i class="i-ico i-ext" aria-hidden="true"></i>' +
+          '</a></li>';
+      }).join('');
+
+    function setOpen(open) {
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      btn.classList.toggle('is-open', open);
+    }
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOpen(menu.hidden);
+    });
+    menu.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('click', function () { if (!menu.hidden) setOpen(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); }
+    });
   };
 
   /* ---------- 启动 ---------- */

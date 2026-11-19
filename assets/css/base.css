@@ -125,6 +125,15 @@ img { max-width: 100%; }
   background: rgba(0, 0, 0, .18); color: var(--muted);
   font: 500 11px var(--mono); letter-spacing: .8px; line-height: 1;
 }
+/* 纯图标状态胶囊：SYSTEM / MODULE 只留图标，右上角状态点保留 */
+.status--icon { width: 30px; padding: 0; justify-content: center; gap: 0; }
+.status--icon .i-ico { width: 16px; height: 16px; }
+/* 可点击的状态图标（MODULE 切换器）：hover / 展开态高亮 */
+.status--btn { cursor: pointer; transition: color .18s, border-color .18s, background .18s; }
+.status--btn:hover, .status--btn[aria-expanded="true"] {
+  color: var(--accent); border-color: var(--line-strong); background: var(--accent-dim);
+}
+
 /* 状态点：与 .sy-trigger-dot 同款右上角 7px 小圆点，恢复呼吸动画 */
 .dot {
   position: absolute;
@@ -170,6 +179,9 @@ img { max-width: 100%; }
 /* 下拉选择用图标：文件夹（分类）/ 箭头（下拉），mask + currentColor 跨主题一致 */
 .i-folder { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z'/%3E%3C/svg%3E"); }
 .i-chev { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+/* 状态图标：SYSTEM 用芯片（在线系统）/ MODULE 用四宫格（模块矩阵），mask + currentColor */
+.i-system { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5' width='14' height='14' rx='2'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1'/%3E%3Cpath d='M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3'/%3E%3C/svg%3E"); }
+.i-modules { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linejoin='round'%3E%3Crect x='3.5' y='3.5' width='7' height='7' rx='1.4'/%3E%3Crect x='13.5' y='3.5' width='7' height='7' rx='1.4'/%3E%3Crect x='3.5' y='13.5' width='7' height='7' rx='1.4'/%3E%3Crect x='13.5' y='13.5' width='7' height='7' rx='1.4'/%3E%3C/svg%3E"); }
 
 /* ---------- 主题切换按钮（三段循环：自动 → 亮 → 暗） ---------- */
 .theme-toggle {
@@ -309,6 +321,36 @@ img { max-width: 100%; }
 }
 .sel-pill .sel-cancel[hidden] { display: none; }
 
+/* ---------- MODULE 状态图标的二级菜单：列出已注册模块并可点击进入 ---------- */
+.module-switch { position: relative; display: inline-flex; flex: 0 0 auto; }
+.msw-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 70;
+  width: max-content; min-width: 232px; max-width: min(340px, calc(100vw - 32px));
+  margin: 0; padding: 6px; list-style: none;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: #121d30;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
+  animation: sel-pop .14s ease both;
+}
+.msw-menu[hidden] { display: none; }
+.msw-head {
+  padding: 6px 10px 8px; margin-bottom: 3px;
+  border-bottom: 1px solid var(--line-soft);
+  font: 10px var(--mono); letter-spacing: 1.2px; color: var(--muted);
+}
+.msw-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 9px 10px; border-radius: 6px;
+  color: var(--text-2); transition: color .15s, background .15s;
+}
+.msw-item:hover, .msw-item.is-current { color: var(--accent); background: var(--accent-dim); }
+.msw-num { flex: 0 0 auto; font: 10.5px var(--mono); color: var(--accent); letter-spacing: .5px; }
+.msw-body { flex: 1; min-width: 0; }
+.msw-name { display: block; font: 12.5px var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msw-desc { display: block; margin-top: 2px; font: 10.5px var(--sans); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msw-item .i-ico.i-ext { width: 12px; height: 12px; color: var(--muted); flex: 0 0 auto; }
+.msw-item.is-current .i-ico.i-ext { color: var(--accent); }
+
 .field {
   width: 100%; height: 100%;
   border: 0; outline: 0; background: transparent; color: var(--text);
@@ -330,6 +372,10 @@ details > summary::-webkit-details-marker { display: none; }
   .page { width: min(100% - 32px, 1120px); padding-top: 32px; }
   .site-header { align-items: stretch; flex-direction: column; gap: 16px; padding-bottom: 22px; }
   .header-meta { width: 100%; justify-content: flex-start; row-gap: 8px; }
+  /* 窄屏下菜单改为对齐整个页头行左缘（而非按钮），避免贴边按钮把菜单推出视口 */
+  .header-meta { position: relative; }
+  .module-switch { position: static; }
+  .msw-menu { left: 0; right: auto; }
   .site-footer { font-size: 10px; }
 }
 

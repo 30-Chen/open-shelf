@@ -983,8 +983,11 @@
     var headerMeta = document.querySelector('.header-meta');
     if (headerMeta) {
       var statusEl = headerMeta.querySelector('.status');
-      if (statusEl && statusEl.parentNode) statusEl.parentNode.insertBefore(wrap, statusEl.nextSibling);
-      else headerMeta.appendChild(wrap);
+      if (statusEl && statusEl.parentNode) {
+        // MODULE 状态是可点击的切换器（含二级菜单），整组作为一个锚点，避免把面板插进按钮与菜单之间
+        var anchor = statusEl.closest ? (statusEl.closest('.module-switch') || statusEl) : statusEl;
+        headerMeta.insertBefore(wrap, anchor.nextSibling);
+      } else headerMeta.appendChild(wrap);
       // SYNC 紧跟状态标签；主题按钮无论脚本顺序如何都保持在最后
       var themeEl = headerMeta.querySelector('#theme-toggle');
       if (themeEl && themeEl.nextSibling) headerMeta.appendChild(themeEl);

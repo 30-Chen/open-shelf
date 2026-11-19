@@ -231,8 +231,7 @@
       // 媒体以 data URI（比原始文件大约 1/3）存进同步文件，因此必须留出安全余量。
       var MAX_IMAGE_RAW = 8 * 1024 * 1024;    // 源图放宽到 8MB，上传后自动压到目标体积
       var IMAGE_TARGET = 260 * 1024;          // 每张图片压缩目标（data URI 字符数）
-      var MAX_VIDEO = 600 * 1024;             // 本地视频无法在浏览器有效压缩，限制到安全体积
-      var MEDIA_TOTAL = 900 * 1024;           // 全部媒体 data URI 总量上限（给其它数据留余量）
+      var MEDIA_TOTAL = 900 * 1024;           // 全部图片 data URI 总量上限（给其它数据留余量）
       var MAX_BODY = 200 * 1024;              // 正文只存短引用，实际远远用不到
 
       function fileToDataUrl(file) {
@@ -293,15 +292,9 @@
           });
         }
         if (type.indexOf('video/') === 0) {
-          // 浏览器端无法可靠压缩视频，且 base64 会放大 1/3，必须限制在 Gist 安全线内
-          if (file.size > MAX_VIDEO) {
-            return Promise.reject(new Error('视频「' + file.name + '」超过 600KB，本地视频无法自动压缩，请改用网络视频地址'));
-          }
-          return fileToDataUrl(file).then(function (url) {
-            return { url: url, name: file.name, shrunk: false };
-          });
+          return Promise.reject(new Error('不支持上传视频，请用「视频」工具粘贴网络视频地址'));
         }
-        return Promise.reject(new Error('只支持图片或视频文件'));
+        return Promise.reject(new Error('只支持图片文件'));
       }
 
       function mediaTotal() {
@@ -334,15 +327,12 @@
               // 正文只插入短引用；data URI 存进媒体字典，不污染编辑器源码
               var snippet = '![' + name + '](media:' + id + ')';
               if (ta.value.length + snippet.length > MAX_BODY) {
-                throw new Error('这篇笔记内容过长，无法再插入媒体');
+                throw new Error('这篇笔记内容过长，无法再插入图片');
               }
               if (mediaTotal() + media.url.length > MEDIA_TOTAL) {
-                throw new Error('本地媒体总大小已达上限（约 900KB），请删除部分图片/视频，或改用网络地址');
+                throw new Error('本地图片总大小已达上限（约 900KB），请删除部分图片，或改用网络图片地址');
               }
-              state.media[id] = {
-                t: /^data:video/i.test(media.url) ? 'v' : 'i',
-                n: name, d: media.url
-              };
+              state.media[id] = { t: 'i', n: name, d: media.url };
               insertSnippet(ta, snippet);
               if (state.draftMedia.indexOf(id) < 0) state.draftMedia.push(id);
               touch();      // 上传即视为用户数据，允许参与同步
@@ -354,10 +344,10 @@
         });
         queue.then(function () {
           updatePreview();
-          if (done) flash('已插入 ' + done + ' 个媒体文件' +
+          if (done) flash('已插入 ' + done + ' 张图片' +
             (compressed ? '（自动压缩 ' + compressed + ' 张）' : '') +
             (errors.length ? '，' + errors.length + ' 个失败：' + errors[0] : ''));
-          else flash(errors[0] || '没有可插入的媒体文件', 'error');
+          else flash(errors[0] || '没有可插入的图片', 'error');
         });
       }
 
