@@ -96,21 +96,26 @@
 .sy-status-pill.is-synced { color: var(--accent); border-color: rgba(85, 227, 194, .32); background: var(--accent-dim); }
 .sy-status-pill.is-dirty { color: var(--warn); border-color: rgba(255, 196, 107, .34); }
 .sy-status-pill.is-error { color: var(--danger); border-color: rgba(216, 56, 90, .38); }
+/* 箭头默认不显示：只在同步进行中出现，尺寸与 10px 胶囊文字等高 */
 .sy-auto-ico {
-  display: inline-block; flex: 0 0 auto; width: 12px; height: 12px; opacity: .6;
+  display: none; flex: 0 0 auto; width: 10px; height: 10px;
   background: currentColor;
   -webkit-mask: var(--i-sync-img) no-repeat center / contain;
   mask: var(--i-sync-img) no-repeat center / contain;
 }
-/* 开启态只提高图标亮度；已同步时圆点轻微呼吸（不做持续旋转） */
-.sy-status-pill.is-on .sy-auto-ico { opacity: 1; }
+/* 静止时圆点轻微呼吸；有本地改动时呼吸稍快 */
 .sy-status-pill.is-on.is-synced .sy-status-dot { animation: sy-breathe 2.6s ease-in-out infinite; }
 .sy-status-pill.is-dirty .sy-status-dot { animation: sy-breathe 1.4s ease-in-out infinite; }
-/* 手动同步进行中：整体光圈 + 圆点脉冲（图标保持静止） */
+/* 同步进行中：箭头淡入并匀速旋转，整体光圈 + 圆点脉冲；完成后随 is-busy 移除而隐藏 */
 .sy-status-pill.is-busy { box-shadow: 0 0 0 2px rgba(85, 227, 194, .10); }
-.sy-status-pill.is-busy .sy-auto-ico { opacity: 1; }
+.sy-status-pill.is-busy .sy-auto-ico {
+  display: inline-block;
+  animation: sy-spin 3.4s linear infinite, sy-ico-in .18s ease-out both;
+}
 .sy-status-pill.is-busy .sy-status-dot { animation: sy-pulse .8s ease-in-out infinite; }
 .sy-status-pill.is-pop { animation: sy-pop .34s cubic-bezier(.2, .8, .3, 1); }
+@keyframes sy-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes sy-ico-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sy-breathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.7); } }
 @keyframes sy-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(1.7); } }
 @keyframes sy-pop { 0% { transform: scale(1); } 45% { transform: scale(1.08); } 100% { transform: scale(1); } }
@@ -243,4 +248,5 @@
 @media (max-width: 360px) {
   .sy-head-line { gap: 6px; }
   .sy-status-pill { padding: 0 7px; font-size: 9px; }
+  .sy-auto-ico { width: 9px; height: 9px; }
 }

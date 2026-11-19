@@ -215,6 +215,8 @@
     // 允许无 gistId：本地有数据时会自动新建私有 Gist（见下方 writeGist）
 
     syncing = true;
+    // 同步开始时通知面板：胶囊内箭头淡入并旋转；结束时成对通知隐藏
+    if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:progress', { active: true, reason: reason });
     var localModules = collectLocal();
     var localHash = hashModules(localModules);
 
@@ -276,6 +278,7 @@
       syncing = false;
       lastSeenLocalHash = hashModules(collectLocal());
       lastAuto = { at: Date.now(), result: r, reason: reason };
+      if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:progress', { active: false, reason: reason });
       if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
       return r;
     });
@@ -891,7 +894,7 @@
     var moreBtn = panel.querySelector('#sy-more-toggle');
     var moreBody = panel.querySelector('#sy-more-body');
     var timer = null;
-    var busy = false, popping = false;
+    var busyDepth = 0, busy = false, popping = false;
 
     function msg(text, kind) {
       msgEl.textContent = text || '';
@@ -928,7 +931,12 @@
       statusEl.textContent = text;
     }
 
-    function setBusy(on) { busy = !!on; refresh(); }
+    // 手动同步与后台对账可能重叠；用计数避免先结束的那个把忙碌态提前清掉
+    function setBusy(on) {
+      busyDepth = Math.max(0, busyDepth + (on ? 1 : -1));
+      busy = busyDepth > 0;
+      refresh();
+    }
     function pop() {
       popping = true; refresh();
       global.setTimeout(function () { popping = false; refresh(); }, 360);
@@ -1005,8 +1013,9 @@
       });
     }
 
-    // 后台同步结果只更新标题行状态；出错时在面板消息区提示
+    // 后台同步进行时也显示旋转箭头；结果只更新标题行状态，出错时提示
     if (Portal.bus && Portal.bus.on) {
+      Portal.bus.on('sync:progress', function (info) { setBusy(!!(info && info.active)); });
       Portal.bus.on('sync:auto', function (info) {
         refresh();
         if (info && info.result && info.result.error && !panel.hidden) {
