@@ -987,7 +987,7 @@
             'spellcheck="false" placeholder="ghp_…" value="' + esc(cfg.token) + '">' +
         '</label>' +
         '<div class="sy-actions sy-actions--sync">' +
-          '<button class="btn btn--primary sy-btn" id="sy-sync-now" type="button">↻ 立即同步</button>' +
+          '<button class="btn btn--primary sy-btn" id="sy-sync-now" type="button"><i class="i-ico i-refresh" aria-hidden="true"></i> 立即同步</button>' +
           '<button class="btn sy-btn sy-more-toggle" id="sy-more-toggle" type="button" ' +
             'aria-expanded="false" aria-controls="sy-more-body">更多设置 ' +
             '<i class="i-ico i-chev sy-more-chev" aria-hidden="true"></i>' +

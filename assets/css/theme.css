@@ -41,6 +41,8 @@ html[data-theme="light"] {
   --danger: var(--th-danger);
   --radius: 14px;
   --radius-sm: 9px;
+  /* 悬浮面板统一边框（与暗色主题共用同一语义变量） */
+  --pop-border: rgba(16, 150, 122, .4);
 }
 
 html[data-theme="light"] ::selection { background: rgba(14, 156, 126, .18); color: var(--text); }
@@ -89,13 +91,13 @@ html[data-theme="light"] .sel-pill { background: rgba(28, 46, 74, .04); }
 html[data-theme="light"] .sel-pill:hover,
 html[data-theme="light"] .sel-pill.is-open { background: rgba(28, 46, 74, .08); }
 html[data-theme="light"] .sel-menu {
-  background: #fff; border-color: rgba(16, 150, 122, .4); box-shadow: var(--th-shadow);
+  background: #fff; box-shadow: var(--th-shadow);
 }
 html[data-theme="light"] .sel-option:hover,
 html[data-theme="light"] .sel-option.is-active { background: var(--accent-dim); }
 /* MODULE 二级菜单：白底深字，与 .sel-menu 同款 */
 html[data-theme="light"] .msw-menu {
-  background: #fff; border-color: rgba(16, 150, 122, .4); box-shadow: var(--th-shadow);
+  background: #fff; box-shadow: var(--th-shadow);
 }
 html[data-theme="light"] .msw-head { border-bottom-color: var(--line-soft); }
 html[data-theme="light"] .msw-item:hover,
@@ -120,6 +122,12 @@ html[data-theme="light"] .nt-textarea::placeholder,
 html[data-theme="light"] .sel-pill input.sel-new::placeholder,
 html[data-theme="light"] .sy-input::placeholder { color: #94a2b8; }
 html[data-theme="light"] .chip:hover { background: var(--accent-dim); }
+
+/* 集中式目录管理浮层：白底深字，边框走统一变量 */
+html[data-theme="light"] .cat-manager {
+  background: #fff; box-shadow: var(--th-shadow);
+}
+html[data-theme="light"] .cat-manager-input { background: var(--th-inset); }
 
 /* ---------- 首页引导 ---------- */
 /* 渐变文字：只换背景图，不能用 background 简写——它会把 background-clip 重置成 border-box，

@@ -160,6 +160,7 @@
         query: '',
         category: ALL,
         editingCat: null,
+        manageOpen: false,   // 目录管理浮层是否展开
         flashTimer: null
       };
 
@@ -506,6 +507,51 @@
         flash(note.pinned ? '已置顶《' + (note.title || '无标题') + '》' : '已取消置顶');
       }
 
+      /** 目录管理浮层的展开/收起（收起时取消重命名态） */
+      function setManageOpen(open) {
+        state.manageOpen = !!open;
+        if (!open) state.editingCat = null;
+        render();
+      }
+
+      /** 新建分类 */
+      function createCat() {
+        var input = root.querySelector('#nt-new-cat-input');
+        var name = String(input ? input.value : '').trim().slice(0, 24);
+        if (!name) { flash('请输入分类名称', 'error'); if (input) input.focus(); return; }
+        if (state.categories.indexOf(name) >= 0) {
+          flash('分类「' + name + '」已存在', 'warn');
+          state.category = name;
+          render();
+          return;
+        }
+        state.categories.push(name);
+        state.category = name;
+        touch();
+        persist();
+        flash('分类「' + name + '」已创建');
+        render();
+      }
+
+      /** 删除分类：该分类下的笔记移入「未分类」，不删除笔记本身 */
+      function deleteCat(name) {
+        if (!name) return;
+        var idx = state.categories.indexOf(name);
+        if (idx < 0) return;
+        var moved = state.notes.filter(function (n) { return n.category === name; }).length;
+        if (!global.confirm('确定删除分类「' + name + '」？' +
+            (moved ? '其中 ' + moved + ' 篇笔记会移入「未分类」。' : '') + '此操作不可撤销。')) return;
+        state.categories.splice(idx, 1);
+        state.notes.forEach(function (n) { if (n.category === name) n.category = '未分类'; });
+        if (state.categories.indexOf('未分类') < 0) state.categories.push('未分类');
+        if (state.category === name) state.category = ALL;
+        if (state.editingCat === name) state.editingCat = null;
+        touch();
+        persist();
+        render();
+        flash('分类「' + name + '」已删除' + (moved ? '，' + moved + ' 篇笔记已移入未分类' : ''));
+      }
+
       /** 分类重命名：同步更新所有笔记的 category 与导航状态 */
       function startCatRename(name) { state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
       function cancelCatRename() { state.editingCat = null; render(); }
@@ -710,6 +756,9 @@
 
       root.addEventListener('click', function (e) {
         var t = e.target;
+        // 目录管理浮层内的点击不冒泡到 document，避免 render 后节点失联被外部点击误关
+        var mgrEl = root.querySelector('#nt-cat-manager');
+        if (mgrEl && t && mgrEl.contains(t)) e.stopPropagation();
         var btn = t && t.closest ? t.closest('[data-act]') : null;
         if (!btn || !root.contains(btn)) return;
         var act = btn.dataset.act;
@@ -722,6 +771,9 @@
         if (act === 'cat-rename-start') return startCatRename(btn.dataset.cat);
         if (act === 'cat-rename-save') return saveCatRename(btn.dataset.cat);
         if (act === 'cat-rename-cancel') return cancelCatRename();
+        if (act === 'cat-delete') return deleteCat(btn.dataset.cat);
+        if (act === 'cat-create') return createCat();
+        if (act === 'manage-toggle') { e.stopPropagation(); return setManageOpen(!state.manageOpen); }
         if (act === 'new') return openEdit(null, true);
         if (act === 'back') return goList();
         if (act === 'cancel') return goList();
@@ -733,6 +785,7 @@
         if (act === 'filter') {
           state.category = btn.dataset.cat || ALL;
           state.editingCat = null;
+          state.manageOpen = false;
           render();
           return;
         }
@@ -790,10 +843,32 @@
           if (e.key === 'Enter') { e.preventDefault(); saveCatRename(state.editingCat); return; }
           if (e.key === 'Escape') { e.preventDefault(); cancelCatRename(); return; }
         }
+        // 新建分类输入：回车创建 / Esc 收起浮层
+        if (e.target && e.target.id === 'nt-new-cat-input') {
+          if (e.key === 'Enter') { e.preventDefault(); createCat(); return; }
+          if (e.key === 'Escape') { e.preventDefault(); setManageOpen(false); return; }
+        }
         // Ctrl/Cmd + Enter 快速保存
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.view === 'edit') {
           e.preventDefault();
           save();
+        }
+      });
+
+      // 点击空白处自动收起目录管理浮层与「更多」面板
+      // 注意：笔记模块每次 render 都会重建 root.innerHTML，details 元素会被替换，
+      // 因此这里必须每次现取，不能用挂载时捕获的旧引用。
+      document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (state.manageOpen) {
+          var mgr = root.querySelector('#nt-cat-manager');
+          if (mgr && t && mgr.contains(t)) return;
+          if (t && t.closest && t.closest('[data-act="manage-toggle"]')) return;
+          setManageOpen(false);
+        }
+        var toolsDetails = root.querySelector('.nt-tools-menu');
+        if (toolsDetails && toolsDetails.open && !toolsDetails.contains(t)) {
+          toolsDetails.open = false;
         }
       });
 

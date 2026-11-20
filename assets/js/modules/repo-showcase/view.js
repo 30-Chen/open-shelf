@@ -66,14 +66,15 @@
         '<span class="rs-num mono">' + num + '</span>' +
         '<a class="rs-path mono" href="' + safeUrl(url || 'https://github.com/' + fullName) +
           '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
-        (pinned ? '<span class="rs-pin-badge mono" title="已置顶">置顶</span>' : '') +
+        (pinned ? '<span class="rs-pin-badge mono" title="已置顶"><i class="i-ico i-star-fill" aria-hidden="true"></i>置顶</span>' : '') +
         '<div class="rs-card-actions">' +
           '<button class="rs-icon-btn rs-pin-btn' + (pinned ? ' is-pinned' : '') + '" data-action="pin" data-repo="' + attrRepo(fullName) +
-            '" title="' + (pinned ? '取消置顶' : '置顶') + '" aria-label="' + (pinned ? '取消置顶' : '置顶') + '">' + (pinned ? '★' : '☆') + '</button>' +
+            '" title="' + (pinned ? '取消置顶' : '置顶') + '" aria-label="' + (pinned ? '取消置顶' : '置顶') +
+            '"><i class="i-ico ' + (pinned ? 'i-star-fill' : 'i-star') + '" aria-hidden="true"></i></button>' +
           '<button class="rs-icon-btn" data-action="refresh" data-repo="' + attrRepo(fullName) +
-            '" title="重新获取" aria-label="重新获取">↻</button>' +
+            '" title="重新获取" aria-label="重新获取"><i class="i-ico i-refresh" aria-hidden="true"></i></button>' +
           '<button class="rs-icon-btn rs-icon-btn--danger" data-action="remove" data-repo="' + attrRepo(fullName) +
-            '" title="移除收藏" aria-label="移除收藏">×</button>' +
+            '" title="移除收藏" aria-label="移除收藏"><i class="i-ico i-trash" aria-hidden="true"></i></button>' +
         '</div>' +
       '</header>';
   }
@@ -245,7 +246,7 @@
         '<div class="rs-error-title">↯ 无法获取该仓库</div>' +
         '<p>' + esc(item.error || '未知错误') + '</p>' +
         '<p class="rs-error-tip">检查仓库名是否正确；若网络无法访问 api.github.com，可在「设置」里更换 API 地址。</p>' +
-        '<button class="btn" data-action="refresh" data-repo="' + attrRepo(item.fullName) + '">↻ 重试</button>' +
+        '<button class="btn" data-action="refresh" data-repo="' + attrRepo(item.fullName) + '"><i class="i-ico i-refresh" aria-hidden="true"></i> 重试</button>' +
       '</div>';
   }
 
@@ -253,7 +254,7 @@
     return '<div class="rs-stale"><span>⚠ ' + esc(item.error || '刷新失败') + '，以下为 ' +
       esc(relative(item.data.fetchedAt)) + ' 前的本地数据</span>' +
       '<button class="rs-stale-retry mono" data-action="refresh" data-repo="' +
-      attrRepo(item.fullName) + '">↻ 重试</button></div>';
+      attrRepo(item.fullName) + '"><i class="i-ico i-refresh" aria-hidden="true"></i> 重试</button></div>';
   }
 
   function footBlock(d) {

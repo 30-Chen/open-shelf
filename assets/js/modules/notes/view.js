@@ -31,7 +31,7 @@
         (cover
           ? '<div class="nt-card-cover"><img loading="lazy" src="' + cover + '" alt=""></div>'
           : '<div class="nt-card-cover nt-card-cover--ph"><span class="mono">NT / ' + esc(String(note.id).slice(0, 6)) + '</span></div>') +
-        (note.pinned ? '<span class="nt-pin-badge mono" title="已置顶">★ 置顶</span>' : '') +
+        (note.pinned ? '<span class="nt-pin-badge mono" title="已置顶"><i class="i-ico i-star-fill" aria-hidden="true"></i>置顶</span>' : '') +
         '<div class="nt-card-body">' +
           '<div class="nt-card-meta mono">' +
             '<span class="nt-cat-pill">' + esc(note.category || '未分类') + '</span>' +
@@ -44,9 +44,9 @@
         '<div class="nt-card-foot">' +
           '<button class="nt-text-btn" data-act="read" data-id="' + esc(note.id) + '">阅读 →</button>' +
           '<div class="nt-card-actions">' +
-            '<button class="nt-icon-btn nt-pin-btn' + (note.pinned ? ' is-pinned' : '') + '" data-act="pin" data-id="' + esc(note.id) + '" title="' + (note.pinned ? '取消置顶' : '置顶') + '" aria-label="' + (note.pinned ? '取消置顶' : '置顶') + '">' + (note.pinned ? '★' : '☆') + '</button>' +
-            '<button class="nt-icon-btn" data-act="edit" data-id="' + esc(note.id) + '" title="编辑" aria-label="编辑">✎</button>' +
-            '<button class="nt-icon-btn nt-icon-btn--danger" data-act="delete" data-id="' + esc(note.id) + '" title="删除" aria-label="删除">×</button>' +
+            '<button class="nt-icon-btn nt-pin-btn' + (note.pinned ? ' is-pinned' : '') + '" data-act="pin" data-id="' + esc(note.id) + '" title="' + (note.pinned ? '取消置顶' : '置顶') + '" aria-label="' + (note.pinned ? '取消置顶' : '置顶') + '"><i class="i-ico ' + (note.pinned ? 'i-star-fill' : 'i-star') + '" aria-hidden="true"></i></button>' +
+            '<button class="nt-icon-btn" data-act="edit" data-id="' + esc(note.id) + '" title="编辑" aria-label="编辑"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
+            '<button class="nt-icon-btn nt-icon-btn--danger" data-act="delete" data-id="' + esc(note.id) + '" title="删除" aria-label="删除"><i class="i-ico i-trash" aria-hidden="true"></i></button>' +
           '</div>' +
         '</div>' +
       '</article>';
@@ -64,31 +64,50 @@
       '</div>';
   }
 
-  /** 分类筛选条：分类可就地重命名 */
-  function filters(categories, counts, active, query, editingCat) {
+  /** 分类筛选条：chip 只负责筛选；增删改统一收敛到「管理目录」浮层 */
+  function filters(categories, counts, active, query, editingCat, manageOpen) {
     var row = '<button class="nt-filter' + (active === '__all__' ? ' is-active' : '') +
       '" data-act="filter" data-cat="__all__">全部<span class="mono">' + (counts['__all__'] || 0) + '</span></button>';
     categories.forEach(function (c) {
-      if (editingCat === c) {
-        row += '<span class="nt-filter nt-filter--edit">' +
-          '<input class="nt-filter-input" id="nt-rename-input" type="text" maxlength="24" ' +
-            'autocomplete="off" value="' + esc(c) + '" aria-label="重命名分类">' +
-          '<button class="nt-filter-mini" type="button" data-act="cat-rename-save" data-cat="' + esc(c) + '" title="保存">✓</button>' +
-          '<button class="nt-filter-mini" type="button" data-act="cat-rename-cancel" title="取消">×</button>' +
-        '</span>';
-        return;
-      }
       var on = active === c;
-      row += '<span class="nt-filter-wrap' + (on ? ' is-active' : '') + '">' +
-        '<button class="nt-filter' + (on ? ' is-active' : '') + '" data-act="filter" data-cat="' + esc(c) + '">' +
-          esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>' +
-        '<button class="nt-filter-tool" type="button" data-act="cat-rename-start" data-cat="' + esc(c) +
-          '" title="重命名分类" aria-label="重命名分类">✎</button>' +
-      '</span>';
+      row += '<button class="nt-filter' + (on ? ' is-active' : '') + '" data-act="filter" data-cat="' + esc(c) + '">' +
+        esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>';
     });
+    row += '<button class="nt-filter nt-filter--manage' + (manageOpen ? ' is-open' : '') +
+      '" type="button" data-act="manage-toggle" aria-expanded="' + (manageOpen ? 'true' : 'false') +
+      '" aria-controls="nt-cat-manager"><i class="i-ico i-settings" aria-hidden="true"></i>管理目录</button>';
+
+    // 集中式目录管理浮层
+    var mgr = '<div class="cat-manager" id="nt-cat-manager"' + (manageOpen ? '' : ' hidden') + '>';
+    if (manageOpen) {
+      mgr += '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除 · 新建</span></div><div class="cat-manager-list">';
+      categories.forEach(function (c) {
+        if (editingCat === c) {
+          mgr += '<div class="cat-manager-row cat-manager-row--edit">' +
+            '<input class="cat-manager-input" id="nt-rename-input" type="text" maxlength="24" ' +
+              'autocomplete="off" value="' + esc(c) + '" aria-label="重命名分类">' +
+            '<button class="cat-manager-mini" type="button" data-act="cat-rename-save" data-cat="' + esc(c) + '" title="保存"><i class="i-ico i-check" aria-hidden="true"></i></button>' +
+            '<button class="cat-manager-mini" type="button" data-act="cat-rename-cancel" title="取消"><i class="i-ico i-close" aria-hidden="true"></i></button>' +
+          '</div>';
+        } else {
+          mgr += '<div class="cat-manager-row">' +
+            '<button class="cat-manager-name" type="button" data-act="filter" data-cat="' + esc(c) + '"><i class="i-ico i-folder" aria-hidden="true"></i>' + esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>' +
+            '<button class="cat-manager-mini" type="button" data-act="cat-rename-start" data-cat="' + esc(c) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
+            '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-act="cat-delete" data-cat="' + esc(c) + '" title="删除目录，笔记移入未分类" aria-label="删除目录"><i class="i-ico i-trash" aria-hidden="true"></i></button>' +
+          '</div>';
+        }
+      });
+      mgr += '</div><div class="cat-manager-new">' +
+        '<input class="cat-manager-input" id="nt-new-cat-input" type="text" maxlength="24" autocomplete="off" placeholder="新分类名称" aria-label="新分类名称">' +
+        '<button class="cat-manager-add" type="button" data-act="cat-create"><i class="i-ico i-plus" aria-hidden="true"></i>新建</button>' +
+      '</div>';
+    }
+    mgr += '</div>';
+
     return '' +
       '<div class="nt-filters">' +
         '<div class="nt-filter-row">' + row + '</div>' +
+        mgr +
         '<div class="nt-search-wrap">' +
           '<span class="mono">⌕</span>' +
           '<input class="field nt-search" id="nt-search" type="search" autocomplete="off" ' +
@@ -102,7 +121,7 @@
     return '' +
       '<div class="nt">' +
         head(state, notes.length) +
-        filters(state.categories, counts, state.category, state.query, state.editingCat) +
+        filters(state.categories, counts, state.category, state.query, state.editingCat, state.manageOpen) +
         '<div class="nt-statusbar mono">' +
           '<span><i class="nt-led"></i> LOCAL STORAGE · 仅保存在当前浏览器</span>' +
           '<span id="nt-count">' + notes.length + ' 篇笔记</span>' +
@@ -123,13 +142,13 @@
           '<p class="nt-sub">用 Markdown 收藏教程与灵感，支持图文、代码和内嵌视频。</p>' +
         '</div>' +
         '<div class="nt-head-actions">' +
-          '<button class="btn btn--primary" data-act="new">+ 新建笔记</button>' +
+          '<button class="btn btn--primary" data-act="new"><i class="i-ico i-plus" aria-hidden="true"></i> 新建笔记</button>' +
           '<details class="nt-tools-menu">' +
-            '<summary class="btn">⋯ 更多</summary>' +
+            '<summary class="btn"><i class="i-ico i-more" aria-hidden="true"></i> 更多</summary>' +
             '<div class="nt-tools-panel">' +
-              '<button class="nt-menu-item" data-act="export">↓ 导出全部（JSON）</button>' +
-              '<button class="nt-menu-item" data-act="import-open">↑ 导入笔记</button>' +
-              '<button class="nt-menu-item nt-menu-item--danger" data-act="reset">↺ 恢复内置示例</button>' +
+              '<button class="nt-menu-item" data-act="export"><i class="i-ico i-download" aria-hidden="true"></i> 导出全部（JSON）</button>' +
+              '<button class="nt-menu-item" data-act="import-open"><i class="i-ico i-upload" aria-hidden="true"></i> 导入笔记</button>' +
+              '<button class="nt-menu-item nt-menu-item--danger" data-act="reset"><i class="i-ico i-reset" aria-hidden="true"></i> 恢复内置示例</button>' +
               '<p class="nt-menu-note">导入会追加笔记；恢复示例会重置为你首次访问时的内容。</p>' +
             '</div>' +
           '</details>' +
@@ -144,8 +163,8 @@
         '<div class="nt-reader-bar">' +
           '<button class="nt-back mono" data-act="back"><i class="i-ico i-back" aria-hidden="true"></i> 返回列表</button>' +
           '<div class="nt-reader-actions">' +
-            '<button class="btn" data-act="edit" data-id="' + esc(note.id) + '">✎ 编辑</button>' +
-            '<button class="btn btn--danger-ghost" data-act="delete" data-id="' + esc(note.id) + '">删除</button>' +
+            '<button class="btn" data-act="edit" data-id="' + esc(note.id) + '"><i class="i-ico i-edit" aria-hidden="true"></i> 编辑</button>' +
+            '<button class="btn btn--danger-ghost" data-act="delete" data-id="' + esc(note.id) + '"><i class="i-ico i-trash" aria-hidden="true"></i> 删除</button>' +
           '</div>' +
         '</div>' +
         '<article class="nt-article">' +

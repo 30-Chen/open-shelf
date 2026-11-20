@@ -162,6 +162,7 @@
         ui: {},                  // 每张卡的平台筛选选择，纯本地视图状态
         activeGroup: '__all__',  // 分类筛选：__all__ 表示全部目录
         editingGroup: null,      // 正在重命名的目录名
+        manageOpen: false,       // 目录管理浮层是否展开
         demo: isDemo === true,
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
@@ -178,9 +179,9 @@
               '<p class="rs-sub">粘贴 GitHub 仓库地址，选择或新建分类目录，自动获取项目介绍与最新 Release 下载地址。</p>' +
             '</div>' +
             '<div class="rs-head-actions">' +
-              '<button class="btn" data-action="refresh-all" id="rs-refresh-all">↻ 全部刷新</button>' +
+              '<button class="btn" data-action="refresh-all" id="rs-refresh-all"><i class="i-ico i-refresh" aria-hidden="true"></i> 全部刷新</button>' +
               '<details class="rs-settings">' +
-                '<summary class="btn">⚙ 设置</summary>' +
+                '<summary class="btn"><i class="i-ico i-settings" aria-hidden="true"></i> 设置</summary>' +
                 '<div class="rs-settings-panel">' +
                   '<label>GitHub Token <span>可选 · 把限额从 60 次/小时提升到 5000 次</span>' +
                     '<input class="field rs-setting-input" id="rs-token" type="password" autocomplete="off" placeholder="ghp_…" value="' + esc(state.token) + '">' +
@@ -215,18 +216,13 @@
               '<input class="sel-new" id="rs-group-new" type="text" maxlength="24" autocomplete="off" ' +
                 'placeholder="新目录名称" aria-label="新分类目录名称" hidden>' +
             '</div>' +
-            '<button class="btn btn--primary" type="submit">+ 添加项目</button>' +
+            '<button class="btn btn--primary" type="submit"><i class="i-ico i-plus" aria-hidden="true"></i> 添加项目</button>' +
           '</form>' +
 
-          // 分类筛选条：与模块 02 的 .nt-filters 同一套视觉语言，目录入口常驻可见
+          // 分类筛选条：chip 只负责筛选；目录的增删改统一收敛到「管理目录」浮层
           '<div class="rs-filters">' +
             '<div class="rs-filter-row" id="rs-filter-row"></div>' +
-            '<div class="rs-new-group" id="rs-new-group" hidden>' +
-              '<input class="field" id="rs-new-group-input" type="text" maxlength="24" ' +
-                'autocomplete="off" placeholder="新目录名称" aria-label="新目录名称">' +
-              '<button class="btn btn--primary" type="button" data-action="create-group">创建</button>' +
-              '<button class="btn" type="button" data-action="cancel-new-group">取消</button>' +
-            '</div>' +
+            '<div class="cat-manager" id="rs-cat-manager" hidden></div>' +
           '</div>' +
 
           '<div class="rs-suggest">' +
@@ -248,8 +244,7 @@
       var groupNew = root.querySelector('#rs-group-new');
       var catPill = root.querySelector('#rs-cat-pill');
       var filterRow = root.querySelector('#rs-filter-row');
-      var newGroupBox = root.querySelector('#rs-new-group');
-      var newGroupInput = root.querySelector('#rs-new-group-input');
+      var catManager = root.querySelector('#rs-cat-manager');
       // 自定义下拉：真实值仍在隐藏 select 中，菜单由 DOM 渲染，主题/跨平台一致
       var catSelect = global.PortalSelect ? global.PortalSelect.mount(catPill) : null;
       var msgEl = root.querySelector('#rs-msg');
@@ -313,53 +308,79 @@
         return name;
       }
 
-      /** 分类筛选条：全部 / 各目录（含空目录）/ 常驻新建入口。目录可就地重命名、删除。 */
+      /** 分类筛选条：只负责筛选；增删改统一收敛到「管理目录」浮层 */
       function renderFilterRow() {
         if (!filterRow) return;
         var total = allRepos(state.groups).length;
-        var on = state.activeGroup === '__all__';
-        var html = '<button class="rs-filter' + (on ? ' is-active' : '') + '" type="button" ' +
-          'data-action="filter-group" data-group="__all__">全部<span class="mono">' + total + '</span></button>';
-
+        var html = '<button class="rs-filter' + (state.activeGroup === '__all__' ? ' is-active' : '') +
+          '" type="button" data-action="filter-group" data-group="__all__">全部<span class="mono">' + total + '</span></button>';
         state.groups.forEach(function (g) {
-          // 重命名进行中：就地渲染输入框
-          if (state.editingGroup === g.name) {
-            html += '<span class="rs-filter rs-filter--edit">' +
-              '<input class="rs-filter-input" id="rs-rename-input" type="text" maxlength="24" ' +
-                'autocomplete="off" value="' + esc(g.name) + '" aria-label="重命名目录">' +
-              '<button class="rs-filter-mini" type="button" data-action="rename-save" data-group="' +
-                esc(g.name) + '" title="保存名称">✓</button>' +
-              '<button class="rs-filter-mini" type="button" data-action="rename-cancel" title="取消">×</button>' +
-            '</span>';
-            return;
-          }
           var active = state.activeGroup === g.name;
-          html += '<span class="rs-filter-wrap' + (active ? ' is-active' : '') + '">' +
-            '<button class="rs-filter' + (active ? ' is-active' : '') + '" type="button" ' +
-              'data-action="filter-group" data-group="' + esc(g.name) + '">' +
-              esc(g.name) + '<span class="mono">' + g.repos.length + '</span></button>' +
-            '<button class="rs-filter-tool" type="button" data-action="rename-start" data-group="' +
-              esc(g.name) + '" title="重命名目录" aria-label="重命名目录">✎</button>' +
-            (g.name === DEFAULT_GROUP ? '' :
-              '<button class="rs-filter-tool rs-filter-tool--danger" type="button" ' +
-                'data-action="delete-group" data-group="' + esc(g.name) +
-                '" title="删除目录，项目移入默认目录" aria-label="删除目录">×</button>') +
-          '</span>';
+          html += '<button class="rs-filter' + (active ? ' is-active' : '') + '" type="button" ' +
+            'data-action="filter-group" data-group="' + esc(g.name) + '">' +
+            esc(g.name) + '<span class="mono">' + g.repos.length + '</span></button>';
         });
-
-        html += '<button class="rs-filter rs-filter--new" type="button" data-action="new-group">＋ 新建目录</button>';
+        html += '<button class="rs-filter rs-filter--manage' + (state.manageOpen ? ' is-open' : '') +
+          '" type="button" data-action="manage-toggle" aria-expanded="' + (state.manageOpen ? 'true' : 'false') +
+          '" aria-controls="rs-cat-manager"><i class="i-ico i-settings" aria-hidden="true"></i>管理目录</button>';
         filterRow.innerHTML = html;
+      }
+
+      /** 集中式目录管理浮层：一行一目录，重命名/删除/新建都在这里完成 */
+      function renderCatManager() {
+        if (!catManager) return;
+        catManager.hidden = !state.manageOpen;
+        if (!state.manageOpen) return;
+        var html = '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除 · 新建</span></div>' +
+          '<div class="cat-manager-list">';
+        state.groups.forEach(function (g) {
+          if (state.editingGroup === g.name) {
+            html += '<div class="cat-manager-row cat-manager-row--edit">' +
+              '<input class="cat-manager-input" id="rs-rename-input" type="text" maxlength="24" ' +
+                'autocomplete="off" value="' + esc(g.name) + '" aria-label="重命名目录">' +
+              '<button class="cat-manager-mini" type="button" data-action="rename-save" data-group="' +
+                esc(g.name) + '" title="保存名称"><i class="i-ico i-check" aria-hidden="true"></i></button>' +
+              '<button class="cat-manager-mini" type="button" data-action="rename-cancel" title="取消"><i class="i-ico i-close" aria-hidden="true"></i></button>' +
+            '</div>';
+          } else {
+            html += '<div class="cat-manager-row">' +
+              '<button class="cat-manager-name" type="button" data-action="filter-group" data-group="' +
+                esc(g.name) + '"><i class="i-ico i-folder" aria-hidden="true"></i>' + esc(g.name) +
+                '<span class="mono">' + g.repos.length + '</span></button>' +
+              '<button class="cat-manager-mini" type="button" data-action="rename-start" data-group="' +
+                esc(g.name) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
+              (g.name === DEFAULT_GROUP
+                ? '<span class="cat-manager-lock mono" title="默认目录不可删除">默认</span>'
+                : '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-action="delete-group" ' +
+                  'data-group="' + esc(g.name) + '" title="删除目录，项目移入默认目录" aria-label="删除目录">' +
+                  '<i class="i-ico i-trash" aria-hidden="true"></i></button>') +
+            '</div>';
+          }
+        });
+        html += '</div><div class="cat-manager-new">' +
+          '<input class="cat-manager-input" id="rs-new-group-input" type="text" maxlength="24" ' +
+            'autocomplete="off" placeholder="新目录名称" aria-label="新目录名称">' +
+          '<button class="cat-manager-add" type="button" data-action="create-group"><i class="i-ico i-plus" aria-hidden="true"></i>新建</button>' +
+        '</div></div>';
+        catManager.innerHTML = html;
+      }
+
+      function setManageOpen(open) {
+        state.manageOpen = !!open;
+        if (!open) state.editingGroup = null;
+        renderFilterRow();
+        renderCatManager();
       }
 
       function startRename(name) {
         state.editingGroup = name;
-        renderFilterRow();
+        renderCatManager();
         var input = root.querySelector('#rs-rename-input');
         if (input) { input.focus(); input.select(); }
       }
       function cancelRename() {
         state.editingGroup = null;
-        renderFilterRow();
+        renderCatManager();
       }
       function saveRename(oldName) {
         var input = root.querySelector('#rs-rename-input');
@@ -381,12 +402,6 @@
         renderGroupOptions(name);
         flash('目录已重命名为「' + name + '」');
         render();
-      }
-      function setNewGroupOpen(open) {
-        if (!newGroupBox) return;
-        newGroupBox.hidden = !open;
-        if (open && newGroupInput) newGroupInput.focus();
-        if (!open && newGroupInput) newGroupInput.value = '';
       }
 
       function render() {
@@ -435,6 +450,7 @@
         countEl.textContent = total + (total === 1 ? ' REPO' : ' REPOS');
         renderGroupOptions(groupSelect.value);
         renderFilterRow();
+        renderCatManager();
       }
 
       function load(fullName, force) {
@@ -560,19 +576,36 @@
         if (e.key === 'Enter') { e.preventDefault(); saveRename(state.editingGroup); }
         else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
       });
-      if (newGroupInput) newGroupInput.addEventListener('keydown', function (e) {
+      // 新建目录输入框：回车创建、Esc 收起管理浮层（事件委托，输入框由浮层动态渲染）
+      root.addEventListener('keydown', function (e) {
+        if (!e.target || e.target.id !== 'rs-new-group-input') return;
         if (e.key === 'Enter') {
           e.preventDefault();
           var create = root.querySelector('[data-action="create-group"]');
           if (create) create.click();
         } else if (e.key === 'Escape') {
           e.preventDefault();
-          setNewGroupOpen(false);
+          setManageOpen(false);
+        }
+      });
+      // 点击空白处自动收起目录管理浮层与「设置」面板
+      var settingsDetails = root.querySelector('.rs-settings');
+      document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (state.manageOpen) {
+          if (catManager && t && catManager.contains(t)) return;
+          if (filterRow && t && t.closest && t.closest('[data-action="manage-toggle"]')) return;
+          setManageOpen(false);
+        }
+        if (settingsDetails && settingsDetails.open && !settingsDetails.contains(t)) {
+          settingsDetails.open = false;
         }
       });
 
       root.addEventListener('click', function (e) {
         var target = e.target;
+        // 目录管理浮层内的点击不冒泡到 document，避免 render 后节点失联被外部点击误关
+        if (catManager && target && catManager.contains(target)) e.stopPropagation();
         var btn = target && target.closest ? target.closest('[data-action]') : null;
         if (!btn || !root.contains(btn)) return;
         var action = btn.dataset.action;
@@ -589,20 +622,24 @@
         if (action === 'filter-group') {
           state.activeGroup = btn.dataset.group || '__all__';
           state.editingGroup = null;
+          state.manageOpen = false;
           render();
           return;
         }
-        if (action === 'new-group') { setNewGroupOpen(true); return; }
-        if (action === 'cancel-new-group') { setNewGroupOpen(false); return; }
+        if (action === 'manage-toggle') {
+          e.stopPropagation();
+          setManageOpen(!state.manageOpen);
+          return;
+        }
         if (action === 'create-group') {
-          var name = String(newGroupInput ? newGroupInput.value : '').trim().slice(0, 24);
-          if (!name) { flash('请输入新目录名称', 'error'); newGroupInput.focus(); return; }
+          var nameInput = root.querySelector('#rs-new-group-input');
+          var name = String(nameInput ? nameInput.value : '').trim().slice(0, 24);
+          if (!name) { flash('请输入新目录名称', 'error'); if (nameInput) nameInput.focus(); return; }
           if (name === '__new__') { flash('目录名称不可用', 'error'); return; }
           if (state.groups.some(function (g) { return g.name === name; })) {
             flash('目录「' + name + '」已存在', 'warn');
             state.activeGroup = name;
             groupSelect.value = name;
-            setNewGroupOpen(false);
             render();
             return;
           }
@@ -610,7 +647,6 @@
           state.activeGroup = name;
           touch();
           saveGroups();
-          setNewGroupOpen(false);
           // 先把新目录写进下拉选项，再渲染；否则此时 select 还没有该 option，
           // 直接赋值会失败，下拉又退回「默认」。
           renderGroupOptions(name);
