@@ -27,10 +27,11 @@
     var cover = MD.coverOf(note.body, media);
     var excerpt = MD.excerpt(note.body, 108);
     return '' +
-      '<article class="nt-card" data-id="' + esc(note.id) + '">' +
+      '<article class="nt-card' + (note.pinned ? ' nt-card--pinned' : '') + '" data-id="' + esc(note.id) + '">' +
         (cover
           ? '<div class="nt-card-cover"><img loading="lazy" src="' + cover + '" alt=""></div>'
           : '<div class="nt-card-cover nt-card-cover--ph"><span class="mono">NT / ' + esc(String(note.id).slice(0, 6)) + '</span></div>') +
+        (note.pinned ? '<span class="nt-pin-badge mono" title="已置顶">★ 置顶</span>' : '') +
         '<div class="nt-card-body">' +
           '<div class="nt-card-meta mono">' +
             '<span class="nt-cat-pill">' + esc(note.category || '未分类') + '</span>' +
@@ -43,6 +44,7 @@
         '<div class="nt-card-foot">' +
           '<button class="nt-text-btn" data-act="read" data-id="' + esc(note.id) + '">阅读 →</button>' +
           '<div class="nt-card-actions">' +
+            '<button class="nt-icon-btn nt-pin-btn' + (note.pinned ? ' is-pinned' : '') + '" data-act="pin" data-id="' + esc(note.id) + '" title="' + (note.pinned ? '取消置顶' : '置顶') + '" aria-label="' + (note.pinned ? '取消置顶' : '置顶') + '">' + (note.pinned ? '★' : '☆') + '</button>' +
             '<button class="nt-icon-btn" data-act="edit" data-id="' + esc(note.id) + '" title="编辑" aria-label="编辑">✎</button>' +
             '<button class="nt-icon-btn nt-icon-btn--danger" data-act="delete" data-id="' + esc(note.id) + '" title="删除" aria-label="删除">×</button>' +
           '</div>' +
@@ -62,18 +64,31 @@
       '</div>';
   }
 
-  /** 分类筛选条 */
-  function filters(categories, counts, active, query) {
-    function item(name, label) {
-      var on = name === active;
-      return '<button class="nt-filter' + (on ? ' is-active' : '') + '" data-act="filter" data-cat="' + esc(name) + '">' +
-        esc(label) + '<span class="mono">' + (counts[name] || 0) + '</span></button>';
-    }
+  /** 分类筛选条：分类可就地重命名 */
+  function filters(categories, counts, active, query, editingCat) {
+    var row = '<button class="nt-filter' + (active === '__all__' ? ' is-active' : '') +
+      '" data-act="filter" data-cat="__all__">全部<span class="mono">' + (counts['__all__'] || 0) + '</span></button>';
+    categories.forEach(function (c) {
+      if (editingCat === c) {
+        row += '<span class="nt-filter nt-filter--edit">' +
+          '<input class="nt-filter-input" id="nt-rename-input" type="text" maxlength="24" ' +
+            'autocomplete="off" value="' + esc(c) + '" aria-label="重命名分类">' +
+          '<button class="nt-filter-mini" type="button" data-act="cat-rename-save" data-cat="' + esc(c) + '" title="保存">✓</button>' +
+          '<button class="nt-filter-mini" type="button" data-act="cat-rename-cancel" title="取消">×</button>' +
+        '</span>';
+        return;
+      }
+      var on = active === c;
+      row += '<span class="nt-filter-wrap' + (on ? ' is-active' : '') + '">' +
+        '<button class="nt-filter' + (on ? ' is-active' : '') + '" data-act="filter" data-cat="' + esc(c) + '">' +
+          esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>' +
+        '<button class="nt-filter-tool" type="button" data-act="cat-rename-start" data-cat="' + esc(c) +
+          '" title="重命名分类" aria-label="重命名分类">✎</button>' +
+      '</span>';
+    });
     return '' +
       '<div class="nt-filters">' +
-        '<div class="nt-filter-row">' + item('__all__', '全部') +
-          categories.map(function (c) { return item(c, c); }).join('') +
-        '</div>' +
+        '<div class="nt-filter-row">' + row + '</div>' +
         '<div class="nt-search-wrap">' +
           '<span class="mono">⌕</span>' +
           '<input class="field nt-search" id="nt-search" type="search" autocomplete="off" ' +
@@ -87,7 +102,7 @@
     return '' +
       '<div class="nt">' +
         head(state, notes.length) +
-        filters(state.categories, counts, state.category, state.query) +
+        filters(state.categories, counts, state.category, state.query, state.editingCat) +
         '<div class="nt-statusbar mono">' +
           '<span><i class="nt-led"></i> LOCAL STORAGE · 仅保存在当前浏览器</span>' +
           '<span id="nt-count">' + notes.length + ' 篇笔记</span>' +

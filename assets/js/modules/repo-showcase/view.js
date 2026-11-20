@@ -59,14 +59,17 @@
 
   function attrRepo(fullName) { return esc(fullName); }
 
-  function headBlock(fullName, index, url) {
+  function headBlock(fullName, index, url, pinned) {
     var num = String(index + 1).padStart(2, '0');
     return '' +
       '<header class="rs-card-head">' +
         '<span class="rs-num mono">' + num + '</span>' +
         '<a class="rs-path mono" href="' + safeUrl(url || 'https://github.com/' + fullName) +
           '" target="_blank" rel="noopener noreferrer">' + esc(fullName) + ' <i class="i-ico i-ext" aria-hidden="true"></i></a>' +
+        (pinned ? '<span class="rs-pin-badge mono" title="已置顶">置顶</span>' : '') +
         '<div class="rs-card-actions">' +
+          '<button class="rs-icon-btn rs-pin-btn' + (pinned ? ' is-pinned' : '') + '" data-action="pin" data-repo="' + attrRepo(fullName) +
+            '" title="' + (pinned ? '取消置顶' : '置顶') + '" aria-label="' + (pinned ? '取消置顶' : '置顶') + '">' + (pinned ? '★' : '☆') + '</button>' +
           '<button class="rs-icon-btn" data-action="refresh" data-repo="' + attrRepo(fullName) +
             '" title="重新获取" aria-label="重新获取">↻</button>' +
           '<button class="rs-icon-btn rs-icon-btn--danger" data-action="remove" data-repo="' + attrRepo(fullName) +
@@ -264,40 +267,25 @@
       '</div>';
   }
 
-  /** item: { fullName, status: loading|ready|error, data?, error? }; ui: 该卡的下载选择状态 */
+  /** item: { fullName, status: loading|ready|error, data?, error?, pinned? }; ui: 该卡的下载选择状态 */
   function card(item, index, ui) {
     var d = item.data;
     var inner = '';
 
     if (item.status === 'loading' && !d) {
-      inner = headBlock(item.fullName, index) + loadingBlock();
+      inner = headBlock(item.fullName, index, null, item.pinned) + loadingBlock();
     } else {
-      inner = headBlock(item.fullName, index, d ? d.htmlUrl : null);
+      inner = headBlock(item.fullName, index, d ? d.htmlUrl : null, item.pinned);
       if (item.status === 'error' && d) inner += staleBar(item);
       if (d) inner += repoBlock(d) + releaseBlock(d, ui) + footBlock(d);
       if (item.status === 'error' && !d) inner += errorBlock(item);
     }
 
     var cls = 'rs-card' + (item.status === 'loading' ? ' rs-card--loading' : '') +
-      (item.status === 'error' ? ' rs-card--error' : '');
+      (item.status === 'error' ? ' rs-card--error' : '') + (item.pinned ? ' rs-card--pinned' : '');
     return '<article class="' + cls + '" data-repo="' + attrRepo(item.fullName) +
       '" style="animation-delay:' + Math.min(index, 8) * 55 + 'ms">' +
       '<span class="rs-card-line"></span>' + inner + '</article>';
-  }
-
-  /** 分组标题：仅渲染视觉结构，卡片由调用方组装。key 为默认目录时不显示删除按钮。 */
-  function groupHead(key, count, isDefault) {
-    return '' +
-      '<header class="rs-group-head">' +
-        '<span class="rs-group-mark mono" aria-hidden="true">▎</span>' +
-        '<h3 class="rs-group-name">' + esc(key) + '</h3>' +
-        '<span class="rs-group-count mono">' + count + ' ' + (count === 1 ? 'REPO' : 'REPOS') + '</span>' +
-        '<span class="rs-group-rule" aria-hidden="true"></span>' +
-        (isDefault
-          ? '<span class="rs-group-tag mono">默认目录</span>'
-          : '<button class="rs-group-del mono" type="button" data-action="delete-group" data-group="' +
-            esc(key) + '" title="删除该目录，项目移入默认目录">删除目录 ×</button>') +
-      '</header>';
   }
 
   function empty() {
@@ -309,5 +297,5 @@
       '</div>';
   }
 
-  NS.view = { esc: esc, safeUrl: safeUrl, card: card, groupHead: groupHead, empty: empty, compact: compact };
+  NS.view = { esc: esc, safeUrl: safeUrl, card: card, empty: empty, compact: compact };
 })(window);

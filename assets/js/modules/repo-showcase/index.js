@@ -42,14 +42,24 @@
     if (!Array.isArray(groups)) return null;
     // 内置示例是每个设备各自生成的演示数据，不是用户数据，绝不参与同步
     if (ns.get('demo', false) === true) return null;
-    return { groups: sanitizeGroups({ groups: groups }), snapshots: ns.get('snapshots', {}) || {} };
+    return {
+      groups: sanitizeGroups({ groups: groups }),
+      snapshots: ns.get('snapshots', {}) || {},
+      pinned: normalizePinned(ns.get('pinned', null))
+    };
   };
   /** 冷写入：未挂载时把云端数据落盘，下次进入模块即生效 */
   syncBridge.applyCold = function (data) {
     if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
     var ns = Portal.store.namespace('repo-showcase');
-    ns.set('groups', sanitizeGroups(data));
+    var groups = sanitizeGroups(data);
+    var repos = allRepos(groups);
+    ns.set('groups', groups);
     ns.set('snapshots', (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {});
+    // 与热路径 applyState 一致：丢弃已不存在的置顶项，避免脏数据
+    ns.set('pinned', normalizePinned(data.pinned).filter(function (name) {
+      return repos.indexOf(name) >= 0;
+    }));
     ns.set('demo', false); // 云端数据已覆盖示例
   };
 
@@ -112,6 +122,17 @@
     return out;
   }
 
+  /** 置顶列表归一化：只保留字符串、去重 */
+  function normalizePinned(raw) {
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    raw.forEach(function (r) {
+      var s = String(r || '').trim();
+      if (s && out.indexOf(s) < 0) out.push(s);
+    });
+    return out;
+  }
+
   Portal.registry.register({
     id: 'repo-showcase',
     index: '01',
@@ -136,9 +157,11 @@
       var state = {
         groups: normalizeGroups(rawGroups, legacy),
         snapshots: store.get('snapshots', {}) || {},
+        pinned: normalizePinned(store.get('pinned', null)),  // 置顶的仓库 fullName 列表
         items: {},
         ui: {},                  // 每张卡的平台筛选选择，纯本地视图状态
         activeGroup: '__all__',  // 分类筛选：__all__ 表示全部目录
+        editingGroup: null,      // 正在重命名的目录名
         demo: isDemo === true,
         token: settings.get('githubToken', '') || '',
         apiBase: settings.get('apiBase', '') || '',
@@ -255,6 +278,7 @@
 
       function saveGroups() {
         store.set('groups', state.groups);
+        store.set('pinned', state.pinned);
         store.set('demo', state.demo);
       }
       /** 用户真正增删改后调用：此后数据属于用户，允许参与同步 */
@@ -289,19 +313,74 @@
         return name;
       }
 
-      /** 分类筛选条：全部 / 各目录（含空目录）/ 常驻新建入口 */
+      /** 分类筛选条：全部 / 各目录（含空目录）/ 常驻新建入口。目录可就地重命名、删除。 */
       function renderFilterRow() {
         if (!filterRow) return;
         var total = allRepos(state.groups).length;
-        function item(key, label, count) {
-          var on = state.activeGroup === key;
-          return '<button class="rs-filter' + (on ? ' is-active' : '') + '" type="button" ' +
-            'data-action="filter-group" data-group="' + esc(key) + '">' +
-            esc(label) + '<span class="mono">' + count + '</span></button>';
+        var on = state.activeGroup === '__all__';
+        var html = '<button class="rs-filter' + (on ? ' is-active' : '') + '" type="button" ' +
+          'data-action="filter-group" data-group="__all__">全部<span class="mono">' + total + '</span></button>';
+
+        state.groups.forEach(function (g) {
+          // 重命名进行中：就地渲染输入框
+          if (state.editingGroup === g.name) {
+            html += '<span class="rs-filter rs-filter--edit">' +
+              '<input class="rs-filter-input" id="rs-rename-input" type="text" maxlength="24" ' +
+                'autocomplete="off" value="' + esc(g.name) + '" aria-label="重命名目录">' +
+              '<button class="rs-filter-mini" type="button" data-action="rename-save" data-group="' +
+                esc(g.name) + '" title="保存名称">✓</button>' +
+              '<button class="rs-filter-mini" type="button" data-action="rename-cancel" title="取消">×</button>' +
+            '</span>';
+            return;
+          }
+          var active = state.activeGroup === g.name;
+          html += '<span class="rs-filter-wrap' + (active ? ' is-active' : '') + '">' +
+            '<button class="rs-filter' + (active ? ' is-active' : '') + '" type="button" ' +
+              'data-action="filter-group" data-group="' + esc(g.name) + '">' +
+              esc(g.name) + '<span class="mono">' + g.repos.length + '</span></button>' +
+            '<button class="rs-filter-tool" type="button" data-action="rename-start" data-group="' +
+              esc(g.name) + '" title="重命名目录" aria-label="重命名目录">✎</button>' +
+            (g.name === DEFAULT_GROUP ? '' :
+              '<button class="rs-filter-tool rs-filter-tool--danger" type="button" ' +
+                'data-action="delete-group" data-group="' + esc(g.name) +
+                '" title="删除目录，项目移入默认目录" aria-label="删除目录">×</button>') +
+          '</span>';
+        });
+
+        html += '<button class="rs-filter rs-filter--new" type="button" data-action="new-group">＋ 新建目录</button>';
+        filterRow.innerHTML = html;
+      }
+
+      function startRename(name) {
+        state.editingGroup = name;
+        renderFilterRow();
+        var input = root.querySelector('#rs-rename-input');
+        if (input) { input.focus(); input.select(); }
+      }
+      function cancelRename() {
+        state.editingGroup = null;
+        renderFilterRow();
+      }
+      function saveRename(oldName) {
+        var input = root.querySelector('#rs-rename-input');
+        var name = String(input ? input.value : '').trim().slice(0, 24);
+        if (!name) { flash('目录名称不能为空', 'error'); return; }
+        if (name === '__new__') { flash('目录名称不可用', 'error'); return; }
+        if (name !== oldName && state.groups.some(function (g) { return g.name === name; })) {
+          flash('目录「' + name + '」已存在', 'warn'); return;
         }
-        filterRow.innerHTML = item('__all__', '全部', total) +
-          state.groups.map(function (g) { return item(g.name, g.name, g.repos.length); }).join('') +
-          '<button class="rs-filter rs-filter--new" type="button" data-action="new-group">＋ 新建目录</button>';
+        var group = state.groups.filter(function (g) { return g.name === oldName; })[0];
+        if (!group) { cancelRename(); return; }
+        if (name === oldName) { cancelRename(); return; }
+        group.name = name;
+        if (state.activeGroup === oldName) state.activeGroup = name;
+        if (groupSelect.value === oldName) groupSelect.value = name;
+        state.editingGroup = null;
+        touch();
+        saveGroups();
+        renderGroupOptions(name);
+        flash('目录已重命名为「' + name + '」');
+        render();
       }
       function setNewGroupOpen(open) {
         if (!newGroupBox) return;
@@ -318,27 +397,32 @@
           if (cardEl) openNotes[cardEl.dataset.repo] = true;
         });
 
-        var html = '';
-        var index = 0;
+        // 参照模块 02：不再按目录分组渲染重复标题，卡片统一平铺在一个网格里。
+        // 目录的展示/切换/管理全部收敛到顶部筛选条。
+        var visible = [];
         state.groups.forEach(function (g) {
-          // 筛选条：只显示当前目录；「全部」时跳过空目录，单独选中空目录时给出空态
           if (state.activeGroup !== '__all__' && g.name !== state.activeGroup) return;
-          if (!g.repos.length) return;
-          var cards = g.repos.map(function (fullName) {
-            var item = state.items[fullName] || {
-              fullName: fullName,
-              status: 'loading',
-              data: state.snapshots[fullName] || null
-            };
-            return View.card(item, index++, state.ui[fullName] || {});
-          }).join('');
-          html += '<section class="rs-group" data-group="' + esc(g.name) + '">' +
-            View.groupHead(g.name, g.repos.length, g.name === DEFAULT_GROUP) +
-            '<div class="rs-grid">' + cards + '</div>' +
-          '</section>';
+          g.repos.forEach(function (fullName) { if (visible.indexOf(fullName) < 0) visible.push(fullName); });
         });
+        // 置顶优先，其余保持原有加入顺序
+        visible.sort(function (a, b) {
+          var pa = state.pinned.indexOf(a) >= 0, pb = state.pinned.indexOf(b) >= 0;
+          if (pa !== pb) return pa ? -1 : 1;
+          return 0;
+        });
+        var html = visible.map(function (fullName, i) {
+          var item = state.items[fullName] || {
+            fullName: fullName,
+            status: 'loading',
+            data: state.snapshots[fullName] || null
+          };
+          item.pinned = state.pinned.indexOf(fullName) >= 0;
+          return View.card(item, i, state.ui[fullName] || {});
+        }).join('');
 
-        groupsEl.innerHTML = html || View.empty();
+        groupsEl.innerHTML = html
+          ? '<div class="rs-grid">' + html + '</div>'
+          : View.empty();
 
         Array.prototype.forEach.call(groupsEl.querySelectorAll('.rs-card'), function (el) {
           var repo = el.dataset.repo;
@@ -422,10 +506,24 @@
         load(fullName, true);
       }
 
+      /** 置顶/取消置顶：置顶项在平铺列表里排最前 */
+      function togglePin(fullName) {
+        var i = state.pinned.indexOf(fullName);
+        if (i >= 0) state.pinned.splice(i, 1);
+        else state.pinned.push(fullName);
+        touch();
+        saveGroups();
+        render();
+        flash(i >= 0 ? '已取消置顶 ' + fullName : '已置顶 ' + fullName);
+      }
+
       function remove(fullName) {
         state.groups.forEach(function (g) {
           g.repos = g.repos.filter(function (n) { return n !== fullName; });
         });
+        // 移除项目时同步清理置顶记录，避免脏数据
+        var pi = state.pinned.indexOf(fullName);
+        if (pi >= 0) state.pinned.splice(pi, 1);
         delete state.snapshots[fullName];
         delete state.items[fullName];
         touch();
@@ -444,6 +542,7 @@
         group.repos.forEach(function (r) { if (fallback.repos.indexOf(r) < 0) fallback.repos.push(r); });
         state.groups = state.groups.filter(function (g) { return g.name !== name; });
         if (state.activeGroup === name) state.activeGroup = DEFAULT_GROUP;
+        if (state.editingGroup === name) state.editingGroup = null;
         touch();
         saveGroups();
         render();
@@ -456,6 +555,11 @@
       });
 
       groupSelect.addEventListener('change', toggleNewInput);
+      root.addEventListener('keydown', function (e) {
+        if (!state.editingGroup || e.target && e.target.id !== 'rs-rename-input') return;
+        if (e.key === 'Enter') { e.preventDefault(); saveRename(state.editingGroup); }
+        else if (e.key === 'Escape') { e.preventDefault(); cancelRename(); }
+      });
       if (newGroupInput) newGroupInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -476,10 +580,15 @@
 
         if (action === 'refresh' && repo) { load(repo, true); return; }
         if (action === 'remove' && repo) { remove(repo); return; }
+        if (action === 'pin' && repo) { togglePin(repo); return; }
         if (action === 'delete-group') { deleteGroup(btn.dataset.group); return; }
+        if (action === 'rename-start') { startRename(btn.dataset.group); return; }
+        if (action === 'rename-save') { saveRename(btn.dataset.group); return; }
+        if (action === 'rename-cancel') { cancelRename(); return; }
 
         if (action === 'filter-group') {
           state.activeGroup = btn.dataset.group || '__all__';
+          state.editingGroup = null;
           render();
           return;
         }
@@ -584,7 +693,7 @@
       syncBridge.getState = function () {
         // 纯内置示例不上传：每个设备应各自展示自己的示例，而不是把它同步到云端
         if (state.demo) return null;
-        return { groups: state.groups, snapshots: state.snapshots };
+        return { groups: state.groups, snapshots: state.snapshots, pinned: state.pinned };
       };
       syncBridge.applyState = function (data) {
         if (!data || typeof data !== 'object') throw new Error('仓库数据格式无效');
@@ -595,7 +704,11 @@
           state.activeGroup = '__all__';
         }
         state.snapshots = (data.snapshots && typeof data.snapshots === 'object') ? data.snapshots : {};
+        state.pinned = normalizePinned(data.pinned).filter(function (name) {
+          return allRepos(state.groups).indexOf(name) >= 0; // 丢弃已不存在的置顶项
+        });
         state.items = {};
+        state.editingGroup = null;
         saveGroups();
         store.set('snapshots', state.snapshots);
         render();

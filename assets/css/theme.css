@@ -188,6 +188,8 @@ html[data-theme="light"] .nt-preview-pane { background: var(--th-surface); }
 /* 体积监测条：亮色下用浅底，超限用淡红底 */
 html[data-theme="light"] .nt-size { background: var(--th-surface-2); }
 html[data-theme="light"] .nt-size[data-level="over"] { background: rgba(216, 56, 90, .06); }
+/* 置顶角标亮色下用浅底深字 */
+html[data-theme="light"] .nt-pin-badge { background: rgba(255, 255, 255, .9); }
 html[data-theme="light"] .nt-card {
   background: linear-gradient(155deg, #ffffff, var(--th-surface-2));
   box-shadow: 0 8px 22px rgba(24, 42, 74, .07);

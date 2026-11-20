@@ -60,6 +60,31 @@
   background: linear-gradient(120deg, #67ecd0, #4fd8c0);
 }
 .nt-filter.is-active span { color: rgba(4, 19, 15, .7); }
+/* 分类 chip 包裹：筛选按钮 + 重命名工具 */
+.nt-filter-wrap { display: inline-flex; align-items: stretch; }
+.nt-filter-wrap > .nt-filter { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 8px; }
+.nt-filter-wrap.is-active > .nt-filter { border-radius: 999px 0 0 999px; }
+.nt-filter-tool {
+  display: grid; place-items: center; width: 26px;
+  border: 1px solid var(--line); border-left: 0; background: transparent;
+  color: var(--muted); font-size: 12px; line-height: 1;
+  transition: color .16s, background .16s;
+}
+.nt-filter-tool:last-child { border-radius: 0 999px 999px 0; }
+.nt-filter-tool:hover { color: var(--accent); background: var(--accent-dim); }
+/* 重命名内联输入 */
+.nt-filter--edit { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-color: var(--accent); }
+.nt-filter-input {
+  width: 120px; height: 24px; padding: 0 8px;
+  border: 1px solid var(--line-strong); border-radius: 6px;
+  background: var(--surface-2); color: var(--text); font: 12px var(--sans); outline: 0;
+}
+.nt-filter-mini {
+  width: 24px; height: 24px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: var(--accent-dim);
+  color: var(--accent); font-size: 12px; line-height: 1;
+}
+.nt-filter-mini:hover { background: var(--accent); color: #04130f; }
 
 .nt-search-wrap {
   display: flex; align-items: center; gap: 8px;
@@ -86,11 +111,21 @@
 .nt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
 
 .nt-card {
+  position: relative;
   display: flex; flex-direction: column; min-width: 0; overflow: hidden;
   border: 1px solid var(--line); border-radius: var(--radius);
   background: linear-gradient(155deg, rgba(20, 31, 50, .78), rgba(11, 18, 31, .8));
   transition: border-color .2s, transform .2s, box-shadow .2s;
 }
+/* 置顶卡片：强调描边 + 右上角标 */
+.nt-card--pinned { border-color: var(--line-strong); box-shadow: 0 0 0 1px rgba(85, 227, 194, .14); }
+.nt-pin-badge {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  font-size: 9px; letter-spacing: .4px; color: var(--accent);
+  padding: 3px 8px; border: 1px solid rgba(85, 227, 194, .4); border-radius: 999px;
+  background: rgba(8, 16, 28, .82); backdrop-filter: blur(2px);
+}
+.nt-pin-btn.is-pinned { color: var(--accent); }
 .nt-card:hover {
   transform: translateY(-3px); border-color: var(--line-strong);
   box-shadow: 0 16px 40px rgba(0, 0, 0, .34);

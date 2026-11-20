@@ -67,7 +67,8 @@
       category: String(raw.category || '').trim().slice(0, 24) || '未分类',
       tags: tags.slice(0, 8),
       body: String(raw.body || ''),
-      updatedAt: Number(raw.updatedAt) || Date.now()
+      updatedAt: Number(raw.updatedAt) || Date.now(),
+      pinned: raw.pinned === true
     };
   }
 
@@ -158,6 +159,7 @@
         isNew: false,
         query: '',
         category: ALL,
+        editingCat: null,
         flashTimer: null
       };
 
@@ -209,7 +211,11 @@
           var hay = [n.title, n.category, n.body].join(' ').toLowerCase() + ' ' +
             (n.tags || []).join(' ').toLowerCase();
           return hay.indexOf(q) >= 0;
-        }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+        }).sort(function (a, b) {
+          // 置顶优先，其次按更新时间
+          if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+          return (b.updatedAt || 0) - (a.updatedAt || 0);
+        });
       }
 
       function flash(text, kind) {
@@ -462,6 +468,8 @@
         if (state.categories.indexOf(note.category) < 0) state.categories.push(note.category);
         var idx = -1;
         state.notes.forEach(function (n, i) { if (n.id === note.id) idx = i; });
+        // 保留原置顶状态（置顶只在列表里切换，编辑正文不应清除）
+        note.pinned = idx >= 0 ? !!state.notes[idx].pinned : false;
         if (idx >= 0) state.notes[idx] = note; else state.notes.unshift(note);
         // 草稿里上传但最终没写进正文的媒体要回收；再全局清理无引用的媒体
         state.draftMedia.forEach(function (id) {
@@ -485,6 +493,37 @@
         persist();
         if (state.currentId === id) goList(); else render();
         flash('笔记已删除');
+      }
+
+      /** 置顶/取消置顶：置顶笔记排在列表最前 */
+      function togglePin(id) {
+        var note = state.notes.filter(function (n) { return n.id === id; })[0];
+        if (!note) return;
+        note.pinned = !note.pinned;
+        touch();
+        persist();
+        render();
+        flash(note.pinned ? '已置顶《' + (note.title || '无标题') + '》' : '已取消置顶');
+      }
+
+      /** 分类重命名：同步更新所有笔记的 category 与导航状态 */
+      function startCatRename(name) { state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
+      function cancelCatRename() { state.editingCat = null; render(); }
+      function saveCatRename(oldName) {
+        var input = root.querySelector('#nt-rename-input');
+        var name = String(input ? input.value : '').trim().slice(0, 24);
+        if (!name) { flash('分类名称不能为空', 'error'); return; }
+        if (name !== oldName && state.categories.indexOf(name) >= 0) { flash('分类「' + name + '」已存在', 'warn'); return; }
+        if (name === oldName) { cancelCatRename(); return; }
+        var ci = state.categories.indexOf(oldName);
+        if (ci >= 0) state.categories[ci] = name;
+        state.notes.forEach(function (n) { if (n.category === oldName) n.category = name; });
+        if (state.category === oldName) state.category = name;
+        state.editingCat = null;
+        touch();
+        persist();
+        flash('分类已重命名为「' + name + '」');
+        render();
       }
 
       // ---------- 导入 / 导出 ----------
@@ -679,6 +718,10 @@
         if (act === 'read') return openRead(id);
         if (act === 'edit') return openEdit(id, false);
         if (act === 'delete') return remove(id);
+        if (act === 'pin') return togglePin(id);
+        if (act === 'cat-rename-start') return startCatRename(btn.dataset.cat);
+        if (act === 'cat-rename-save') return saveCatRename(btn.dataset.cat);
+        if (act === 'cat-rename-cancel') return cancelCatRename();
         if (act === 'new') return openEdit(null, true);
         if (act === 'back') return goList();
         if (act === 'cancel') return goList();
@@ -689,6 +732,7 @@
 
         if (act === 'filter') {
           state.category = btn.dataset.cat || ALL;
+          state.editingCat = null;
           render();
           return;
         }
@@ -741,6 +785,11 @@
       });
 
       root.addEventListener('keydown', function (e) {
+        // 分类重命名输入：Enter 保存 / Esc 取消
+        if (state.editingCat && e.target && e.target.id === 'nt-rename-input') {
+          if (e.key === 'Enter') { e.preventDefault(); saveCatRename(state.editingCat); return; }
+          if (e.key === 'Escape') { e.preventDefault(); cancelCatRename(); return; }
+        }
         // Ctrl/Cmd + Enter 快速保存
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && state.view === 'edit') {
           e.preventDefault();

@@ -84,6 +84,32 @@
 .rs-filter.is-active span { color: rgba(4, 19, 15, .7); }
 .rs-filter--new { color: var(--blue); border-style: dashed; }
 .rs-filter--new:hover { color: var(--blue); border-color: var(--blue); background: rgba(109, 156, 255, .1); }
+/* 目录 chip 包裹：筛选按钮 + 重命名/删除小工具 */
+.rs-filter-wrap { display: inline-flex; align-items: stretch; }
+.rs-filter-wrap > .rs-filter { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 8px; }
+.rs-filter-wrap.is-active > .rs-filter { border-radius: 999px 0 0 999px; }
+.rs-filter-tool {
+  display: grid; place-items: center; width: 26px;
+  border: 1px solid var(--line); border-left: 0; background: transparent;
+  color: var(--muted); font-size: 12px; line-height: 1;
+  transition: color .16s, background .16s;
+}
+.rs-filter-tool:last-child { border-radius: 0 999px 999px 0; }
+.rs-filter-tool:hover { color: var(--accent); background: var(--accent-dim); }
+.rs-filter-tool--danger:hover { color: var(--danger); background: rgba(255, 129, 151, .08); }
+/* 重命名内联输入 */
+.rs-filter--edit { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; border-style: solid; border-color: var(--accent); }
+.rs-filter-input {
+  width: 120px; height: 24px; padding: 0 8px;
+  border: 1px solid var(--line-strong); border-radius: 6px;
+  background: var(--surface-2); color: var(--text); font: 12px var(--sans); outline: 0;
+}
+.rs-filter-mini {
+  width: 24px; height: 24px; display: grid; place-items: center;
+  border: 0; border-radius: 6px; background: var(--accent-dim);
+  color: var(--accent); font-size: 12px; line-height: 1;
+}
+.rs-filter-mini:hover { background: var(--accent); color: #04130f; }
 .rs-new-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rs-new-group[hidden] { display: none; }
 .rs-new-group .field { flex: 1 1 200px; height: 36px; }
@@ -146,6 +172,15 @@
   box-shadow: 0 18px 42px rgba(0, 0, 0, .3), 0 0 0 1px rgba(85, 227, 194, .06);
 }
 .rs-card--error { border-color: rgba(255, 129, 151, .38); }
+/* 置顶卡片：强调描边 + 顶部标记条 */
+.rs-card--pinned { border-color: var(--line-strong); box-shadow: 0 12px 30px rgba(0, 0, 0, .18), 0 0 0 1px rgba(85, 227, 194, .14); }
+.rs-card--pinned .rs-card-line { opacity: .85; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+.rs-pin-badge {
+  flex: 0 0 auto; font-size: 9px; letter-spacing: .6px; color: var(--accent);
+  padding: 2px 7px; border: 1px solid rgba(85, 227, 194, .4); border-radius: 999px;
+  background: var(--accent-dim);
+}
+.rs-pin-btn.is-pinned { color: var(--accent); }
 .rs-card-line {
   position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
