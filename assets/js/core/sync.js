@@ -39,7 +39,10 @@
     // 断开关联时的本地快照：用来识别「断开后又新增的内容」，恢复时不再静默覆盖
     detachedHash: store.get('detachedHash', '') || '',
     detachedHashes: store.get('detachedHashes', null) || null,
-    detachedAt: Number(store.get('detachedAt', 0)) || 0
+    detachedAt: Number(store.get('detachedAt', 0)) || 0,
+    // 三方合并的共同祖先：上次同步成功后云端各模块的快照。
+    // 有了它，双方同时改动时能按条目做三方合并，而不是整模块覆盖、静默丢数据。
+    baseSnapshot: store.get('baseSnapshot', null) || null
   };
 
   function saveCfg() {
@@ -56,6 +59,7 @@
       store.set('detachedHash', cfg.detachedHash);
       store.set('detachedHashes', cfg.detachedHashes);
       store.set('detachedAt', cfg.detachedAt);
+      store.set('baseSnapshot', cfg.baseSnapshot);
     }
 
   function esc(v) {
@@ -148,6 +152,117 @@
     return out;
   }
 
+  /* ---------- 三方合并（three-way merge） ----------
+     旧逻辑：双方都改 → 比时间戳，输的一整块被覆盖 → 另一台设备新增的条目静默丢失，
+     且设备时钟不一致时裁决错乱。新逻辑：以「上次同步成功的云端快照」为共同祖先 base，
+     对模块数据做结构化三方合并：
+       · 对象：按 key 递归合并
+       · 带 id/name 的对象数组：按 id/name 对齐后逐条合并（笔记、仓库分组）
+       · 普通数组：按「base 有、某侧删」判断删除，否则取并集（分类、repos、置顶）
+       · 标量：一侧未动取另一侧，两侧都动取本地（情绪数据以本机为准，绝不静默吞）
+     这样三台设备交替增删都能收敛，不依赖时钟。 */
+  function isObj(v) { return v && typeof v === 'object' && !Array.isArray(v); }
+  function isArr(v) { return Array.isArray(v); }
+  function sameVal(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    try { return JSON.stringify(a) === JSON.stringify(b); } catch (e) { return false; }
+  }
+  function unionKeys(groups) {
+    var out = [], seen = Object.create(null);
+    groups.forEach(function (arr) {
+      (arr || []).forEach(function (k) {
+        if (!Object.prototype.hasOwnProperty.call(seen, k)) { seen[k] = 1; out.push(k); }
+      });
+    });
+    return out;
+  }
+  function arrayKey(sample) {
+    if (sample && typeof sample === 'object') {
+      if (sample.id !== undefined) return 'id';
+      if (sample.name !== undefined) return 'name';
+    }
+    return null;
+  }
+  function mergeVal(base, local, remote) {
+    // 一侧缺失（视为删除）：另一侧没动过就删；另一侧改过就保留另一侧，避免吞掉改动
+    if (local === undefined) {
+      if (remote === undefined) return undefined;
+      if (sameVal(remote, base)) return undefined;
+      return remote;
+    }
+    if (remote === undefined) {
+      if (base !== undefined && sameVal(local, base)) return undefined;
+      return local;
+    }
+    if (isArr(local) || isArr(remote) || isArr(base)) return mergeArr(base, local, remote);
+    if (isObj(local) || isObj(remote) || isObj(base)) return mergeObj(base, local, remote);
+    // 标量
+    if (sameVal(local, base)) return remote;
+    if (sameVal(remote, base)) return local;
+    return local;
+  }
+  function mergeObj(base, local, remote) {
+    base = isObj(base) ? base : {};
+    local = isObj(local) ? local : {};
+    remote = isObj(remote) ? remote : {};
+    var out = {};
+    unionKeys([Object.keys(base), Object.keys(local), Object.keys(remote)]).forEach(function (k) {
+      var v = mergeVal(base[k], local[k], remote[k]);
+      if (v !== undefined) out[k] = v;
+    });
+    return out;
+  }
+  function mergeArr(base, local, remote) {
+    base = isArr(base) ? base : [];
+    local = isArr(local) ? local : [];
+    remote = isArr(remote) ? remote : [];
+    var sample = local[0] || remote[0] || base[0];
+    var key = arrayKey(sample);
+    if (key) {
+      // 对象数组按 id/name 对齐
+      var bm = Object.create(null), lm = Object.create(null), rm = Object.create(null);
+      base.forEach(function (o) { if (o && o[key] != null) bm[o[key]] = o; });
+      local.forEach(function (o) { if (o && o[key] != null) lm[o[key]] = o; });
+      remote.forEach(function (o) { if (o && o[key] != null) rm[o[key]] = o; });
+      var out = [];
+      unionKeys([Object.keys(bm), Object.keys(lm), Object.keys(rm)]).forEach(function (k) {
+        var v = mergeVal(bm[k], lm[k], rm[k]);
+        if (v !== undefined) out.push(v);
+      });
+      return out;
+    }
+    // 普通数组（字符串）：保留本地顺序，补入 remote 相对 base 新增、且本地没有的项
+    var bset = Object.create(null), lset = Object.create(null);
+    base.forEach(function (x) { bset[x] = 1; });
+    local.forEach(function (x) { lset[x] = 1; });
+    var out2 = local.slice();
+    remote.forEach(function (x) {
+      if (!bset[x] && !lset[x] && out2.indexOf(x) < 0) out2.push(x);
+    });
+    return out2;
+  }
+
+  /** 用 base 快照把本地与云端做三方合并，得到最终要写入/落地的模块集合 */
+  function threeWayMergeModules(baseModules, localModules, remoteModules) {
+    var all = unionKeys([
+      Object.keys(baseModules || {}),
+      Object.keys(localModules || {}),
+      Object.keys(remoteModules || {})
+    ]);
+    var out = {};
+    all.forEach(function (id) {
+      var merged = mergeObj(
+        (baseModules || {})[id],
+        (localModules || {})[id],
+        (remoteModules || {})[id]
+      );
+      // 只有当某模块至少在一侧存在时才产出，避免凭空生成空模块
+      if ((localModules && localModules[id]) || (remoteModules && remoteModules[id])) out[id] = merged;
+    });
+    return out;
+  }
+
   /* ---------- GitHub API ---------- */
   function friendlyError(err) {
     var status = err && err.status;
@@ -223,8 +338,10 @@
     }, null, 2);
   }
 
-  /** 把模块数据写进 Gist（不存在则创建私有 Gist） */
-  function writeGist(merged, localModules, mergedHash) {
+  /** 把模块数据写进 Gist（不存在则创建私有 Gist）
+   *  finalSnapshot：本次落地后的实际模块数据，作为下次三方合并的共同祖先；
+   *  省略时用 merged。 */
+  function writeGist(merged, localModules, mergedHash, finalSnapshot) {
     var myEpoch = epoch; // 写入请求期间若用户断开，结果作废，不再写回配置
     var content = serializeGist(merged);
     // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限，按 UTF-8 字节计）。
@@ -243,6 +360,7 @@
       cfg.gistId = g.id;
       cfg.syncedHash = mergedHash;
       cfg.localHash = hashModules(localModules);
+      cfg.baseSnapshot = finalSnapshot || merged; // 记录共同祖先，供下次三方合并
       cfg.syncedAt = Date.now();
       clearDetached(); // 成功上传后，断开快照已过期，避免下次恢复误报「本地新增」
       saveCfg();
@@ -363,18 +481,57 @@
         };
       }
 
-      // 上传方向：仅本地变；或双方都变但本地时间更新；且不是首次关联。
-      var localWins = !firstLink && localDirty &&
-        (!remoteChanged || cfg.localChangedAt > remoteTs + SKEW);
-      if (localWins) {
-        var merged = mergeModules(remoteModules, localModules);
-        return writeGist(merged, localModules, hashModules(merged));
+      var base = cfg.baseSnapshot || {};
+
+      // 双方都改：不再用「本机时钟」裁决整模块覆盖（那会静默吞掉另一台设备新增的条目，
+      // 且设备时钟不一致时裁决错乱）。改为三方合并：以 base 为共同祖先，逐条合并
+      // 本地与云端，然后把合并结果同时落回本地与云端。不依赖任何设备时钟。
+      if (!firstLink && localDirty && remoteChanged) {
+        var mergedBoth = threeWayMergeModules(base, localModules, remoteModules);
+        var mergedHash = hashModules(mergedBoth);
+        // 合并结果先落到本地（重绘/写盘），再写云端；localHash 取「合并后重新采集」的值，
+        // 这样落地的归一化结果就是新基线，避免下一轮反复判脏。
+        var applyBoth = applyRemote(mergedBoth);
+        var landedModules = collectLocal();
+        if (mergedHash === remoteHash && applyBoth.failed.length === 0) {
+          // 合并结果与云端一致（可能另一台设备已写入相同内容），无需再写，直接收敛基线
+          cfg.syncedHash = remoteHash;
+          cfg.localHash = hashModules(landedModules);
+          cfg.baseSnapshot = mergedBoth;
+          cfg.syncedAt = remoteTs || Date.now();
+          saveCfg();
+          applyBoth.ok = true;
+          applyBoth.note = 'merged-in-sync';
+          applyBoth.htmlUrl = remote.gist.html_url;
+          return applyBoth;
+        }
+        return writeGist(mergedBoth, landedModules, mergedHash, mergedBoth)
+          .then(function (r) {
+            if (r && r.ok) {
+              r.merged = true;
+              r.applied = applyBoth.applied;
+              r.failed = (r.failed || []).concat(applyBoth.failed);
+              if (applyBoth.failed.length) r.error = applyBoth.failed.length + ' 个模块应用失败，已保留本地数据';
+            }
+            return r;
+          });
       }
 
-      // 下载方向：仅云端变；或双方都变但云端更新
-      var r = applyRemote(remoteModules);
+      // 仅本地变（云端没动）：三方合并退化为「本地覆盖 + 保留云端独有模块」，写入云端。
+      // 用三方合并而非整模块覆盖，可在 base 缺失时仍保住云端独有的模块数据。
+      var localWins = !firstLink && localDirty;
+      if (localWins) {
+        var mergedLocal = threeWayMergeModules(base, localModules, remoteModules);
+        return writeGist(mergedLocal, localModules, hashModules(mergedLocal), mergedLocal);
+      }
+
+      // 仅云端变（本地没动）：以云端为准落地，并把云端快照记为新基线。
+      // 同样经过三方合并，保住本地冷数据里可能存在的独有模块。
+      var mergedRemote = firstLink ? remoteModules : threeWayMergeModules(base, localModules, remoteModules);
+      var r = applyRemote(mergedRemote);
       cfg.syncedHash = remoteHash;
       cfg.localHash = hashModules(collectLocal());
+      cfg.baseSnapshot = mergedRemote;
       cfg.syncedAt = remoteTs || Date.now();
       saveCfg();
       r.ok = true;
@@ -543,6 +700,7 @@
       cfg.syncedHash = '';
       cfg.localHash = '';
       cfg.localChangedAt = 0;
+      cfg.baseSnapshot = null;
       cfg.auto = true;
       saveCfg();
       return { ok: true, gistId: cfg.gistId };
@@ -721,6 +879,7 @@
       cfg.syncedHash = '';
       cfg.localHash = '';
       cfg.localChangedAt = 0;
+      cfg.baseSnapshot = null;
       cfg.auto = true;
       saveCfg();
       return { ok: true, gistId: cfg.gistId };
@@ -789,8 +948,8 @@
         if (cfg.gistId && remoteHash && remoteHash !== cfg.syncedHash && !opts.force) {
           return { needConfirm: true, kind: 'push' };
         }
-        var merged = mergeModules(remoteModules, localModules);
-        return writeGist(merged, localModules, hashModules(merged));
+        var merged = threeWayMergeModules(cfg.baseSnapshot || {}, localModules, remoteModules);
+        return writeGist(merged, localModules, hashModules(merged), merged);
       }).catch(function (e) {
         return { error: e && e.message || String(e) };
       });
@@ -808,9 +967,11 @@
         var remoteHash = hashModules(remoteModules);
         var localDirty = hashModules(collectLocal()) !== cfg.localHash;
         if (localDirty && !opts.force) return { needConfirm: true, kind: 'pull' };
+        // force 下载：明确以云端为准，base 也重置为云端，下一次正常对账从同一起点出发
         var r = applyRemote(remoteModules);
         cfg.syncedHash = remoteHash;
         cfg.localHash = hashModules(collectLocal());
+        cfg.baseSnapshot = opts.force ? remoteModules : threeWayMergeModules(cfg.baseSnapshot || {}, collectLocal(), remoteModules);
         cfg.syncedAt = Date.parse(remote.gist.updated_at) || Date.now();
         saveCfg();
         r.ok = true;
@@ -869,8 +1030,9 @@
       cfg.localHash = '';
       cfg.detachedHash = '';
       cfg.detachedHashes = null;
+      cfg.baseSnapshot = null;
       saveCfg();
-      return writeGist(localModules, localModules, hashModules(localModules));
+      return writeGist(localModules, localModules, hashModules(localModules), localModules);
     },
 
     /** 断开：清掉本机 Token 与关联，后台同步随之停止；本地数据不动 */
@@ -887,6 +1049,7 @@
       cfg.gistId = '';
       cfg.syncedHash = '';
       cfg.localHash = '';
+      cfg.baseSnapshot = null;
       cfg.syncedAt = 0;
       cfg.localChangedAt = 0;
       saveCfg();
@@ -917,7 +1080,8 @@
     if (!r) return '检查中…';
     if (r.skipped) return '正在同步…';
     if (r.error) return '出错 · ' + String(r.error).slice(0, 40);
-    if (r.note === 'in-sync') return '已是最新';
+    if (r.note === 'in-sync' || r.note === 'merged-in-sync') return '已是最新';
+    if (r.merged && r.ok) return '已合并云端改动';
     if (r.ok && r.applied) return '已下载 ' + r.applied.length + ' 个模块';
     if (r.ok && r.count) return '已上传 ' + r.count + ' 个模块';
     return '检查完成';
@@ -1262,7 +1426,8 @@
         }
         if (r.error) { msg(r.error, 'error'); return; }
         gistEl.value = cfg.gistId;
-        if (r.note === 'in-sync') msg('已是最新', 'ok');
+        if (r.note === 'in-sync' || r.note === 'merged-in-sync') msg('已是最新', 'ok');
+        else if (r.merged && r.ok) msg('已合并云端改动 · ' + (r.applied || []).length + ' 个模块', 'ok');
         else if (r.applied) msg('已下载 · 更新 ' + r.applied.length + ' 个模块', 'ok');
         else if (r.count) msg('已上传 · ' + r.count + ' 个模块', 'ok');
         else msg('同步完成', 'ok');
