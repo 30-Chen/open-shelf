@@ -70,13 +70,16 @@
     root.innerHTML = defs.map(function (def, i) {
       var num = String(def.index || (i + 1)).padStart(2, '0');
       var href = def.path || ('module.html?id=' + encodeURIComponent(def.id));
+      var soon = !!def.badge;
       return '' +
-        '<a class="lc-card" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
+        '<a class="lc-card' + (soon ? ' lc-card--soon' : '') + '" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
           '<span class="lc-corner mono" aria-hidden="true"></span>' +
-          '<span class="lc-index mono">' + esc(num) + ' / MODULE</span>' +
+          '<span class="lc-index mono">' + esc(num) + ' / MODULE' +
+            (soon ? '<span class="lc-badge">' + esc(def.badge) + '</span>' : '') + '</span>' +
           '<span class="lc-name">' + esc(def.title || def.id) + '</span>' +
           '<span class="lc-desc">' + esc(def.desc || '') + '</span>' +
-          '<span class="lc-foot mono">进入模块 <i class="i-ico i-ext" aria-hidden="true"></i></span>' +
+          '<span class="lc-foot mono">' + (soon ? '预留位置' : '进入模块') +
+            ' <i class="i-ico i-ext" aria-hidden="true"></i></span>' +
         '</a>';
     }).join('');
 

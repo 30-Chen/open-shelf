@@ -164,10 +164,14 @@
         editingGroup: null,      // 正在重命名的目录名
         manageOpen: false,       // 目录管理浮层是否展开
         demo: isDemo === true,
-        token: settings.get('githubToken', '') || '',
+        // 手动 Token 仍是独立备份；云同步一旦配置，就自动优先用它的 Token，
+        // 用户不必在两个地方重复粘贴。两者都不写进仓库，只留在本机 localStorage。
+        manualToken: settings.get('githubToken', '') || '',
+        syncToken: (typeof Portal.getSyncToken === 'function' ? Portal.getSyncToken() : '') || '',
         apiBase: settings.get('apiBase', '') || '',
         busyAll: false
       };
+      function effectiveToken() { return state.syncToken || state.manualToken; }
       if (rawGroups === null || legacy !== null) saveGroups();
 
       root.innerHTML = '' +
@@ -183,8 +187,13 @@
               '<details class="rs-settings">' +
                 '<summary class="btn"><i class="i-ico i-settings" aria-hidden="true"></i> 设置</summary>' +
                 '<div class="rs-settings-panel">' +
-                  '<label>GitHub Token <span>可选 · 把限额从 60 次/小时提升到 5000 次</span>' +
-                    '<input class="field rs-setting-input" id="rs-token" type="password" autocomplete="off" placeholder="ghp_…" value="' + esc(state.token) + '">' +
+                  '<label>GitHub Token <span>' + (state.syncToken
+                    ? '已自动匹配云同步 Token · 无需重复填写'
+                    : '可选 · 把限额从 60 次/小时提升到 5000 次') + '</span>' +
+                    '<input class="field rs-setting-input" id="rs-token" type="password" autocomplete="off" ' +
+                      (state.syncToken
+                        ? 'disabled placeholder="已由云同步自动提供"'
+                        : 'placeholder="ghp_…" value="' + esc(state.manualToken) + '"') + '>' +
                   '</label>' +
                   '<label>API 地址 <span>可选 · 访问不畅时可填镜像地址</span>' +
                     '<input class="field rs-setting-input" id="rs-api" type="text" autocomplete="off" spellcheck="false" placeholder="https://api.github.com" value="' + esc(state.apiBase) + '">' +
@@ -193,7 +202,7 @@
                     '<button class="btn btn--primary" data-action="save-settings">保存设置</button>' +
                     '<button class="btn" data-action="clear-cache">清除缓存</button>' +
                   '</div>' +
-                  '<p class="rs-settings-note">设置仅保存在当前浏览器，不会写进仓库。公开站点请勿填写带权限的 Token。</p>' +
+                  '<p class="rs-settings-note">云同步配置 Token 后这里会自动匹配；Token 仅保存在当前浏览器，不会写进仓库。公开站点请勿填写带权限的 Token。</p>' +
                 '</div>' +
               '</details>' +
             '</div>' +
@@ -484,7 +493,7 @@
 
         return Github.fetchSnapshot(fullName, {
           apiBase: state.apiBase || ctx.config.githubApiBase,
-          token: state.token,
+          token: effectiveToken(),
           cacheMs: cacheMs,
           force: !!force
         }).then(function (data) {
@@ -697,9 +706,14 @@
         }
 
         if (action === 'save-settings') {
-          state.token = root.querySelector('#rs-token').value.trim();
+          // 云同步已配置时 Token 输入框禁用：保留已有的手动 Token 作为后备，
+          // 但不会被这次保存覆盖，也不会把云同步 Token 写进 settings 命名空间。
+          if (!state.syncToken) {
+            var tokenInput = root.querySelector('#rs-token');
+            state.manualToken = tokenInput ? tokenInput.value.trim() : '';
+            settings.set('githubToken', state.manualToken);
+          }
           state.apiBase = root.querySelector('#rs-api').value.trim().replace(/\/+$/, '');
-          settings.set('githubToken', state.token);
           settings.set('apiBase', state.apiBase);
           flash('设置已保存，正在重新同步…');
           loadAll(true);
@@ -721,6 +735,17 @@
         if (info && info.remaining !== null && info.remaining !== undefined) {
           rateEl.textContent = 'API 剩余额度 ' + info.remaining + ' 次';
         }
+      });
+
+      // 云同步 Token 变更（配置 / 恢复 / 断开 / 重置）后，模块1立即跟随，不要求用户重复设置
+      Portal.bus.on('sync:token-change', function (info) {
+        var next = (info && info.token) || '';
+        if (next === state.syncToken) return;
+        state.syncToken = next;
+        // 断开/重置时同步 Token 被清空，重新读一次本地后备，避免沿用已清掉的内存旧值
+        if (!next) state.manualToken = settings.get('githubToken', '') || '';
+        render();
+        loadAll(true);
       });
 
       // 首屏策略：仓库自带的静态快照先铺内容，实时 API 随后覆盖。

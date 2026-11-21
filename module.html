@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="开源应用模块：自动展示 GitHub 项目介绍与最新 Release 下载地址">
+  <meta name="description" content="私人数字收藏夹的各个模块：开源应用、笔记博客与预留位置">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ctext x='12' y='44' font-family='monospace' font-size='34' font-weight='bold' fill='%2355e3c2'%3E%26gt;_%3C/text%3E%3C/svg%3E">
   <title>模块 · OPEN / SHELF</title>
 
@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="assets/css/landing.css">
   <link rel="stylesheet" href="assets/css/module-repo-showcase.css">
   <link rel="stylesheet" href="assets/css/module-notes.css">
+  <link rel="stylesheet" href="assets/css/module-one-more-thing.css">
   <link rel="stylesheet" href="assets/css/sync.css">
   <link rel="stylesheet" href="assets/css/theme.css">
 
@@ -34,6 +35,7 @@
   <script defer src="assets/js/modules/notes/markdown.js"></script>
   <script defer src="assets/js/modules/notes/view.js"></script>
   <script defer src="assets/js/modules/notes/index.js"></script>
+  <script defer src="assets/js/modules/one-more-thing/index.js"></script>
 
   <!-- 最后启动 -->
   <script defer src="assets/js/core/app.js"></script>
@@ -48,7 +50,7 @@
         <div class="brand-mark" aria-hidden="true"><span>&gt;_</span></div>
         <div class="brand-text">
           <h1>OPEN<span>/</span>SHELF</h1>
-          <p>我常用的开源应用 · 自动同步 GitHub Release</p>
+          <p>私人数字收藏夹 · 把值得留下的收进一个架子</p>
         </div>
       </div>
       <div class="header-meta">
@@ -57,7 +59,7 @@
           <button class="status status--icon status--btn" id="module-switch-btn" type="button" aria-label="切换模块" aria-haspopup="true" aria-expanded="false" title="切换模块"><i class="i-ico i-modules" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></button>
           <ul class="msw-menu" id="module-switch-menu" role="menu" hidden></ul>
         </span>
-        <a class="ghost-link ghost-link--icon mono" href="https://github.com" target="_blank" rel="noopener noreferrer" title="打开 GitHub" aria-label="打开 GitHub"><i class="i-ico i-github" aria-hidden="true"></i></a>
+        <a class="ghost-link ghost-link--icon mono site-github-link" href="https://github.com/30-Chen/open-shelf" target="_blank" rel="noopener noreferrer" title="打开本项目仓库" aria-label="打开本项目仓库"><i class="i-ico i-github" aria-hidden="true"></i></a>
       </div>
     </header>
 
@@ -72,7 +74,7 @@
 
     <footer class="site-footer mono">
       <span>© <span id="year"></span> · 数据来自 GitHub REST API</span>
-      <a class="ghost-link" href="index.html"><i class="i-ico i-back" aria-hidden="true"></i> 返回模块入口</a>
+      <span>STATIC / MODULAR / NO BUILD</span>
     </footer>
   </div>
 </body>

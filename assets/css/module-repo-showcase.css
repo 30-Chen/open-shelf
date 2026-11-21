@@ -40,6 +40,7 @@
   background: rgba(0, 0, 0, .24) !important;
 }
 .rs-setting-input:focus { border-color: var(--line-strong) !important; }
+.rs-setting-input:disabled { color: var(--accent); opacity: 1; cursor: not-allowed; }
 .rs-settings-actions { display: flex; gap: 8px; }
 .rs-settings-actions .btn { flex: 1; height: 36px; }
 .rs-settings-note { margin: 12px 0 0; font-size: 11px; line-height: 1.6; color: var(--muted); }

@@ -78,8 +78,10 @@
     });
 
     paint();
-    // 放在页头控件最后（SYNC、外链之后），与其它胶囊控件同排
-    header.appendChild(btn);
+    // 主题按钮放在 GitHub 外链之前；同步面板挂载时也会维持这个相对顺序。
+    var gh = header.querySelector('.site-github-link');
+    if (gh && gh.parentNode) header.insertBefore(btn, gh);
+    else header.appendChild(btn);
   }
 
   // 暴露给需要的页面（目前无需外部调用，仅便于测试）

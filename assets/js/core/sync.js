@@ -46,6 +46,10 @@
     baseSnapshot: store.get('baseSnapshot', null) || null
   };
 
+  // 上次广播出去的 Token。模块1（repo-showcase）会在云同步 Token 变化时自动复用，
+  // 避免用户在两个地方重复粘贴同一个 Token；仅在真正变化时广播，防止无意义重渲染。
+  var lastNotifiedToken = cfg.token;
+
   function saveCfg() {
     store.set('token', cfg.token);
     store.set('gistId', cfg.gistId);
@@ -54,14 +58,21 @@
     store.set('syncedAt', cfg.syncedAt);
     store.set('localChangedAt', cfg.localChangedAt);
     store.set('auto', cfg.auto);
-      store.set('vaultCode', cfg.vaultCode);
-      store.set('vaultGistId', cfg.vaultGistId);
-      store.set('vaultOwner', cfg.vaultOwner);
-      store.set('detachedHash', cfg.detachedHash);
-      store.set('detachedHashes', cfg.detachedHashes);
-      store.set('detachedAt', cfg.detachedAt);
-      store.set('baseSnapshot', cfg.baseSnapshot);
+    store.set('vaultCode', cfg.vaultCode);
+    store.set('vaultGistId', cfg.vaultGistId);
+    store.set('vaultOwner', cfg.vaultOwner);
+    store.set('detachedHash', cfg.detachedHash);
+    store.set('detachedHashes', cfg.detachedHashes);
+    store.set('detachedAt', cfg.detachedAt);
+    store.set('baseSnapshot', cfg.baseSnapshot);
+    if (cfg.token !== lastNotifiedToken) {
+      lastNotifiedToken = cfg.token;
+      if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:token-change', { token: cfg.token });
     }
+  }
+
+  /** 供其它模块读取云同步 Token（只暴露只读值，不暴露其它同步凭证） */
+  Portal.getSyncToken = function () { return cfg.token || ''; };
 
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
@@ -1300,9 +1311,10 @@
         var anchor = statusEl.closest ? (statusEl.closest('.module-switch') || statusEl) : statusEl;
         headerMeta.insertBefore(wrap, anchor.nextSibling);
       } else headerMeta.appendChild(wrap);
-      // SYNC 紧跟状态标签；主题按钮无论脚本顺序如何都保持在最后
+      // SYNC 紧跟状态标签；主题按钮始终位于 GitHub 外链之前（与主题脚本互相兜底）。
       var themeEl = headerMeta.querySelector('#theme-toggle');
-      if (themeEl && themeEl.nextSibling) headerMeta.appendChild(themeEl);
+      var ghEl = headerMeta.querySelector('.site-github-link');
+      if (themeEl && ghEl && ghEl.parentNode) headerMeta.insertBefore(themeEl, ghEl);
     } else {
       wrap.classList.add('sy-wrap--floating');
       document.body.appendChild(wrap);

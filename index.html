@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="个人开源应用收藏夹：模块化主页，自动展示 GitHub 项目介绍与最新 Release 下载地址">
+  <meta name="description" content="一个纯静态的个人收藏夹：收集开源应用与灵感笔记，本地优先，支持跨设备自动同步。">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ctext x='12' y='44' font-family='monospace' font-size='34' font-weight='bold' fill='%2355e3c2'%3E%26gt;_%3C/text%3E%3C/svg%3E">
-  <title>OPEN / SHELF · 我的开源应用</title>
+  <title>OPEN / SHELF · 我的私人收藏夹</title>
 
   <link rel="preconnect" href="https://api.github.com">
   <!-- 主题脚本尽早执行，首屏前定好明暗，避免闪烁 -->
@@ -32,6 +32,7 @@
   <script defer src="assets/js/modules/notes/markdown.js"></script>
   <script defer src="assets/js/modules/notes/view.js"></script>
   <script defer src="assets/js/modules/notes/index.js"></script>
+  <script defer src="assets/js/modules/one-more-thing/index.js"></script>
 
   <!-- 最后启动 -->
   <script defer src="assets/js/core/app.js"></script>
@@ -45,36 +46,141 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><span>&gt;_</span></div>
         <div class="brand-text">
-          <!-- 改这里即可换成你自己的站名 -->
           <h1>OPEN<span>/</span>SHELF</h1>
-          <p>我常用的开源应用 · 自动同步 GitHub Release</p>
+          <p>私人数字收藏夹 · 把值得留下的收进一个架子</p>
         </div>
       </div>
       <div class="header-meta">
         <span class="status status--icon" title="系统在线" aria-label="系统在线"><i class="i-ico i-system" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></span>
-        <a class="ghost-link ghost-link--icon mono" href="https://github.com" target="_blank" rel="noopener noreferrer" title="打开 GitHub" aria-label="打开 GitHub"><i class="i-ico i-github" aria-hidden="true"></i></a>
+        <a class="ghost-link ghost-link--icon mono site-github-link" href="https://github.com/30-Chen/open-shelf" target="_blank" rel="noopener noreferrer" title="打开本项目仓库" aria-label="打开本项目仓库"><i class="i-ico i-github" aria-hidden="true"></i></a>
       </div>
     </header>
 
-    <section class="lc-hero">
-      <span class="lc-eyebrow mono"><i aria-hidden="true"></i> PERSONAL OPEN-SOURCE HUB</span>
-      <h2>把常用的开源应用，<br><em>收进一个架子。</em></h2>
-      <p class="lc-lead">每个功能都是一个独立模块，互不干扰。点开下面的模块，粘贴 GitHub 仓库地址即可自动读取项目介绍与最新 Release 下载地址。</p>
+    <section class="lc-hero" id="top">
+      <span class="lc-hero-glow" aria-hidden="true"></span>
+      <span class="lc-eyebrow mono"><i aria-hidden="true"></i> PERSONAL DIGITAL SHELF</span>
+      <h2>把值得留下的，<br><em>收进一个架子。</em></h2>
+      <p class="lc-lead">这里是一座安静的私人宝库：开源应用、随手写下的想法，还有尚未命名的下一次灵感，都被分门别类地收好。不追求大而全，只留下真正想回头找到的东西。</p>
+      <p class="lc-hero-note mono">01 开源应用&nbsp; / &nbsp;02 笔记 · 博客&nbsp; / &nbsp;03 ONE MORE THING</p>
+      <div class="lc-actions">
+        <a class="lc-btn lc-btn--primary" href="#catalog-section">打开收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
+        <a class="lc-btn" href="#how">看看它怎么工作 <i class="i-ico i-chev" aria-hidden="true"></i></a>
+      </div>
       <div class="lc-stats" aria-label="站点特性">
-        <div class="lc-stat" title="2 个独立模块"><b>02</b><span>MODULES</span></div>
-        <div class="lc-stat" title="支持任意 GitHub 仓库"><b>∞</b><span>REPOS</span></div>
-        <div class="lc-stat" title="零构建依赖"><b>0</b><span>DEPS</span></div>
+        <div class="lc-stat" title="3 个独立模块，第三个为预留"><b>03</b><span>DRAWERS</span></div>
+        <div class="lc-stat" title="收藏数量不限"><b>∞</b><span>KEEPSAKES</span></div>
+        <div class="lc-stat" title="零构建依赖"><b>0</b><span>BUILD STEPS</span></div>
       </div>
     </section>
 
-    <section class="lc-section" aria-labelledby="lc-modules-title">
+    <section class="lc-section" id="catalog-section" aria-labelledby="lc-modules-title">
       <div class="lc-section-head">
-        <h3 id="lc-modules-title">MODULES / 模块入口</h3>
+        <h3 id="lc-modules-title">THE SHELF / 收藏架</h3>
         <span class="lc-rule" aria-hidden="true"></span>
-        <span class="lc-hint">SELECT TO ENTER <i class="i-ico i-ext" aria-hidden="true"></i></span>
+        <span class="lc-hint">PICK A DRAWER <i class="i-ico i-ext" aria-hidden="true"></i></span>
       </div>
+      <p class="lc-section-intro">三个抽屉，各放各的东西。点开即进，互不打扰。</p>
       <!-- 模块入口卡片由内核根据注册表自动生成 -->
       <main id="catalog" class="lc-catalog"></main>
+    </section>
+
+    <section class="lc-section" id="features" aria-labelledby="lc-features-title">
+      <div class="lc-section-head">
+        <h3 id="lc-features-title">WHY A SHELF / 主要特点</h3>
+        <span class="lc-rule" aria-hidden="true"></span>
+        <span class="lc-hint">SMALL BY DESIGN</span>
+      </div>
+      <div class="lc-feature-grid">
+        <article class="lc-feature">
+          <span class="lc-feature-icon"><i class="i-ico i-modules" aria-hidden="true"></i></span>
+          <h4>各自独立，互不打扰</h4>
+          <p>每个模块都有自己的容器、存储和样式。一个抽屉整理得再乱，也不会翻动另一个抽屉里的东西。</p>
+        </article>
+        <article class="lc-feature">
+          <span class="lc-feature-icon"><i class="i-ico i-cloud" aria-hidden="true"></i></span>
+          <h4>本地优先，云端兜底</h4>
+          <p>内容先存在当前浏览器；需要在多台设备间使用时，再接入私有 Gist。冲突按条目合并，不靠时间覆盖。</p>
+        </article>
+        <article class="lc-feature">
+          <span class="lc-feature-icon"><i class="i-ico i-star-fill" aria-hidden="true"></i></span>
+          <h4>收藏，而不是堆砌</h4>
+          <p>分类目录、置顶卡片、标题直达阅读、实时体积提醒——让每一件收进来的东西都找得到。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="lc-section" id="inside" aria-labelledby="lc-inside-title">
+      <div class="lc-section-head">
+        <h3 id="lc-inside-title">INSIDE / 每个抽屉装什么</h3>
+        <span class="lc-rule" aria-hidden="true"></span>
+        <span class="lc-hint">TODAY &amp; TOMORROW</span>
+      </div>
+      <div class="lc-detail-list">
+        <article class="lc-detail">
+          <span class="lc-detail-index mono">01 / REPOS</span>
+          <div class="lc-detail-body">
+            <h4>开源应用</h4>
+            <p>粘贴一个 GitHub 仓库，自动读出项目介绍、更新日志与最新 Release 下载地址。按目录整理、置顶常用项目，Token 还能从云同步自动匹配。</p>
+          </div>
+          <ul class="lc-tags"><li>GitHub Release</li><li>分类目录</li><li>置顶</li></ul>
+        </article>
+        <article class="lc-detail">
+          <span class="lc-detail-index mono">02 / NOTES</span>
+          <div class="lc-detail-body">
+            <h4>笔记 / 博客</h4>
+            <p>用 Markdown 写教程与灵感，拖拽上传图片并使用短引用保持正文清爽。默认目录不可删除但可重命名，编辑器实时显示体积，超限前就提醒你。</p>
+          </div>
+          <ul class="lc-tags"><li>Markdown</li><li>图片短引用</li><li>体积监测</li></ul>
+        </article>
+        <article class="lc-detail lc-detail--soon">
+          <span class="lc-detail-index mono">03 / RESERVED</span>
+          <div class="lc-detail-body">
+            <h4>One more thing</h4>
+            <p>留给下一个想法的空位置。它不收集数据、不参与同步，只保留一个入口——等真正需要时，再把它填成新的模块。</p>
+          </div>
+          <ul class="lc-tags"><li>COMING SOON</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="lc-section" id="how" aria-labelledby="lc-how-title">
+      <div class="lc-section-head">
+        <h3 id="lc-how-title">HOW IT WORKS / 工作原理</h3>
+        <span class="lc-rule" aria-hidden="true"></span>
+        <span class="lc-hint">LOCAL FIRST, CLOUD OPTIONAL</span>
+      </div>
+      <div class="lc-flow">
+        <article class="lc-step">
+          <span class="lc-step-num mono">01</span>
+          <h4>先写进本地</h4>
+          <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
+        </article>
+        <article class="lc-step">
+          <span class="lc-step-num mono">02</span>
+          <h4>按需连接云端</h4>
+          <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
+        </article>
+        <article class="lc-step">
+          <span class="lc-step-num mono">03</span>
+          <h4>逐条对账合并</h4>
+          <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
+        </article>
+        <article class="lc-step">
+          <span class="lc-step-num mono">04</span>
+          <h4>打开就是最新</h4>
+          <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
+        </article>
+      </div>
+      <p class="lc-flow-note">没有构建步骤，没有服务端程序。这个仓库本身就是页面，浏览器就是你的收藏盒。</p>
+    </section>
+
+    <section class="lc-cta" aria-labelledby="lc-cta-title">
+      <div>
+        <span class="lc-eyebrow mono"><i aria-hidden="true"></i> READY WHEN YOU ARE</span>
+        <h2 id="lc-cta-title">从一件小东西开始。</h2>
+        <p>不必先想好全部结构。先放进来，之后再慢慢归类，架子会替你记着。</p>
+      </div>
+      <a class="lc-btn lc-btn--primary" href="#catalog-section">打开收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
     </section>
 
     <footer class="site-footer mono">
