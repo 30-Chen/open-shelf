@@ -62,11 +62,6 @@ html[data-theme="light"] .glow {
 
 /* ---------- 页头 ---------- */
 html[data-theme="light"] .site-header { border-bottom-color: var(--line); }
-html[data-theme="light"] .brand-mark {
-  border-color: rgba(14, 156, 126, .4);
-  background: linear-gradient(145deg, rgba(14, 156, 126, .14), rgba(47, 99, 201, .08));
-  box-shadow: inset 0 0 18px rgba(14, 156, 126, .08), 0 0 20px rgba(14, 156, 126, .08);
-}
 /* 状态胶囊原本是 rgba(0,0,0,.18) 黑底，浅色下会变成脏斑，统一成浅底 */
 html[data-theme="light"] .status,
 html[data-theme="light"] .ghost-link,
