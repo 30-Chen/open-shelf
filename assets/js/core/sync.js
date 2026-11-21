@@ -1059,8 +1059,9 @@
     },
 
     /**
-     * 一键重置到初始状态：清空本机模块数据 + 云端文件，保留 Token 与恢复凭证。
+     * 一键重置到初始状态（完全出厂）：清空本机模块数据 + 云端文件 + 本机全部凭证。
      * 用于历史超限大文件导致云端截断、同步反复断流后的彻底重来。
+     * 顺序至关重要：先用凭证写空云端（唯一需要凭证的一步），成功后才清本地数据与凭证。
      * 只在用户在面板二次确认后调用，绝不自动触发。
      */
     resetAll: function () {
@@ -1084,14 +1085,24 @@
         ['notes', 'repo-showcase', 'settings'].forEach(function (id) {
           try { Portal.store.namespace(id).clear(); } catch (e) { /* noop */ }
         });
-        clearDetached();
+        // 最后一步才清凭证与全部基线 —— 回到完全未配置的出厂状态。
+        // 必须在 writeGist 成功之后：写空云端是唯一需要 Token/Gist 的动作。
+        cfg.token = '';
+        cfg.gistId = '';
+        cfg.syncedHash = '';
+        cfg.localHash = '';
+        cfg.syncedAt = 0;
         cfg.localChangedAt = 0;
-        lastSeenLocalHash = hashModules({});
+        cfg.vaultCode = '';
+        cfg.vaultGistId = '';
+        cfg.vaultOwner = '';
+        cfg.baseSnapshot = null;
+        clearDetached();
+        lastSeenLocalHash = null;
         lastAuto = { at: Date.now(), result: null, reason: 'reset' };
         saveCfg();
         if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
-        // 凭证仍在：重置后立即恢复自动同步调度，无需用户重新配置。
-        startScheduler();
+        // 不重启调度器：凭证已清空，页面重载后是全新实例，等待用户重新配置。
         r.localCleared = true;
         return r;
       }).catch(function (e) {
@@ -1542,11 +1553,10 @@
     // 重置到初始状态：两级确认，避免误触清空全部数据
     panel.querySelector('#sy-reset').addEventListener('click', function () {
       if (!global.confirm(
-        '重置将清空本机两个模块的数据，并把云端同步文件一并清空，恢复到初始示例状态。\n' +
-        'Token 与恢复凭证会保留，重置后可立即继续同步。\n\n' +
+        '重置会先清空云端同步文件，再清空本机两个模块的数据，最后连本机保存的 Token、Gist 关联与恢复凭证一起清除，恢复到完全未配置的初始状态。\n\n' +
         '重要：其它已关联的设备需要各自点一次「重置到初始状态」，否则它们上的旧数据会再次同步回来。\n\n' +
         '此操作不可撤销，确定继续？')) return;
-      if (!global.confirm('再次确认：真的要清空本机与云端的所有数据吗？这一步无法撤销。')) return;
+      if (!global.confirm('再次确认：真的要清空本机与云端的所有数据、并清除凭证吗？这一步无法撤销。')) return;
       var btn = panel.querySelector('#sy-reset');
       btn.disabled = true;
       msg('正在重置…');
@@ -1556,8 +1566,9 @@
           msg('重置失败：' + ((r && r.error) || (r && r.reason) || '未知错误') + '。本地数据未改动，请重试。', 'error');
           return;
         }
-        tokenEl.value = cfg.token;
-        gistEl.value = cfg.gistId;
+        // 凭证已清空，输入框同步清空，避免页面重载前残留旧值误导
+        tokenEl.value = '';
+        gistEl.value = '';
         msg('已重置 · 正在重新载入页面…', 'ok');
         setMoreOpen(false);
         refresh();
