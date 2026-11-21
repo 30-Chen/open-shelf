@@ -8,7 +8,6 @@
   var NS = Portal.moduleAssets.notes;
   var MD = NS.markdown;
   var esc = MD.esc;
-  var DEFAULT_CAT = NS.defaultCategory || '未分类';
 
   function date(ts) {
     if (!ts) return '—';
@@ -93,10 +92,11 @@
         } else {
           mgr += '<div class="cat-manager-row">' +
             '<button class="cat-manager-name" type="button" data-act="filter" data-cat="' + esc(c) + '"><i class="i-ico i-folder" aria-hidden="true"></i>' + esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>' +
-            (c === DEFAULT_CAT
-              ? '<span class="cat-manager-lock mono" title="默认目录不可删除或重命名">默认</span>'
-              : '<button class="cat-manager-mini" type="button" data-act="cat-rename-start" data-cat="' + esc(c) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
-                '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-act="cat-delete" data-cat="' + esc(c) + '" title="删除目录，笔记移入未分类" aria-label="删除目录"><i class="i-ico i-trash" aria-hidden="true"></i></button>') +
+            // 默认目录（首个）：可重命名，仅删除按钮替换为「默认」标记
+            '<button class="cat-manager-mini" type="button" data-act="cat-rename-start" data-cat="' + esc(c) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
+            (c === categories[0]
+              ? '<span class="cat-manager-lock mono" title="默认目录不可删除">默认</span>'
+              : '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-act="cat-delete" data-cat="' + esc(c) + '" title="删除目录，笔记移入默认目录" aria-label="删除目录"><i class="i-ico i-trash" aria-hidden="true"></i></button>') +
           '</div>';
         }
       });

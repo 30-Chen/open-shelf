@@ -12,9 +12,10 @@
 
   var STORE_KEY = 'notes-v1';
   var ALL = '__all__';
-  var DEFAULT_CAT = (NS && NS.defaultCategory) || '未分类';   // 默认目录：始终存在、排首位、不可删除/重命名（参照模块1的默认目录）
+  var DEFAULT_CAT = (NS && NS.defaultCategory) || '未分类';   // 首次初始化的默认目录名；之后「首个目录」即默认目录，可重命名、不可删除（参照模块1）
 
-  /** 归一化分类列表：确保默认目录存在且排首位，并补齐笔记引用到的分类 */
+  /** 归一化分类列表：去重、补齐笔记引用到的分类，并保证至少有一个目录（首位即默认目录）。
+   *  默认目录的身份由「位置」而非固定名称决定，因此重命名后仍保持默认，不会被重新塞回旧名字。 */
   function sanitizeCategories(cats, notes) {
     var out = Array.isArray(cats)
       ? cats.map(function (c) { return String(c).trim().slice(0, 24); }).filter(Boolean)
@@ -27,10 +28,8 @@
       var c = n && n.category;
       if (c && !seen[c]) { seen[c] = true; out.push(c); }
     });
-    // 默认目录排首位
-    var di = out.indexOf(DEFAULT_CAT);
-    if (di < 0) out.unshift(DEFAULT_CAT);
-    else if (di > 0) out = [DEFAULT_CAT].concat(out.filter(function (c) { return c !== DEFAULT_CAT; }));
+    // 至少保留一个目录作为默认目录（仅全新数据才会用到 DEFAULT_CAT 这个名字）
+    if (!out.length) out.push(DEFAULT_CAT);
     return out;
   }
 
@@ -186,7 +185,10 @@
 
       function seed() {
         var notes = (NS.defaults || []).map(normalizeNote).filter(Boolean);
-        return { notes: notes, categories: sanitizeCategories(NS.defaultCategories, notes) };
+        // 全新数据先放入「未分类」作为默认目录（首位）；之后默认目录由位置决定，
+        // 重命名会原位替换，刷新/同步后也不会被塞回旧名字。
+        var cats = [DEFAULT_CAT].concat(Array.isArray(NS.defaultCategories) ? NS.defaultCategories : []);
+        return { notes: notes, categories: sanitizeCategories(cats, notes) };
       }
 
       if (saved && Array.isArray(saved.notes)) {
@@ -536,10 +538,17 @@
 
       /** 目录管理浮层的展开/收起（收起时取消重命名态） */
       function setManageOpen(open) {
+        if (open) Portal.popovers.closeAll('nt-catmgr'); // 打开自己前先收起其它浮层
         state.manageOpen = !!open;
         if (!open) state.editingCat = null;
         render();
       }
+      // 目录管理浮层 + 「更多」details 加入全局互斥组（关闭器现取状态）
+      Portal.popovers.register('nt-catmgr', function () { if (state.manageOpen) setManageOpen(false); });
+      Portal.popovers.register('nt-tools', function () {
+        var d = root.querySelector('.nt-tools-menu');
+        if (d && d.open) d.open = false;
+      });
 
       /** 新建分类 */
       function createCat() {
@@ -560,38 +569,40 @@
         render();
       }
 
-      /** 删除分类：该分类下的笔记移入默认目录，不删除笔记本身；默认目录不可删除 */
+      /** 当前默认目录（列表首位）：可重命名，但不可删除 */
+      function defaultCategory() { return state.categories[0] || DEFAULT_CAT; }
+
+      /** 删除分类：该分类下的笔记移入默认目录，不删除笔记本身；默认目录（首位）不可删除 */
       function deleteCat(name) {
-        if (!name || name === DEFAULT_CAT) return;
+        var def = defaultCategory();
+        if (!name || name === def) return;
         var idx = state.categories.indexOf(name);
         if (idx < 0) return;
         var moved = state.notes.filter(function (n) { return n.category === name; }).length;
         if (!global.confirm('确定删除分类「' + name + '」？' +
-            (moved ? '其中 ' + moved + ' 篇笔记会移入「' + DEFAULT_CAT + '」。' : '') + '此操作不可撤销。')) return;
+            (moved ? '其中 ' + moved + ' 篇笔记会移入「' + def + '」。' : '') + '此操作不可撤销。')) return;
         state.categories.splice(idx, 1);
-        state.notes.forEach(function (n) { if (n.category === name) n.category = DEFAULT_CAT; });
-        if (state.categories.indexOf(DEFAULT_CAT) < 0) state.categories.unshift(DEFAULT_CAT);
+        state.notes.forEach(function (n) { if (n.category === name) n.category = def; });
+        if (state.categories.indexOf(def) < 0) state.categories.unshift(def);
         if (state.category === name) state.category = ALL;
         if (state.editingCat === name) state.editingCat = null;
         touch();
         persist();
         render();
-        flash('分类「' + name + '」已删除' + (moved ? '，' + moved + ' 篇笔记已移入' + DEFAULT_CAT : ''));
+        flash('分类「' + name + '」已删除' + (moved ? '，' + moved + ' 篇笔记已移入' + def : ''));
       }
 
-      /** 分类重命名：同步更新所有笔记的 category 与导航状态；默认目录不可重命名 */
-      function startCatRename(name) { if (name === DEFAULT_CAT) return; state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
+      /** 分类重命名：同步更新所有笔记的 category 与导航状态；默认目录同样可重命名（保持首位） */
+      function startCatRename(name) { state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
       function cancelCatRename() { state.editingCat = null; render(); }
       function saveCatRename(oldName) {
-        if (oldName === DEFAULT_CAT) return;
         var input = root.querySelector('#nt-rename-input');
         var name = String(input ? input.value : '').trim().slice(0, 24);
         if (!name) { flash('分类名称不能为空', 'error'); return; }
-        if (name === DEFAULT_CAT) { flash('「' + DEFAULT_CAT + '」是默认目录，名称不可用', 'warn'); return; }
         if (name !== oldName && state.categories.indexOf(name) >= 0) { flash('分类「' + name + '」已存在', 'warn'); return; }
         if (name === oldName) { cancelCatRename(); return; }
         var ci = state.categories.indexOf(oldName);
-        if (ci >= 0) state.categories[ci] = name;
+        if (ci >= 0) state.categories[ci] = name;  // 原位替换：默认目录重命名后仍在首位
         state.notes.forEach(function (n) { if (n.category === oldName) n.category = name; });
         if (state.category === oldName) state.category = name;
         state.editingCat = null;
@@ -786,6 +797,12 @@
 
       root.addEventListener('click', function (e) {
         var t = e.target;
+        // 「更多」details 展开前先收起其它浮层（原生 details 自行 open，这里只协调其它面板）
+        var toolsSummary = t && t.closest ? t.closest('.nt-tools-menu > summary') : null;
+        var toolsBox = root.querySelector('.nt-tools-menu');
+        if (toolsSummary && toolsBox && !toolsBox.open) {
+          Portal.popovers.closeAll('nt-tools');
+        }
         // 目录管理浮层内的点击不冒泡到 document，避免 render 后节点失联被外部点击误关
         var mgrEl = root.querySelector('#nt-cat-manager');
         if (mgrEl && t && mgrEl.contains(t)) e.stopPropagation();

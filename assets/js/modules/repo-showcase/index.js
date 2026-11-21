@@ -372,11 +372,19 @@
       }
 
       function setManageOpen(open) {
+        if (open) Portal.popovers.closeAll('rs-catmgr'); // 打开自己前先收起其它浮层
         state.manageOpen = !!open;
         if (!open) state.editingGroup = null;
         renderFilterRow();
         renderCatManager();
       }
+      // 目录管理浮层加入全局互斥组（close 时现取状态，避免陈旧引用）
+      Portal.popovers.register('rs-catmgr', function () { if (state.manageOpen) setManageOpen(false); });
+      // 「设置」原生 details 面板：登记关闭器，展开时收起其它浮层
+      Portal.popovers.register('rs-settings', function () {
+        var d = root.querySelector('.rs-settings');
+        if (d && d.open) d.open = false;
+      });
 
       function startRename(name) {
         state.editingGroup = name;
@@ -610,6 +618,12 @@
 
       root.addEventListener('click', function (e) {
         var target = e.target;
+        // 「设置」details 展开前先收起其它浮层（原生 details 自行 open，这里只协调其它面板）
+        var settingsSummary = target && target.closest ? target.closest('.rs-settings > summary') : null;
+        var settingsBox = root.querySelector('.rs-settings');
+        if (settingsSummary && settingsBox && !settingsBox.open) {
+          Portal.popovers.closeAll('rs-settings');
+        }
         // 目录管理浮层内的点击不冒泡到 document，避免 render 后节点失联被外部点击误关
         if (catManager && target && catManager.contains(target)) e.stopPropagation();
         var btn = target && target.closest ? target.closest('[data-action]') : null;

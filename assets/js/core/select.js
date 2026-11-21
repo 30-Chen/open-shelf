@@ -16,6 +16,14 @@
   function bindGlobal() {
     if (bound) return;
     bound = true;
+    // 加入全局浮层互斥组：打开某个下拉时收起其它浮层，打开其它浮层时也收起下拉
+    if (global.Portal && global.Portal.popovers) {
+      global.Portal.popovers.register('select-dropdown', function () {
+        for (var i = 0; i < mounted.length; i++) {
+          if (mounted[i].api.isOpen()) mounted[i].api.close();
+        }
+      });
+    }
     doc.addEventListener('click', function (e) {
       for (var i = mounted.length - 1; i >= 0; i--) {
         var m = mounted[i];
@@ -136,6 +144,7 @@
     }
 
     function open() {
+      if (global.Portal && global.Portal.popovers) global.Portal.popovers.closeAll('select-dropdown');
       refresh();
       menu.hidden = false;
       pill.classList.add('is-open');

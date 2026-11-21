@@ -1514,10 +1514,12 @@
     }
 
     function setOpen(open) {
+      if (open) Portal.popovers.closeAll('sync-panel'); // 打开自己前先收起其它浮层
       panel.hidden = !open;
       fab.setAttribute('aria-expanded', open ? 'true' : 'false');
       if (open) refresh();
     }
+    Portal.popovers.register('sync-panel', function () { setOpen(false); });
 
     fab.addEventListener('click', function (e) {
       e.stopPropagation();

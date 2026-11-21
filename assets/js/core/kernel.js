@@ -109,10 +109,12 @@
       }).join('');
 
     function setOpen(open) {
+      if (open) Portal.popovers.closeAll('module-switch'); // 打开自己前先收起其它浮层
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
       btn.classList.toggle('is-open', open);
     }
+    Portal.popovers.register('module-switch', function () { setOpen(false); });
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       setOpen(menu.hidden);
@@ -122,6 +124,28 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); }
     });
+  };
+
+  /* ---------- 全局悬浮面板互斥 ---------- */
+  // 任意浮层打开时先收起其它浮层，避免「设置 / 云同步 / 切换模块」等多个面板叠加。
+  // 各浮层只需 register(id, closeFn)，并在自己打开的瞬间调用 closeAll(id)。
+  var popovers = [];
+  Portal.popovers = {
+    /** 登记一个浮层：id 唯一；closeFn 用于关闭它 */
+    register: function (id, closeFn) {
+      if (!id || typeof closeFn !== 'function') return;
+      for (var i = 0; i < popovers.length; i++) {
+        if (popovers[i].id === id) { popovers[i].close = closeFn; return; }
+      }
+      popovers.push({ id: id, close: closeFn });
+    },
+    /** 关闭除 exceptId 之外的所有已登记浮层 */
+    closeAll: function (exceptId) {
+      popovers.slice().forEach(function (p) {
+        if (p.id === exceptId) return;
+        try { p.close(); } catch (e) { /* 单个浮层关闭失败不影响其它 */ }
+      });
+    }
   };
 
   /* ---------- 悬浮层定位 ---------- */

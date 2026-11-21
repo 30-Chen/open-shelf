@@ -10,7 +10,7 @@
   Portal.moduleAssets = Portal.moduleAssets || {};
   var NS = Portal.moduleAssets.notes = Portal.moduleAssets.notes || {};
 
-  NS.defaultCategory = '未分类';       // 默认目录：始终存在、不可删除/重命名
+  NS.defaultCategory = '未分类';       // 全新数据初始化时的默认目录名；之后「首个目录」即默认，可重命名、不可删除
   NS.defaultCategories = ['教程', '随笔'];
 
   NS.defaults = [
