@@ -152,24 +152,6 @@
   font-size: 13px; color: var(--muted);
 }
 
-/* ---------- 主要特点 ---------- */
-.lc-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.lc-feature {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  padding: 30px 28px; border: 1px solid var(--line-soft); border-radius: 22px;
-  background: var(--surface-2);
-  transition: border-color .22s, transform .22s;
-}
-.lc-feature:hover { border-color: var(--line-strong); transform: translateY(-3px); }
-.lc-feature-icon {
-  display: grid; place-items: center;
-  width: 44px; height: 44px; margin: 0 auto 20px;
-  border-radius: 14px; background: var(--accent-dim); color: var(--accent);
-}
-.lc-feature-icon .i-ico { width: 21px; height: 21px; }
-.lc-feature h4 { margin: 0 0 11px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
-.lc-feature p { margin: 0; font-size: 13.5px; line-height: 1.85; color: var(--text-2); }
-
 /* ---------- 工作原理：两层卡片步骤（参考 localsend 的视觉台 + 居中文字） ---------- */
 .lc-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .lc-step {
@@ -204,20 +186,15 @@
 .lc-step-body { text-align: center; }
 .lc-step h4 { margin: 0 0 10px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .lc-step p { margin: 0; font-size: 13px; line-height: 1.85; color: var(--text-2); }
-.lc-flow-note { margin: 40px 0 0; text-align: center; font-size: 12.5px; color: var(--muted); }
 
-/* ---------- 收尾 ---------- */
+/* ---------- 收尾：一行式，不再重复首屏大标题与说明 ---------- */
 .lc-cta {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  margin-top: 118px; padding: 64px 24px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 20px;
+  margin-top: 92px; padding: 40px 24px;
   border-top: 1px solid var(--line-soft);
 }
-.lc-cta h2 {
-  margin: 22px 0 12px;
-  font: 600 clamp(28px, 4.4vw, 46px)/1.18 var(--sans); letter-spacing: -.03em;
-}
-.lc-cta p { margin: 0; font-size: 14px; line-height: 1.85; color: var(--text-2); }
-.lc-cta .lc-actions { margin-top: 28px; }
+.lc-cta-line { font-size: 11px; letter-spacing: 2px; color: var(--muted); }
+.lc-cta .lc-btn { min-height: 44px; }
 
 /* ---------- 滚动入场动画 ---------- */
 @keyframes lc-hero-in { from { opacity: 0; filter: blur(6px); transform: translateY(16px); } to { opacity: 1; filter: none; transform: none; } }
@@ -252,7 +229,6 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 900px) {
-  .lc-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lc-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 28px; }
 }
 
@@ -263,11 +239,10 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-traits { grid-template-columns: 1fr; gap: 12px; margin-top: 40px; }
   .lc-trait { padding: 18px 16px; }
   .lc-section { margin-top: 72px; }
-  .lc-feature-grid { grid-template-columns: 1fr; gap: 14px; }
   .lc-flow { grid-template-columns: 1fr; row-gap: 24px; }
   .lc-step-stage { height: 116px; }
   .lc-card { min-height: 190px; padding: 22px; }
-  .lc-cta { margin-top: 72px; padding: 48px 12px 8px; }
+  .lc-cta { margin-top: 60px; padding: 34px 12px; gap: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -277,5 +252,5 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-hero > .lc-lead,
   .lc-hero > .lc-actions { animation: none !important; }
   html.js-reveal .lc-reveal { opacity: 1; transform: none; transition: none; }
-  .lc-btn, .lc-card, .lc-feature, .lc-trait, .lc-step-stage { transition: none !important; }
+  .lc-btn, .lc-card, .lc-trait, .lc-step-stage { transition: none !important; }
 }
