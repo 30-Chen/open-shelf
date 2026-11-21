@@ -947,6 +947,27 @@
         render();
       };
 
+      // 断开关联 / 一键重置后回到「未开启云同步」的初始状态：
+      // 模块2重新展示内置示例并写回本地，避免页面上还留着刚被断开的云端内容。
+      Portal.bus.on('sync:disconnect', function () {
+        var seeded = seed();
+        state.notes = seeded.notes;
+        state.categories = seeded.categories;
+        state.media = {};
+        state.draftMedia = [];
+        state.demo = true;
+        state.view = 'list';
+        state.currentId = null;
+        state.draft = null;
+        state.isNew = false;
+        state.query = '';
+        state.category = ALL;
+        state.editingCat = null;
+        state.manageOpen = false;
+        persist();
+        render();
+      });
+
       render();
     }
   });

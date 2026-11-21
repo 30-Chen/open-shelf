@@ -244,13 +244,24 @@
       });
       return out;
     }
-    // 普通数组（字符串）：保留本地顺序，补入 remote 相对 base 新增、且本地没有的项
-    var bset = Object.create(null), lset = Object.create(null);
+    // 普通数组（字符串，如分类目录 / repos / 置顶列表）：
+    // 以 base 为共同祖先，任一侧「相对 base 的删除」都要生效，否则 A 删除的目录
+    // 会被 B 的旧本地列表重新带回云端，跨设备看起来就像没删掉。
+    // 顺序仍以本地为主，另一侧新增的项追加在后。
+    var bset = Object.create(null), lset = Object.create(null), rset = Object.create(null);
     base.forEach(function (x) { bset[x] = 1; });
     local.forEach(function (x) { lset[x] = 1; });
-    var out2 = local.slice();
+    remote.forEach(function (x) { rset[x] = 1; });
+    var out2 = [];
+    local.forEach(function (x) {
+      // base 里有、云端已删 → 本地未独立改动，接受删除
+      if (bset[x] && !rset[x]) return;
+      if (out2.indexOf(x) < 0) out2.push(x);
+    });
     remote.forEach(function (x) {
-      if (!bset[x] && !lset[x] && out2.indexOf(x) < 0) out2.push(x);
+      // base 里有、本地已删 → 云端旧值不能再把目录带回来
+      if (bset[x] && !lset[x]) return;
+      if (out2.indexOf(x) < 0) out2.push(x);
     });
     return out2;
   }
@@ -1052,8 +1063,11 @@
       // 只清 gistId 不够：token 还在时 localTimer / visibilitychange 会触发 autoRun，
       // 无 gistId 的 reconcile 会新建私有 Gist，等于「断开」后又静默关联了云端。
       epoch++; // 在途请求的结果全部作废，避免断开后又把 gistId 写回来
-      // 记下此刻的本地快照，恢复时才能分辨「断开后新增的内容」
+      // 记下此刻的本地快照，恢复时才能分辨「断开后新增的内容」。
+      // 模块2在断开关联后会恢复内置示例，不再属于「断开后的本地改动」，
+      // 所以从快照里剔除，避免下次恢复配置时被误判成冲突。
       var detached = collectLocal();
+      delete detached.notes;
       cfg.detachedHash = hashModules(detached);
       cfg.detachedHashes = moduleHashes(detached);
       cfg.detachedAt = Date.now();
@@ -1065,8 +1079,14 @@
       cfg.syncedAt = 0;
       cfg.localChangedAt = 0;
       saveCfg();
+      // 未挂载模块时也要回到示例态：直接清掉笔记冷数据，
+      // 已挂载时由下面的事件让模块立即重绘，不必等刷新页面。
+      try { Portal.store.namespace('notes').clear(); } catch (e) { /* noop */ }
       lastAuto = { at: Date.now(), result: null, reason: 'disconnect' };
-      if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
+      if (Portal.bus && Portal.bus.emit) {
+        Portal.bus.emit('sync:auto', lastAuto);
+        Portal.bus.emit('sync:disconnect', { at: cfg.detachedAt, reason: 'disconnect' });
+      }
     },
 
     /**
@@ -1112,7 +1132,10 @@
         lastSeenLocalHash = null;
         lastAuto = { at: Date.now(), result: null, reason: 'reset' };
         saveCfg();
-        if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
+        if (Portal.bus && Portal.bus.emit) {
+          Portal.bus.emit('sync:auto', lastAuto);
+          Portal.bus.emit('sync:disconnect', { at: Date.now(), reason: 'reset' });
+        }
         // 不重启调度器：凭证已清空，页面重载后是全新实例，等待用户重新配置。
         r.localCleared = true;
         return r;
@@ -1552,7 +1575,7 @@
     panel.querySelector('#sy-push').addEventListener('click', function () { commitConfig(true); run('push'); });
     panel.querySelector('#sy-pull').addEventListener('click', function () { commitConfig(true); run('pull'); });
     panel.querySelector('#sy-disconnect').addEventListener('click', function () {
-      if (!global.confirm('断开后将清除本机保存的 Token 与云端关联，并停止自动同步；本地数据保持不变。确定继续？')) return;
+      if (!global.confirm('断开后将清除本机保存的 Token 与云端关联，并停止自动同步；模块 2「笔记」会恢复为内置示例，模块 1 的本地数据保持不变。确定继续？')) return;
       sync.disconnect();
       // 底层清掉 token 后，输入框也要同步清空，否则再次点「立即同步」会把旧 Token 写回去
       tokenEl.value = '';
