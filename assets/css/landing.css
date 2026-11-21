@@ -81,7 +81,7 @@
 /* ---------- 二级页面（面包屑 + 返回） ---------- */
 .lc-crumb {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 22px 0 6px; font: 10.5px var(--mono); letter-spacing: 1.1px; color: var(--muted);
+  padding: 22px 0 6px; font: 10.5px var(--sans); letter-spacing: 1.1px; color: var(--muted);
 }
 .lc-crumb a { color: var(--text-2); transition: color .18s; }
 .lc-crumb a:hover { color: var(--accent); }

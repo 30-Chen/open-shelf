@@ -12,6 +12,27 @@
 
   var STORE_KEY = 'notes-v1';
   var ALL = '__all__';
+  var DEFAULT_CAT = (NS && NS.defaultCategory) || '未分类';   // 默认目录：始终存在、排首位、不可删除/重命名（参照模块1的默认目录）
+
+  /** 归一化分类列表：确保默认目录存在且排首位，并补齐笔记引用到的分类 */
+  function sanitizeCategories(cats, notes) {
+    var out = Array.isArray(cats)
+      ? cats.map(function (c) { return String(c).trim().slice(0, 24); }).filter(Boolean)
+      : [];
+    // 去重
+    var seen = Object.create(null);
+    out = out.filter(function (c) { if (seen[c]) return false; seen[c] = true; return true; });
+    // 补齐笔记用到的分类
+    (notes || []).forEach(function (n) {
+      var c = n && n.category;
+      if (c && !seen[c]) { seen[c] = true; out.push(c); }
+    });
+    // 默认目录排首位
+    var di = out.indexOf(DEFAULT_CAT);
+    if (di < 0) out.unshift(DEFAULT_CAT);
+    else if (di > 0) out = [DEFAULT_CAT].concat(out.filter(function (c) { return c !== DEFAULT_CAT; }));
+    return out;
+  }
 
   // 同步桥：mount() 后用内存态，未挂载（如首页）时用冷数据读写 localStorage。
   // 内核只通过注册表的 sync 字段访问，本模块不引用其它模块。
@@ -28,7 +49,7 @@
     migrateLegacyMedia(notes, media);
     return {
       notes: notes,
-      categories: Array.isArray(saved.categories) ? saved.categories.slice() : [],
+      categories: sanitizeCategories(saved.categories, notes),
       media: media
     };
   };
@@ -40,8 +61,7 @@
     var notes = data.notes.map(normalizeNote).filter(Boolean);
     var media = normalizeMedia(data.media);
     migrateLegacyMedia(notes, media);
-    var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
-    notes.forEach(function (n) { if (cats.indexOf(n.category) < 0) cats.push(n.category); });
+    var cats = sanitizeCategories(data.categories, notes);
     Portal.store.namespace('notes').set(STORE_KEY, {
       notes: notes, categories: cats, media: media, demo: false
     });
@@ -166,15 +186,12 @@
 
       function seed() {
         var notes = (NS.defaults || []).map(normalizeNote).filter(Boolean);
-        var cats = (NS.defaultCategories || []).slice();
-        notes.forEach(function (n) { if (cats.indexOf(n.category) < 0) cats.push(n.category); });
-        return { notes: notes, categories: cats };
+        return { notes: notes, categories: sanitizeCategories(NS.defaultCategories, notes) };
       }
 
       if (saved && Array.isArray(saved.notes)) {
         state.notes = saved.notes.map(normalizeNote).filter(Boolean);
-        state.categories = Array.isArray(saved.categories)
-          ? saved.categories.slice() : [];
+        state.categories = sanitizeCategories(saved.categories, state.notes);
         state.media = normalizeMedia(saved.media);
         // 旧版本把 data URI 直接写进正文；首次打开时自动迁移成短引用
         if (migrateLegacyMedia(state.notes, state.media)) persist();
@@ -184,9 +201,6 @@
         state.categories = seeded.categories;
         persist();
       }
-      state.notes.forEach(function (n) {
-        if (state.categories.indexOf(n.category) < 0) state.categories.push(n.category);
-      });
 
       function persist() {
         store.set(STORE_KEY, {
@@ -546,32 +560,34 @@
         render();
       }
 
-      /** 删除分类：该分类下的笔记移入「未分类」，不删除笔记本身 */
+      /** 删除分类：该分类下的笔记移入默认目录，不删除笔记本身；默认目录不可删除 */
       function deleteCat(name) {
-        if (!name) return;
+        if (!name || name === DEFAULT_CAT) return;
         var idx = state.categories.indexOf(name);
         if (idx < 0) return;
         var moved = state.notes.filter(function (n) { return n.category === name; }).length;
         if (!global.confirm('确定删除分类「' + name + '」？' +
-            (moved ? '其中 ' + moved + ' 篇笔记会移入「未分类」。' : '') + '此操作不可撤销。')) return;
+            (moved ? '其中 ' + moved + ' 篇笔记会移入「' + DEFAULT_CAT + '」。' : '') + '此操作不可撤销。')) return;
         state.categories.splice(idx, 1);
-        state.notes.forEach(function (n) { if (n.category === name) n.category = '未分类'; });
-        if (state.categories.indexOf('未分类') < 0) state.categories.push('未分类');
+        state.notes.forEach(function (n) { if (n.category === name) n.category = DEFAULT_CAT; });
+        if (state.categories.indexOf(DEFAULT_CAT) < 0) state.categories.unshift(DEFAULT_CAT);
         if (state.category === name) state.category = ALL;
         if (state.editingCat === name) state.editingCat = null;
         touch();
         persist();
         render();
-        flash('分类「' + name + '」已删除' + (moved ? '，' + moved + ' 篇笔记已移入未分类' : ''));
+        flash('分类「' + name + '」已删除' + (moved ? '，' + moved + ' 篇笔记已移入' + DEFAULT_CAT : ''));
       }
 
-      /** 分类重命名：同步更新所有笔记的 category 与导航状态 */
-      function startCatRename(name) { state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
+      /** 分类重命名：同步更新所有笔记的 category 与导航状态；默认目录不可重命名 */
+      function startCatRename(name) { if (name === DEFAULT_CAT) return; state.editingCat = name; render(); var el = root.querySelector('#nt-rename-input'); if (el) { el.focus(); el.select(); } }
       function cancelCatRename() { state.editingCat = null; render(); }
       function saveCatRename(oldName) {
+        if (oldName === DEFAULT_CAT) return;
         var input = root.querySelector('#nt-rename-input');
         var name = String(input ? input.value : '').trim().slice(0, 24);
         if (!name) { flash('分类名称不能为空', 'error'); return; }
+        if (name === DEFAULT_CAT) { flash('「' + DEFAULT_CAT + '」是默认目录，名称不可用', 'warn'); return; }
         if (name !== oldName && state.categories.indexOf(name) >= 0) { flash('分类「' + name + '」已存在', 'warn'); return; }
         if (name === oldName) { cancelCatRename(); return; }
         var ci = state.categories.indexOf(oldName);
@@ -638,6 +654,7 @@
             if (c && state.categories.indexOf(c) < 0) state.categories.push(c);
           });
         }
+        state.categories = sanitizeCategories(state.categories, state.notes);
         pruneMedia(state.media, state.notes);
         touch();
         persist();
@@ -903,11 +920,7 @@
         state.media = normalizeMedia(data.media);
         migrateLegacyMedia(state.notes, state.media); // 兼容旧云端数据
         state.draftMedia = [];
-        var cats = Array.isArray(data.categories) ? data.categories.slice() : [];
-        state.notes.forEach(function (n) {
-          if (cats.indexOf(n.category) < 0) cats.push(n.category);
-        });
-        state.categories = cats;
+        state.categories = sanitizeCategories(data.categories, state.notes);
         state.category = ALL;
         state.query = '';
         state.view = 'list';

@@ -331,7 +331,7 @@
         if (!catManager) return;
         catManager.hidden = !state.manageOpen;
         if (!state.manageOpen) return;
-        var html = '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除 · 新建</span></div>' +
+        var html = '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除</span></div>' +
           '<div class="cat-manager-list">';
         state.groups.forEach(function (g) {
           if (state.editingGroup === g.name) {

@@ -190,7 +190,7 @@
 
     // 平台筛选条：至少两个平台时才显示，不再有「全部」（只显示 3 行时无意义）
     var platBar = present.length > 1
-      ? '<div class="rs-platform-bar mono" role="group" aria-label="按平台筛选下载">' +
+      ? '<div class="rs-platform-bar" role="group" aria-label="按平台筛选下载">' +
           present.map(function (p) {
             var label = PLATFORM_LABEL[p] || p;
             if (p === device) label += ' · 本机';
@@ -212,7 +212,7 @@
     var foot = r.body.trim()
       ? '<details class="rs-notes rs-release-foot"><summary class="rs-release-foot-sum">' +
           '<span class="rs-release-meta mono">' + releaseMeta + '</span>' +
-          '<span class="rs-notes-toggle mono">更新日志 <i class="i-ico i-chev" aria-hidden="true"></i></span>' +
+          '<span class="rs-notes-toggle">更新日志 <i class="i-ico i-chev" aria-hidden="true"></i></span>' +
         '</summary><pre>' +
           esc(r.body.trim().slice(0, 1600)) + (r.body.length > 1600 ? '\n…' : '') +
         '</pre></details>'

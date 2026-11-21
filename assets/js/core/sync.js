@@ -1187,7 +1187,7 @@
 
       // 恢复配置时发现本地新增内容的确认卡：紧贴标题行，出现即可见
       '<div class="sy-restore-choice" id="sy-restore-choice" hidden>' +
-        '<div class="sy-restore-choice-head mono" id="sy-restore-head">本地有新增内容 · 请选择</div>' +
+        '<div class="sy-restore-choice-head" id="sy-restore-head">本地有新增内容 · 请选择</div>' +
         '<p class="sy-restore-choice-desc" id="sy-restore-desc"></p>' +
         '<div class="sy-restore-choice-actions">' +
           '<button class="btn btn--primary sy-btn" id="sy-restore-upload" type="button">上传本地</button>' +
@@ -1254,7 +1254,7 @@
             '<button class="btn btn--primary sy-btn" id="sy-pass-make" type="button">生成凭证</button>' +
           '</div>' +
           '<div class="sy-vault-seal" id="sy-vault-seal" hidden>' +
-            '<span class="sy-vault-seal-label mono">你的恢复凭证 · 口令自己记牢</span>' +
+            '<span class="sy-vault-seal-label">你的恢复凭证 · 口令自己记牢</span>' +
             '<span class="sy-vault-seal-code mono" id="sy-vault-seal-code">——</span>' +
             '<div class="sy-seal-links">' +
               '<button class="sy-link" id="sy-code-copy" type="button">复制凭证</button>' +

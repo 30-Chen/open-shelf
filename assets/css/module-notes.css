@@ -12,7 +12,7 @@
 .nt-head-left { min-width: 0; }
 .nt-index { font-size: 10px; letter-spacing: 1.6px; color: var(--blue); }
 .nt-title {
-  margin: 8px 0 6px; font-size: 24px; font-weight: 650; letter-spacing: .4px;
+  margin: 8px 0 6px; font-size: 24px; font-weight: 600; letter-spacing: .4px;
   color: var(--text);
 }
 .nt-badge {
@@ -57,7 +57,7 @@
 .nt-filter span { font-size: 10px; color: var(--muted); }
 .nt-filter:hover { border-color: var(--line-strong); color: var(--text); }
 .nt-filter.is-active {
-  color: #04130f; font-weight: 650; border-color: transparent;
+  color: #04130f; font-weight: 600; border-color: transparent;
   background: linear-gradient(120deg, #67ecd0, #4fd8c0);
 }
 .nt-filter.is-active span { color: rgba(4, 19, 15, .7); }
@@ -127,11 +127,14 @@
 .nt-cat-pill {
   padding: 2px 8px; border-radius: 999px; color: var(--blue);
   background: rgba(109, 156, 255, .1); border: 1px solid rgba(109, 156, 255, .22);
+  font-family: var(--sans);   /* 分类名多为中文，避免继承 .nt-card-meta 的等宽字体 */
 }
 .nt-card-title {
-  margin: 11px 0 8px; font-size: 16px; font-weight: 620; line-height: 1.4;
+  margin: 11px 0 8px; font-size: 16px; font-weight: 600; line-height: 1.4;
   color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  cursor: pointer; transition: color .18s;
 }
+.nt-card-title:hover { color: var(--accent); }
 .nt-card-excerpt {
   margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--muted);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -144,7 +147,7 @@
   padding: 10px 16px; border-top: 1px solid var(--line-soft);
 }
 .nt-text-btn {
-  border: 0; background: transparent; color: var(--accent); font: 11px var(--mono);
+  border: 0; background: transparent; color: var(--accent); font: 11px var(--sans);
   letter-spacing: .5px; padding: 4px 0;
 }
 .nt-text-btn:hover { text-decoration: underline; }
@@ -289,7 +292,7 @@
 /* ---------- Markdown 正文排版 ---------- */
 .nt-markdown { color: var(--text-2); font-size: 14.5px; line-height: 1.85; overflow-wrap: anywhere; }
 .nt-markdown > *:first-child { margin-top: 0; }
-.nt-h { color: var(--text); font-weight: 650; line-height: 1.35; margin: 1.5em 0 .6em; }
+.nt-h { color: var(--text); font-weight: 600; line-height: 1.35; margin: 1.5em 0 .6em; }
 .nt-h1 { font-size: 28px; }
 .nt-h2 { font-size: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--line-soft); }
 .nt-h3 { font-size: 18px; }

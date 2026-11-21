@@ -10,6 +10,7 @@
   Portal.moduleAssets = Portal.moduleAssets || {};
   var NS = Portal.moduleAssets.notes = Portal.moduleAssets.notes || {};
 
+  NS.defaultCategory = '未分类';       // 默认目录：始终存在、不可删除/重命名
   NS.defaultCategories = ['教程', '随笔'];
 
   NS.defaults = [

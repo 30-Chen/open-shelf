@@ -24,8 +24,11 @@
   --radius-sm:     9px;
   /* 所有悬浮面板共用的边框色，保证菜单/设置/更多/同步面板视觉统一 */
   --pop-border:    rgba(85, 227, 194, .30);
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  /* 两套字体体系：--sans 用于中文/正文，--mono 用于数字/代码/英文标识。
+     --mono 末尾补入与 --sans 相同的中文无衬线回退，避免中文落到各平台默认衬线体导致混排不协调。 */
+  --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", var(--cjk);
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", var(--cjk);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -314,7 +317,7 @@ img { max-width: 100%; }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 .btn--primary {
-  border-color: transparent; color: #04130f; font-weight: 650;
+  border-color: transparent; color: #04130f; font-weight: 600;
   background: linear-gradient(120deg, #67ecd0, #4fd8c0);
   box-shadow: 0 4px 22px rgba(85, 227, 194, .18);
 }
@@ -417,7 +420,7 @@ img { max-width: 100%; }
 .msw-head {
   padding: 6px 10px 8px; margin-bottom: 3px;
   border-bottom: 1px solid var(--line-soft);
-  font: 10px var(--mono); letter-spacing: 1.2px; color: var(--muted);
+  font: 10px var(--sans); letter-spacing: 1.2px; color: var(--muted);
 }
 .msw-item {
   display: flex; align-items: center; gap: 10px;

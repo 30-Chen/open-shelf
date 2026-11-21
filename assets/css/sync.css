@@ -144,7 +144,7 @@
 .sy-btn { flex: 1; height: 38px; }
 .sy-link {
   padding: 4px 0; border: 0; background: transparent;
-  color: var(--muted); font: 11px var(--mono); text-decoration: none;
+  color: var(--muted); font: 11px var(--sans); text-decoration: none;
   transition: color .18s;
 }
 .sy-link:hover { color: var(--accent); }
@@ -160,7 +160,7 @@
   width: 12px; height: 12px; flex: 0 0 12px;
   background-color: currentColor;
 }
-.sy-danger-hint { color: var(--muted); font: 10px var(--mono); }
+.sy-danger-hint { color: var(--muted); font: 10px var(--sans); }
 
 .sy-msg { min-height: 16px; margin: 12px 0 0; font-size: 11px; color: var(--muted); word-break: break-all; }
 .sy-msg--ok { color: var(--accent); }

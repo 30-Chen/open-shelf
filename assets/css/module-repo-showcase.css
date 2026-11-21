@@ -79,7 +79,7 @@
 .rs-filter span { font-size: 10px; color: var(--muted); }
 .rs-filter:hover { border-color: var(--line-strong); color: var(--text); }
 .rs-filter.is-active {
-  color: #04130f; font-weight: 650; border-color: transparent;
+  color: #04130f; font-weight: 600; border-color: transparent;
   background: linear-gradient(120deg, #67ecd0, #4fd8c0);
 }
 .rs-filter.is-active span { color: rgba(4, 19, 15, .7); }
@@ -224,7 +224,7 @@
 }
 .rs-plat:hover { color: var(--text); border-color: var(--line-strong); }
 .rs-plat.is-active {
-  color: #04130f; font-weight: 650; border-color: transparent;
+  color: #04130f; font-weight: 600; border-color: transparent;
   background: linear-gradient(120deg, #67ecd0, #4fd8c0);
 }
 

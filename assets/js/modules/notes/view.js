@@ -8,6 +8,7 @@
   var NS = Portal.moduleAssets.notes;
   var MD = NS.markdown;
   var esc = MD.esc;
+  var DEFAULT_CAT = NS.defaultCategory || '未分类';
 
   function date(ts) {
     if (!ts) return '—';
@@ -37,7 +38,7 @@
             '<span class="nt-cat-pill">' + esc(note.category || '未分类') + '</span>' +
             '<time>' + date(note.updatedAt) + '</time>' +
           '</div>' +
-          '<h3 class="nt-card-title">' + esc(note.title || '无标题') + '</h3>' +
+          '<h3 class="nt-card-title" data-act="read" data-id="' + esc(note.id) + '" title="点击阅读">' + esc(note.title || '无标题') + '</h3>' +
           '<p class="nt-card-excerpt">' + esc(excerpt) + '</p>' +
           tagList(note.tags) +
         '</div>' +
@@ -80,7 +81,7 @@
     // 集中式目录管理浮层
     var mgr = '<div class="cat-manager" id="nt-cat-manager"' + (manageOpen ? '' : ' hidden') + '>';
     if (manageOpen) {
-      mgr += '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除 · 新建</span></div><div class="cat-manager-list">';
+      mgr += '<div class="cat-manager-head mono">目录管理 <span>重命名 · 删除</span></div><div class="cat-manager-list">';
       categories.forEach(function (c) {
         if (editingCat === c) {
           mgr += '<div class="cat-manager-row cat-manager-row--edit">' +
@@ -92,8 +93,10 @@
         } else {
           mgr += '<div class="cat-manager-row">' +
             '<button class="cat-manager-name" type="button" data-act="filter" data-cat="' + esc(c) + '"><i class="i-ico i-folder" aria-hidden="true"></i>' + esc(c) + '<span class="mono">' + (counts[c] || 0) + '</span></button>' +
-            '<button class="cat-manager-mini" type="button" data-act="cat-rename-start" data-cat="' + esc(c) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
-            '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-act="cat-delete" data-cat="' + esc(c) + '" title="删除目录，笔记移入未分类" aria-label="删除目录"><i class="i-ico i-trash" aria-hidden="true"></i></button>' +
+            (c === DEFAULT_CAT
+              ? '<span class="cat-manager-lock mono" title="默认目录不可删除或重命名">默认</span>'
+              : '<button class="cat-manager-mini" type="button" data-act="cat-rename-start" data-cat="' + esc(c) + '" title="重命名" aria-label="重命名"><i class="i-ico i-edit" aria-hidden="true"></i></button>' +
+                '<button class="cat-manager-mini cat-manager-mini--danger" type="button" data-act="cat-delete" data-cat="' + esc(c) + '" title="删除目录，笔记移入未分类" aria-label="删除目录"><i class="i-ico i-trash" aria-hidden="true"></i></button>') +
           '</div>';
         }
       });
