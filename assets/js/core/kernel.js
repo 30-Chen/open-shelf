@@ -124,6 +124,56 @@
     });
   };
 
+  /* ---------- 悬浮层定位 ---------- */
+  /**
+   * 把一个 absolute 浮层定位到触发按钮正下方，右缘与按钮右缘对齐。
+   * 解决「浮层用 right:0 锚定在整个 .filters 容器右缘、与按钮错位」的问题。
+   * - host：定位宿主（浮层的 offsetParent，通常是 .filters 容器）；不传则取浮层当前 offsetParent
+   * - 会把浮层夹取在 host 内，左右各留 pad，避免移动端溢出
+   * - 浮层显示后调用；窗口 resize / 宿主滚动时自动重算
+   */
+  var placements = [];   // [{ pop, anchor, host, gap, pad }]
+  function computePlacement(p) {
+    var pop = p.pop, anchor = p.anchor, host = p.host || pop.offsetParent;
+    if (!pop || !anchor || !host) return;
+    var hr = host.getBoundingClientRect();
+    var ar = anchor.getBoundingClientRect();
+    // 先清除上次内联定位，按 CSS 的自然宽度测量浮层
+    pop.style.left = '';
+    pop.style.right = '';
+    pop.style.top = '';
+    var pw = pop.offsetWidth;
+    var pad = p.pad == null ? 8 : p.pad;
+    var gap = p.gap == null ? 8 : p.gap;
+    // 右缘对齐按钮右缘；夹取到 host 内（左右留 pad）
+    var left = ar.right - hr.left - pw;
+    var maxLeft = hr.width - pw - pad;
+    if (left > maxLeft) left = maxLeft;
+    if (left < pad) left = pad;
+    pop.style.left = Math.round(left) + 'px';
+    pop.style.right = 'auto';
+    pop.style.top = Math.round(ar.bottom - hr.top + gap) + 'px';
+  }
+  Portal.placePopover = function (pop, anchor, opts) {
+    if (!pop || !anchor) return;
+    opts = opts || {};
+    var entry = { pop: pop, anchor: anchor, host: opts.host || pop.offsetParent,
+      gap: opts.gap, pad: opts.pad };
+    // 清理已脱离 DOM 的旧浮层（模块 render 会整体重建 innerHTML），避免累积
+    for (var i = placements.length - 1; i >= 0; i--) {
+      if (!placements[i].pop.parentNode || placements[i].pop === pop) placements.splice(i, 1);
+    }
+    placements.push(entry);
+    computePlacement(entry);
+  };
+  if (global.addEventListener) {
+    global.addEventListener('resize', function () {
+      placements.forEach(function (p) {
+        if (p.pop && !p.pop.hidden && p.pop.offsetParent) computePlacement(p);
+      });
+    });
+  }
+
   /* ---------- 启动 ---------- */
   /**
    * @param mountRoot 挂载点

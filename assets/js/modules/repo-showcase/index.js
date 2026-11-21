@@ -363,6 +363,12 @@
           '<button class="cat-manager-add" type="button" data-action="create-group"><i class="i-ico i-plus" aria-hidden="true"></i>新建</button>' +
         '</div></div>';
         catManager.innerHTML = html;
+        // 浮层锚定到「管理目录」按钮正下方，避免贴 .rs-filters 容器右缘而错位
+        if (global.Portal && Portal.placePopover) {
+          var btn = filterRow.querySelector('[data-action="manage-toggle"]');
+          var host = root.querySelector('.rs-filters');
+          if (btn) Portal.placePopover(catManager, btn, { host: host });
+        }
       }
 
       function setManageOpen(open) {

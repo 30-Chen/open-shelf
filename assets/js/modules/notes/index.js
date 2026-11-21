@@ -388,6 +388,7 @@
           var note = state.notes.filter(function (n) { return n.id === state.currentId; })[0];
           root.innerHTML = note ? View.reader(note, state.media)
             : View.list(state, visibleNotes(), counts(), state.media);
+          placeMgr();
           return;
         }
         if (state.view === 'edit') {
@@ -401,6 +402,18 @@
           return;
         }
         root.innerHTML = View.list(state, visibleNotes(), counts(), state.media);
+        placeMgr();
+      }
+
+      /** 展开目录管理浮层时，把它锚定到「管理目录」按钮正下方，避免贴容器右缘而错位 */
+      function placeMgr() {
+        if (!state.manageOpen) return;
+        var btn = root.querySelector('[data-act="manage-toggle"]');
+        var mgr = root.querySelector('#nt-cat-manager');
+        if (btn && mgr && global.Portal && Portal.placePopover) {
+          var host = root.querySelector('.nt-filters');
+          Portal.placePopover(mgr, btn, { host: host });
+        }
       }
 
       function goList() {
