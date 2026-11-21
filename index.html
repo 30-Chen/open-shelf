@@ -62,16 +62,28 @@
       <span class="lc-eyebrow mono"><i aria-hidden="true"></i> PERSONAL DIGITAL SHELF</span>
       <h2>把值得留下的，<br><em>收进一个架子。</em></h2>
       <p class="lc-lead">这里是一座安静的私人宝库：开源应用、随手写下的想法，还有尚未命名的下一次灵感，都被分门别类地收好。不追求大而全，只留下真正想回头找到的东西。</p>
-      <p class="lc-hero-note mono">01 开源应用&nbsp; / &nbsp;02 笔记 · 博客&nbsp; / &nbsp;03 ONE MORE THING</p>
       <div class="lc-actions">
         <a class="lc-btn lc-btn--primary" href="#catalog-section">打开收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
         <a class="lc-btn" href="#how">看看它怎么工作 <i class="i-ico i-chev" aria-hidden="true"></i></a>
       </div>
-      <div class="lc-stats" aria-label="站点特性">
-        <div class="lc-stat" title="3 个独立模块，第三个为预留"><b>03</b><span>DRAWERS</span></div>
-        <div class="lc-stat" title="收藏数量不限"><b>∞</b><span>KEEPSAKES</span></div>
-        <div class="lc-stat" title="零构建依赖"><b>0</b><span>BUILD STEPS</span></div>
-      </div>
+    </section>
+
+    <section class="lc-traits" aria-label="项目特点">
+      <article class="lc-trait lc-reveal">
+        <span class="lc-trait-icon"><i class="i-ico i-folder" aria-hidden="true"></i></span>
+        <h4 class="mono">STATIC</h4>
+        <p>仓库本身就是页面，浏览器直接打开，无需服务端。</p>
+      </article>
+      <article class="lc-trait lc-reveal">
+        <span class="lc-trait-icon"><i class="i-ico i-modules" aria-hidden="true"></i></span>
+        <h4 class="mono">MODULAR</h4>
+        <p>每个功能独立成模块，存储与样式各自隔离。</p>
+      </article>
+      <article class="lc-trait lc-reveal">
+        <span class="lc-trait-icon"><i class="i-ico i-check" aria-hidden="true"></i></span>
+        <h4 class="mono">NO BUILD</h4>
+        <p>零依赖、零构建，改完即上线，随处可托管。</p>
+      </article>
     </section>
 
     <section class="lc-section" id="catalog-section" aria-labelledby="lc-modules-title">
@@ -118,24 +130,44 @@
       </div>
       <div class="lc-flow">
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">01</span>
-          <h4>先写进本地</h4>
-          <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
+          <div class="lc-step-stage">
+            <span class="lc-step-num mono">01</span>
+            <i class="i-ico i-edit" aria-hidden="true"></i>
+          </div>
+          <div class="lc-step-body">
+            <h4>先写进本地</h4>
+            <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
+          </div>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">02</span>
-          <h4>按需连接云端</h4>
-          <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
+          <div class="lc-step-stage">
+            <span class="lc-step-num mono">02</span>
+            <i class="i-ico i-cloud" aria-hidden="true"></i>
+          </div>
+          <div class="lc-step-body">
+            <h4>按需连接云端</h4>
+            <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
+          </div>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">03</span>
-          <h4>逐条对账合并</h4>
-          <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
+          <div class="lc-step-stage">
+            <span class="lc-step-num mono">03</span>
+            <i class="i-ico i-refresh" aria-hidden="true"></i>
+          </div>
+          <div class="lc-step-body">
+            <h4>逐条对账合并</h4>
+            <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
+          </div>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">04</span>
-          <h4>打开就是最新</h4>
-          <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
+          <div class="lc-step-stage">
+            <span class="lc-step-num mono">04</span>
+            <i class="i-ico i-check" aria-hidden="true"></i>
+          </div>
+          <div class="lc-step-body">
+            <h4>打开就是最新</h4>
+            <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
+          </div>
         </article>
       </div>
       <p class="lc-flow-note">没有构建步骤，没有服务端程序。这个仓库本身就是页面，浏览器就是你的收藏盒。</p>
@@ -152,7 +184,6 @@
 
     <footer class="site-footer mono">
       <span>© <span id="year"></span> · 数据来自 GitHub REST API</span>
-      <span>STATIC / MODULAR / NO BUILD</span>
     </footer>
   </div>
 
