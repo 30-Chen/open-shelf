@@ -149,6 +149,19 @@
 }
 .sy-link:hover { color: var(--accent); }
 
+/* 重置到初始状态：危险操作，与断开关联同区但明显区分 */
+.sy-danger-row {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--pop-border, var(--line));
+}
+.sy-link--danger { color: var(--danger); display: inline-flex; align-items: center; gap: 5px; }
+.sy-link--danger:hover { color: var(--danger); opacity: .82; }
+.sy-link--danger .i-ico {
+  width: 12px; height: 12px; flex: 0 0 12px;
+  background-color: currentColor;
+}
+.sy-danger-hint { color: var(--muted); font: 10px var(--mono); }
+
 .sy-msg { min-height: 16px; margin: 12px 0 0; font-size: 11px; color: var(--muted); word-break: break-all; }
 .sy-msg--ok { color: var(--accent); }
 .sy-msg--error { color: var(--danger); }

@@ -3,9 +3,10 @@
    职责：
      1. 采集各模块通过 registry.sync 暴露的 getState()/cold() 数据
      2. 本地改动自动检测 → 防抖后自动上传；云端变化自动轮询 → 自动下载
-     3. 冲突按「最后修改时间戳」裁决，不静默丢数据
+     3. 冲突按三方合并（共同祖先快照）逐条裁决，不依赖设备时钟、不静默丢数据
      4. 上传前把「当前页面未挂载模块」的云端数据合并回去，避免覆盖
      5. 页头 ☁ SYNC 触发按钮 + 下拉面板（两步）：连接云端、换设备；同步状态在标题行
+     6. 一键重置：清空本机模块数据 + 云端文件，保留 Token 与恢复凭证，用于超限断流后重来
 
    数据只写进用户自己的私有 Gist，token 只存在本机 localStorage，
    不进入仓库、不经过任何第三方。模块之间仍互不引用，仅通过注册表通信。
@@ -1057,6 +1058,48 @@
       if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
     },
 
+    /**
+     * 一键重置到初始状态：清空本机模块数据 + 云端文件，保留 Token 与恢复凭证。
+     * 用于历史超限大文件导致云端截断、同步反复断流后的彻底重来。
+     * 只在用户在面板二次确认后调用，绝不自动触发。
+     */
+    resetAll: function () {
+      // 作废一切在途读写并停表：否则清理过程中本地检测/云端轮询会把内存里的
+      // 旧数据重新写回云端，或在途请求把旧基线写回配置。
+      epoch++;
+      syncing = false;
+      if (localTimer) { global.clearInterval(localTimer); localTimer = null; }
+      if (cloudTimer) { global.clearInterval(cloudTimer); cloudTimer = null; }
+      global.clearTimeout(debounceTimer);
+      debounceTimer = null;
+      lastSeenLocalHash = null;
+
+      // 先把云端文件重写为空 payload —— 这一步不依赖本地内存态，直接传空对象。
+      // 只有云端清理成功才继续清本机，避免「云端没清掉、本地却丢了」的最坏结果。
+      // writeGist 已按 UTF-8 算体积，空数据必然安全，旧超限文件被彻底替换。
+      return writeGist({}, {}, hashModules({}), {}).then(function (r) {
+        if (r && r.skipped) return r;
+        // 云端已清空：清掉两个模块（及共享设置）的本地数据。页面重载后模块
+        // 读不到数据会自动回到内置示例（demo 态不参与同步），即「初始状态」。
+        ['notes', 'repo-showcase', 'settings'].forEach(function (id) {
+          try { Portal.store.namespace(id).clear(); } catch (e) { /* noop */ }
+        });
+        clearDetached();
+        cfg.localChangedAt = 0;
+        lastSeenLocalHash = hashModules({});
+        lastAuto = { at: Date.now(), result: null, reason: 'reset' };
+        saveCfg();
+        if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:auto', lastAuto);
+        // 凭证仍在：重置后立即恢复自动同步调度，无需用户重新配置。
+        startScheduler();
+        r.localCleared = true;
+        return r;
+      }).catch(function (e) {
+        // 云端清理失败：本地数据保持不动，把错误交给 UI 明确提示，绝不静默。
+        return { ok: false, error: (e && e.message || String(e)) };
+      });
+    },
+
     makeRecovery: makeRecovery,
     restoreRecovery: restoreRecovery,
     makeVault: makeVault,
@@ -1172,6 +1215,11 @@
             '<button class="sy-link" id="sy-disconnect" type="button">断开关联</button>' +
             '<a class="sy-link" href="https://github.com/settings/tokens/new?scopes=gist&description=Open%20Shelf%20Sync" ' +
               'target="_blank" rel="noopener noreferrer">获取 Token ↗</a>' +
+          '</div>' +
+          '<div class="sy-actions sy-actions--sub sy-danger-row">' +
+            '<button class="sy-link sy-link--danger" id="sy-reset" type="button">' +
+              '<i class="i-ico i-reset" aria-hidden="true"></i> 重置到初始状态</button>' +
+            '<span class="sy-danger-hint">清空本机与云端数据</span>' +
           '</div>' +
         '</div>' +
       '</section>' +
@@ -1489,6 +1537,32 @@
       switchVTab('restore'); // 已无 Token，切回「恢复配置」更符合当前场景
       refresh();
       msg('已断开关联，自动同步已停止', 'warn');
+    });
+
+    // 重置到初始状态：两级确认，避免误触清空全部数据
+    panel.querySelector('#sy-reset').addEventListener('click', function () {
+      if (!global.confirm(
+        '重置将清空本机两个模块的数据，并把云端同步文件一并清空，恢复到初始示例状态。\n' +
+        'Token 与恢复凭证会保留，重置后可立即继续同步。\n\n' +
+        '重要：其它已关联的设备需要各自点一次「重置到初始状态」，否则它们上的旧数据会再次同步回来。\n\n' +
+        '此操作不可撤销，确定继续？')) return;
+      if (!global.confirm('再次确认：真的要清空本机与云端的所有数据吗？这一步无法撤销。')) return;
+      var btn = panel.querySelector('#sy-reset');
+      btn.disabled = true;
+      msg('正在重置…');
+      sync.resetAll().then(function (r) {
+        btn.disabled = false;
+        if (!r || r.error || r.skipped) {
+          msg('重置失败：' + ((r && r.error) || (r && r.reason) || '未知错误') + '。本地数据未改动，请重试。', 'error');
+          return;
+        }
+        tokenEl.value = cfg.token;
+        gistEl.value = cfg.gistId;
+        msg('已重置 · 正在重新载入页面…', 'ok');
+        setMoreOpen(false);
+        refresh();
+        global.setTimeout(function () { global.location.reload(); }, 600);
+      });
     });
 
     // ---- 换设备：生成凭证 / 恢复配置（两个 Tab）----
