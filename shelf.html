@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="OPEN / SHELF 收藏架：集中管理开源应用、笔记与预留模块">
+  <link rel="icon" type="image/svg+xml" href="assets/brand/logo.svg">
+  <title>收藏架 · OPEN / SHELF</title>
+
+  <link rel="preconnect" href="https://api.github.com">
+  <script src="assets/js/core/theme.js"></script>
+  <script>if ('IntersectionObserver' in window) document.documentElement.classList.add('js-reveal');</script>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/sync.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
+
+  <!-- 内核 + 模块注册：与首页同序，供 app.js 渲染模块入口卡片，并保持后台冷同步 -->
+  <script defer src="assets/js/core/store.js"></script>
+  <script defer src="assets/js/core/net.js"></script>
+  <script defer src="assets/js/core/kernel.js"></script>
+  <script defer src="assets/js/core/select.js"></script>
+  <script defer src="assets/js/core/sync.js"></script>
+
+  <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/github.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/view.js"></script>
+  <script defer src="assets/js/modules/repo-showcase/index.js"></script>
+  <script defer src="assets/js/modules/notes/defaults.js"></script>
+  <script defer src="assets/js/modules/notes/markdown.js"></script>
+  <script defer src="assets/js/modules/notes/view.js"></script>
+  <script defer src="assets/js/modules/notes/index.js"></script>
+  <script defer src="assets/js/modules/one-more-thing/index.js"></script>
+
+  <script defer src="assets/js/core/app.js"></script>
+</head>
+<body>
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+
+  <div class="page">
+    <header class="site-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 96 96" width="100%" height="100%" role="img"><rect x="10" y="10" width="76" height="76" rx="18" fill="#1D9E75"/><path d="M29 37 L39 47 L29 57" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="49" y1="39" x2="67" y2="39" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/><line x1="49" y1="48" x2="63" y2="48" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.8"/><line x1="49" y1="57" x2="58" y2="57" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.6"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>OPEN<span>/</span>SHELF</h1>
+          <p>私人数字收藏夹 · 把值得留下的收进一个架子</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <a class="ghost-link" href="index.html"><i class="i-ico i-back" aria-hidden="true"></i> 返回首页</a>
+        <span class="status status--icon" title="系统在线" aria-label="系统在线"><i class="i-ico i-system" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></span>
+        <a class="ghost-link ghost-link--icon mono site-github-link" href="https://github.com/30-Chen/open-shelf" target="_blank" rel="noopener noreferrer" title="打开本项目仓库" aria-label="打开本项目仓库"><i class="i-ico i-github" aria-hidden="true"></i></a>
+      </div>
+    </header>
+
+    <nav class="lc-crumb" aria-label="面包屑导航">
+      <a href="index.html">HOME</a>
+      <span class="lc-sep">/</span>
+      <span class="lc-current">收藏架</span>
+    </nav>
+
+    <section class="lc-shelf-head lc-reveal" aria-labelledby="shelf-title">
+      <span class="lc-kicker mono">THE SHELF / 收藏架</span>
+      <h2 id="shelf-title">挑一个抽屉，开始收藏。</h2>
+      <p>每个模块独立运行、各自保存。点开即进，随时可以从页头切换回来。</p>
+    </section>
+
+    <!-- 模块入口卡片由内核根据注册表自动生成 -->
+    <main id="catalog" class="lc-catalog"></main>
+
+    <footer class="site-footer mono">
+      <span>© <span id="year"></span> · 数据来自 GitHub REST API</span>
+      <span>STATIC / MODULAR / NO BUILD</span>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      if (!('IntersectionObserver' in window)) return;
+      var els = document.querySelectorAll('.lc-reveal');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-in');
+          io.unobserve(entry.target);
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      Array.prototype.forEach.call(els, function (el) { io.observe(el); });
+    })();
+  </script>
+</body>
+</html>

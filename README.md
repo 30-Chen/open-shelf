@@ -6,7 +6,7 @@
 
 一个简洁、带科技感的**个人收藏夹 / 私人数字宝库**。把常用的开源应用、写下的想法，以及预留给下一次灵感的位置，分门别类地收进同一个架子。纯静态、零依赖、零构建，直接托管到 GitHub Pages。
 
-**页面结构**：`index.html` 是产品介绍首页（大标题、STATIC / MODULAR / NO BUILD 项目特点条、模块入口、工作原理、一行式收尾），每个功能作为二级页面运行在 `module.html?id=<模块id>` 上，互不干扰。首页采用居中的产品式排版（标题与段落全部居中）、圆角软卡片、两层式步骤卡片（上方图标台 + 下方居中文字）与滚动入场动画；自行收敛重复板块：模块独立性并入 MODULAR 特点、本地/云端机制并入工作原理、功能细节并入模块入口引言，收尾只保留一行引导，不再重复首屏大标题。
+**页面结构**：三类页面，各司其职。`index.html` 是**产品介绍首页**，只做介绍——大标题、STATIC / MODULAR / NO BUILD 三个独立段落、功能模块的文字介绍、工作原理与收尾引导，不渲染任何可点击的模块入口卡片；`shelf.html` 是**收藏架页**，集中展示由注册表自动生成的全部模块入口卡片，首页的「现在开始收藏 / 进入收藏架」都指向它；每个功能作为二级页面运行在 `module.html?id=<模块id>` 上，互不干扰。首页采用居中的产品式排版：模块特点是无卡片的三段文字、工作原理是「序号 + 小图标 + 标题同行」的紧凑步骤（移动端不再被大图标台挤占篇幅），配合滚动入场动画；模块独立性并入 MODULAR 特点、本地/云端机制并入工作原理、功能细节并入收藏架卡片，收尾只保留一行引导。
 
 **模块 01 · 开源应用**：提交一个 GitHub 仓库（`owner/repo` 或完整链接）并通过常驻的**分类筛选条**选择/新建目录（样式与模块 02 一致），页面自动读取项目介绍、Star、语言，以及**最新 Release 的版本号、发布时间与下载地址**。下载列表支持**按平台筛选**（Windows / macOS / Linux / Android / iOS），默认优先显示当前设备的安装包，最多显示 3 个主要安装文件（文件名、大小、下载次数），校验文件靠后；只看最新版本，无需切换。同时支持源码 `.zip` / `.tar.gz`、更新日志、一键刷新。内置**静态快照兜底**：API 限流或断网时依然显示内容。
 
@@ -144,7 +144,7 @@ git push -u origin main
 
 | 想改什么 | 改哪里 |
 | --- | --- |
-| 站名 / 引导页标题 / 右上角链接 | `index.html`、`module.html` 的 `<header>` 与 `.lc-hero` |
+| 站名 / 引导页标题 / 右上角链接 | `index.html`、`shelf.html`、`module.html` 的 `<header>` 与 `.lc-hero` |
 | 默认收藏的项目清单 | `assets/js/modules/repo-showcase/defaults.js` |
 | 默认目录名称 | `assets/js/modules/repo-showcase/index.js` 的 `DEFAULT_GROUP` |
 | 下载列表显示几行 | `assets/js/modules/repo-showcase/view.js` 的 `MAX` |
@@ -188,7 +188,8 @@ node tools/update-snapshot.mjs
 ## 目录结构与模块化约定
 
 ```
-index.html                          产品介绍首页：项目特点条 / 模块入口 / 工作原理 / 一行式收尾
+index.html                          产品介绍首页（纯介绍）：项目特点三段 / 模块介绍 / 工作原理 / 收尾引导
+shelf.html                          收藏架页：集中展示注册表生成的全部模块入口卡片
 module.html                         二级页面容器：按 ?id= 挂载单个模块
 data/snapshot.json                  可选的静态兜底快照
 tools/update-snapshot.mjs           一键生成 / 更新快照
@@ -260,14 +261,20 @@ assets/js/modules/one-more-thing/   业务模块 03 · 预留占位
 
 **2.** 新建 `assets/css/module-links.css`，类名统一用 `.lk-` 前缀。
 
-**3.** 在 `index.html` 和 `module.html` **两个页面**里按依赖顺序加标签（模块脚本放在 `app.js` 之前）：
+**3.** 在 `shelf.html` 和 `module.html` 里按依赖顺序加脚本（模块脚本放在 `app.js` 之前），并在 `module.html` 额外引入模块样式：
 
 ```html
+<!-- shelf.html：只需注册脚本，用于生成收藏架卡片 -->
+<script defer src="assets/js/modules/links/index.js"></script>
+
+<!-- module.html：注册脚本 + 模块私有样式 -->
 <link rel="stylesheet" href="assets/css/module-links.css">
 <script defer src="assets/js/modules/links/index.js"></script>
 ```
 
-内核会据此：在首页引导目录自动生成入口卡片，在 `module.html?id=links` 上只挂载这个模块。顺序、故障、存储都与其它模块隔离。
+> 介绍首页 `index.html` 也保留全部模块注册脚本，目的是让停在首页时后台仍能对未挂载模块做冷同步；它本身不渲染入口卡片，无需新增样式。
+
+内核会据此：在收藏架页 `shelf.html` 自动生成入口卡片，在 `module.html?id=links` 上只挂载这个模块。顺序、故障、存储都与其它模块隔离。
 
 ## 后续可扩展的方向
 

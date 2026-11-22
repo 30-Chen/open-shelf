@@ -17,14 +17,15 @@
   <link rel="stylesheet" href="assets/css/sync.css">
   <link rel="stylesheet" href="assets/css/theme.css">
 
-  <!-- 内核：依赖顺序固定，全部 defer，DOM 解析完成后按序执行 -->
+  <!-- 内核：依赖顺序固定，全部 defer。首页只做介绍，但保留注册表与同步脚本，
+       以便停在首页时后台仍能冷同步（未挂载模块的数据直接读写 localStorage）。 -->
   <script defer src="assets/js/core/store.js"></script>
   <script defer src="assets/js/core/net.js"></script>
   <script defer src="assets/js/core/kernel.js"></script>
   <script defer src="assets/js/core/select.js"></script>
   <script defer src="assets/js/core/sync.js"></script>
 
-  <!-- 业务模块注册（首页只读取元数据渲染入口，不挂载模块） -->
+  <!-- 业务模块注册（首页不渲染入口、不挂载模块，仅让同步拿到冷数据桥） -->
   <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
   <script defer src="assets/js/modules/repo-showcase/github.js"></script>
   <script defer src="assets/js/modules/repo-showcase/view.js"></script>
@@ -65,38 +66,41 @@
       <h2>把值得留下的，<br><em>收进一个架子。</em></h2>
       <p class="lc-lead">开源应用、随手记下的想法，还有尚未命名的下一次灵感，都分门别类地收好。不追求大而全，只留下真正想回头找到的东西。</p>
       <div class="lc-actions">
-        <a class="lc-btn lc-btn--primary" href="#catalog-section">打开收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
+        <a class="lc-btn lc-btn--primary" href="shelf.html">现在开始收藏 <i class="i-ico i-ext" aria-hidden="true"></i></a>
         <a class="lc-btn" href="#how">看看它怎么工作 <i class="i-ico i-chev" aria-hidden="true"></i></a>
       </div>
     </section>
 
     <section class="lc-traits" aria-label="项目特点">
-      <article class="lc-trait lc-reveal">
-        <span class="lc-trait-icon"><i class="i-ico i-folder" aria-hidden="true"></i></span>
+      <div class="lc-trait lc-reveal">
         <h4 class="mono">STATIC</h4>
-        <p>仓库本身就是页面，浏览器直接打开，无需服务端。</p>
-      </article>
-      <article class="lc-trait lc-reveal">
-        <span class="lc-trait-icon"><i class="i-ico i-modules" aria-hidden="true"></i></span>
+        <p>仓库本身就是页面，浏览器直接打开，无需服务端。数据留在自己的浏览器里，离线也能用。</p>
+      </div>
+      <div class="lc-trait lc-reveal">
         <h4 class="mono">MODULAR</h4>
-        <p>每个功能独立成模块，存储与样式各自隔离。</p>
-      </article>
-      <article class="lc-trait lc-reveal">
-        <span class="lc-trait-icon"><i class="i-ico i-check" aria-hidden="true"></i></span>
+        <p>每个功能独立成模块，存储与样式各自隔离。一个出问题，不会影响其它模块照常运行。</p>
+      </div>
+      <div class="lc-trait lc-reveal">
         <h4 class="mono">NO BUILD</h4>
-        <p>零依赖、零构建，改完即上线，随处可托管。</p>
-      </article>
+        <p>零依赖、零构建，改完即上线，随处可托管。没有打包步骤，也没有需要维护的服务端。</p>
+      </div>
     </section>
 
-    <section class="lc-section" id="catalog-section" aria-labelledby="lc-modules-title">
+    <section class="lc-section" id="modules-intro" aria-labelledby="lc-modules-title">
       <div class="lc-section-head lc-reveal">
-        <span class="lc-kicker mono">01 / THE SHELF</span>
+        <span class="lc-kicker mono">01 / MODULES</span>
         <h3 id="lc-modules-title">三个抽屉，各放各的东西。</h3>
-        <span class="lc-hint">PICK A DRAWER <i class="i-ico i-ext" aria-hidden="true"></i></span>
+        <span class="lc-hint">具体模块都在收藏架里</span>
       </div>
-      <p class="lc-section-intro lc-reveal">点开即进，互不打扰。分类目录、置顶卡片、标题直达阅读、实时体积提醒——让每一件收进来的东西都找得到。</p>
-      <!-- 模块入口卡片由内核根据注册表自动生成 -->
-      <main id="catalog" class="lc-catalog"></main>
+      <p class="lc-section-intro lc-reveal">每个模块只做一件事，点开即进、互不打扰。分类目录、置顶卡片、标题直达阅读、实时体积提醒，都收在各自的抽屉里。</p>
+      <div class="lc-module-lines lc-reveal">
+        <div class="lc-module-line"><span class="lc-ml-num mono">01</span><strong>开源应用</strong><span>填一个 GitHub 仓库，自动带出介绍、Star 与最新 Release 的下载地址。</span></div>
+        <div class="lc-module-line"><span class="lc-ml-num mono">02</span><strong>笔记 / 博客</strong><span>用 Markdown 写作，图文视频、分类搜索、导入导出，全部存本地。</span></div>
+        <div class="lc-module-line"><span class="lc-ml-num mono">03</span><strong>One more thing</strong><span>留给下一个灵感的空位置，暂时不收集任何数据。</span></div>
+      </div>
+      <div class="lc-section-action lc-reveal">
+        <a class="lc-btn lc-btn--primary" href="shelf.html">进入收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
+      </div>
     </section>
 
     <section class="lc-section" id="how" aria-labelledby="lc-how-title">
@@ -107,42 +111,30 @@
       </div>
       <div class="lc-flow">
         <article class="lc-step lc-reveal">
-          <div class="lc-step-stage">
-            <span class="lc-step-num mono">01</span>
-            <i class="i-ico i-edit" aria-hidden="true"></i>
-          </div>
+          <span class="lc-step-num mono">01</span>
           <div class="lc-step-body">
-            <h4>先写进本地</h4>
+            <h4><i class="i-ico i-edit" aria-hidden="true"></i>先写进本地</h4>
             <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
           </div>
         </article>
         <article class="lc-step lc-reveal">
-          <div class="lc-step-stage">
-            <span class="lc-step-num mono">02</span>
-            <i class="i-ico i-cloud" aria-hidden="true"></i>
-          </div>
+          <span class="lc-step-num mono">02</span>
           <div class="lc-step-body">
-            <h4>按需连接云端</h4>
+            <h4><i class="i-ico i-cloud" aria-hidden="true"></i>按需连接云端</h4>
             <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
           </div>
         </article>
         <article class="lc-step lc-reveal">
-          <div class="lc-step-stage">
-            <span class="lc-step-num mono">03</span>
-            <i class="i-ico i-refresh" aria-hidden="true"></i>
-          </div>
+          <span class="lc-step-num mono">03</span>
           <div class="lc-step-body">
-            <h4>逐条对账合并</h4>
+            <h4><i class="i-ico i-refresh" aria-hidden="true"></i>逐条对账合并</h4>
             <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
           </div>
         </article>
         <article class="lc-step lc-reveal">
-          <div class="lc-step-stage">
-            <span class="lc-step-num mono">04</span>
-            <i class="i-ico i-check" aria-hidden="true"></i>
-          </div>
+          <span class="lc-step-num mono">04</span>
           <div class="lc-step-body">
-            <h4>打开就是最新</h4>
+            <h4><i class="i-ico i-check" aria-hidden="true"></i>打开就是最新</h4>
             <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
           </div>
         </article>
@@ -151,7 +143,7 @@
 
     <section class="lc-cta lc-reveal">
       <span class="lc-cta-line mono">READY WHEN YOU ARE</span>
-      <a class="lc-btn lc-btn--primary" href="#catalog-section">从一件小东西开始 <i class="i-ico i-ext" aria-hidden="true"></i></a>
+      <a class="lc-btn lc-btn--primary" href="shelf.html">现在开始收藏 <i class="i-ico i-ext" aria-hidden="true"></i></a>
     </section>
 
     <footer class="site-footer mono">

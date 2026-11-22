@@ -67,27 +67,31 @@
 }
 .lc-btn--primary:hover { color: #04130f; background: var(--accent); filter: brightness(1.08); }
 
-/* ---------- 项目特点条（STATIC / MODULAR / NO BUILD） ---------- */
+/* ---------- 项目特点：三段独立段落（非卡片） ---------- */
 .lc-traits {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
-  max-width: 920px; margin: 58px auto 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0;
+  max-width: 940px; margin: 52px auto 0;
+  border-top: 1px solid var(--line-soft);
 }
-.lc-trait {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
-  padding: 24px 18px; border: 1px solid var(--line-soft); border-radius: 18px;
-  background: var(--surface-2);
-  transition: border-color .22s, transform .22s;
-}
-.lc-trait:hover { border-color: var(--line-strong); transform: translateY(-3px); }
-.lc-trait-icon {
-  display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 14px;
-  border-radius: 12px; background: var(--accent-dim); color: var(--accent);
-}
-.lc-trait-icon .i-ico { width: 19px; height: 19px; }
+.lc-trait { padding: 26px 26px 6px; border-left: 1px solid var(--line-soft); }
+.lc-trait:first-child { border-left: 0; }
 .lc-trait h4 {
-  margin: 0 0 8px; font: 600 12px var(--mono); letter-spacing: 1.8px; color: var(--text);
+  margin: 0 0 10px; font: 600 12px var(--mono);
+  letter-spacing: 2px; color: var(--accent);
 }
-.lc-trait p { margin: 0; font-size: 12.5px; line-height: 1.75; color: var(--text-2); }
+.lc-trait p { margin: 0; font-size: 13px; line-height: 1.85; color: var(--text-2); }
+
+/* ---------- 模块介绍：三行文字，只做介绍，不放具体入口 ---------- */
+.lc-module-lines { max-width: 760px; margin: 0 auto; text-align: left; }
+.lc-module-line {
+  display: grid; grid-template-columns: 40px 152px 1fr; gap: 12px; align-items: baseline;
+  padding: 16px 4px; border-bottom: 1px solid var(--line-soft);
+}
+.lc-module-line:last-child { border-bottom: 0; }
+.lc-ml-num { font-size: 11px; letter-spacing: 1px; color: var(--accent); }
+.lc-module-line strong { font-size: 14.5px; font-weight: 600; color: var(--text); }
+.lc-module-line > span:last-child { font-size: 13px; line-height: 1.8; color: var(--text-2); }
+.lc-section-action { display: flex; justify-content: center; margin-top: 30px; }
 
 /* ---------- 通用区块标题（全部居中） ---------- */
 .lc-section { margin-top: 118px; }
@@ -152,40 +156,26 @@
   font-size: 13px; color: var(--muted);
 }
 
-/* ---------- 工作原理：两层卡片步骤（参考 localsend 的视觉台 + 居中文字） ---------- */
-.lc-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+/* ---------- 工作原理：紧凑行式步骤（序号 + 小图标 + 标题同行） ---------- */
+.lc-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .lc-step {
-  position: relative; display: flex; flex-direction: column;
-  padding: 18px 6px 4px;
-}
-/* 视觉台：柔和背景 + 大图标，序号浮在右上角 */
-.lc-step-stage {
-  position: relative; display: grid; place-items: center; height: 132px; margin-bottom: 22px;
-  border: 1px solid var(--line-soft); border-radius: 18px;
-  background: linear-gradient(155deg, var(--surface-2), var(--surface));
-  overflow: hidden;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 18px 16px;
+  border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface);
   transition: border-color .22s, transform .22s;
 }
-.lc-step-stage::after {
-  content: ''; position: absolute; inset: auto 0 0 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
-  opacity: 0; transition: opacity .22s;
-}
-.lc-step:hover .lc-step-stage { border-color: var(--line-strong); transform: translateY(-3px); }
-.lc-step:hover .lc-step-stage::after { opacity: .9; }
-.lc-step-stage .i-ico {
-  width: 48px; height: 48px; color: var(--accent);
-  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .12));
-}
+.lc-step:hover { border-color: var(--line-strong); transform: translateY(-3px); }
 .lc-step-num {
-  position: absolute; top: 12px; right: 12px;
-  display: grid; place-items: center; min-width: 27px; height: 24px; padding: 0 6px;
-  border-radius: 8px; background: var(--accent-dim); color: var(--accent);
-  font-size: 10.5px; letter-spacing: .5px;
+  flex: 0 0 auto; font: 600 11px var(--mono); letter-spacing: .5px;
+  color: var(--accent); padding-top: 3px;
 }
-.lc-step-body { text-align: center; }
-.lc-step h4 { margin: 0 0 10px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
-.lc-step p { margin: 0; font-size: 13px; line-height: 1.85; color: var(--text-2); }
+.lc-step-body { min-width: 0; }
+.lc-step h4 {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 8px; font-size: 14.5px; font-weight: 600; color: var(--text);
+}
+.lc-step h4 .i-ico { width: 16px; height: 16px; flex: 0 0 auto; color: var(--accent); }
+.lc-step p { margin: 0; font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
 
 /* ---------- 收尾：一行式，不再重复首屏大标题与说明 ---------- */
 .lc-cta {
@@ -227,22 +217,44 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 .lc-crumb .lc-sep { color: var(--line-strong); }
 .lc-crumb .lc-current { color: var(--accent); }
 
+/* ---------- 收藏架页引导头 ---------- */
+.lc-shelf-head { text-align: center; margin: 44px 0 34px; padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
+.lc-shelf-head h2 {
+  margin: 16px 0 12px; font: 600 clamp(28px, 4vw, 42px)/1.2 var(--sans);
+  letter-spacing: -.025em; color: var(--text);
+}
+.lc-shelf-head p { max-width: 40em; margin: 0 auto; font-size: 14px; line-height: 1.85; color: var(--text-2); }
+.lc-shelf-head + .lc-catalog { margin-top: 0; }
+
 /* ---------- 响应式 ---------- */
 @media (max-width: 900px) {
-  .lc-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 28px; }
+  .lc-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lc-traits { max-width: 620px; }
+  .lc-trait { padding: 22px 18px 4px; }
 }
 
 @media (max-width: 620px) {
   .lc-hero { padding: 62px 0 34px; }
   .lc-hero-glow { top: -60px; height: 320px; }
   .lc-hero h2 { margin-top: 24px; }
-  .lc-traits { grid-template-columns: 1fr; gap: 12px; margin-top: 40px; }
-  .lc-trait { padding: 18px 16px; }
+  /* 特点：三段各自成行，去掉竖分隔、改为横向分隔 */
+  .lc-traits { grid-template-columns: 1fr; gap: 0; margin-top: 40px; }
+  .lc-trait { padding: 18px 2px; border-left: 0; border-bottom: 1px solid var(--line-soft); }
+  .lc-trait:first-child { padding-top: 4px; }
+  .lc-trait:last-child { border-bottom: 0; }
+  .lc-trait h4 { margin-bottom: 6px; }
+  /* 模块介绍行：编号 + 标题一行，说明另起一行 */
+  .lc-module-line { grid-template-columns: 32px 1fr; row-gap: 4px; padding: 14px 2px; }
+  .lc-ml-num { grid-row: 1; }
+  .lc-module-line strong { grid-column: 2; }
+  .lc-module-line > span:last-child { grid-column: 2; }
   .lc-section { margin-top: 72px; }
-  .lc-flow { grid-template-columns: 1fr; row-gap: 24px; }
-  .lc-step-stage { height: 116px; }
+  /* 工作原理：单列，保持紧凑，不再有高图标台 */
+  .lc-flow { grid-template-columns: 1fr; gap: 12px; }
+  .lc-step { padding: 15px 14px; }
   .lc-card { min-height: 190px; padding: 22px; }
   .lc-cta { margin-top: 60px; padding: 34px 12px; gap: 14px; }
+  .lc-shelf-head { margin: 30px 0 26px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -252,5 +264,5 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-hero > .lc-lead,
   .lc-hero > .lc-actions { animation: none !important; }
   html.js-reveal .lc-reveal { opacity: 1; transform: none; transition: none; }
-  .lc-btn, .lc-card, .lc-trait, .lc-step-stage { transition: none !important; }
+  .lc-btn, .lc-card, .lc-trait, .lc-step { transition: none !important; }
 }

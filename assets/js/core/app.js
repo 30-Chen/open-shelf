@@ -1,9 +1,10 @@
 /* ============================================================
    core/app.js · 启动入口（最后加载）
-   同一套脚本服务两种页面：
-     - 首页：存在 #catalog → 渲染模块引导目录
-     - 二级页：存在 #modules + ?id=<moduleId> → 只启动该模块
-   不带 id 时二级页启动全部模块（兼容旧入口）。
+   同一套脚本服务三种页面：
+     - 介绍首页：既无 #catalog 也无 #modules → 只做展示，模块在后台冷同步
+     - 收藏架页：存在 #catalog → 渲染模块入口卡片
+     - 模块页：存在 #modules + ?id=<moduleId> → 只启动该模块
+   不带 id 时模块页启动全部模块（兼容旧入口）。
    ============================================================ */
 (function (global) {
   'use strict';
@@ -29,6 +30,11 @@
       return;
     }
 
+    // 纯介绍首页：既无目录也无挂载点。模块脚本已注册、sync 自行冷同步，
+    // 这里不再尝试 boot，避免产生「找不到挂载点 #modules」的报错。
+    var modulesRoot = document.getElementById('modules');
+    if (!modulesRoot) return;
+
     // 二级页：根据 ?id= 选择模块，并同步页面上的标题 / 描述
     var id = query('id');
     var def = id ? Portal.registry.get(id) : null;
@@ -43,7 +49,7 @@
     }
     // 页头 MODULE 图标的二级菜单：按注册表自动生成入口
     if (Portal.mountModuleSwitch) Portal.mountModuleSwitch(null, null, id);
-    Portal.boot(document.getElementById('modules'), id || null);
+    Portal.boot(modulesRoot, id || null);
   }
 
   if (document.readyState === 'loading') {
