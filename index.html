@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="assets/css/sync.css">
   <link rel="stylesheet" href="assets/css/theme.css">
 
-  <!-- 内核：依赖顺序固定，全部 defer。首页只做介绍，但保留注册表与同步脚本，
+  <!-- 内核：依赖顺序固定，全部 defer。首页保留注册表与同步脚本，
        以便停在首页时后台仍能冷同步（未挂载模块的数据直接读写 localStorage）。 -->
   <script defer src="assets/js/core/store.js"></script>
   <script defer src="assets/js/core/net.js"></script>
@@ -25,7 +25,7 @@
   <script defer src="assets/js/core/select.js"></script>
   <script defer src="assets/js/core/sync.js"></script>
 
-  <!-- 业务模块注册（首页不渲染入口、不挂载模块，仅让同步拿到冷数据桥） -->
+  <!-- 业务模块注册（首页渲染入口卡片，不挂载模块；仅让同步拿到冷数据桥） -->
   <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
   <script defer src="assets/js/modules/repo-showcase/github.js"></script>
   <script defer src="assets/js/modules/repo-showcase/view.js"></script>
@@ -45,15 +45,15 @@
 
   <div class="page">
     <header class="site-header">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
+      <a class="brand" href="index.html" aria-label="返回首页">
+        <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 96 96" width="100%" height="100%" role="img"><rect x="10" y="10" width="76" height="76" rx="18" fill="#1D9E75"/><path d="M29 37 L39 47 L29 57" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="49" y1="39" x2="67" y2="39" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/><line x1="49" y1="48" x2="63" y2="48" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.8"/><line x1="49" y1="57" x2="58" y2="57" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.6"/></svg>
-        </div>
-        <div class="brand-text">
+        </span>
+        <span class="brand-text">
           <h1>OPEN<span>/</span>SHELF</h1>
           <p>私人数字收藏夹 · 把值得留下的收进一个架子</p>
-        </div>
-      </div>
+        </span>
+      </a>
       <div class="header-meta">
         <span class="status status--icon" title="系统在线" aria-label="系统在线"><i class="i-ico i-system" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></span>
         <a class="ghost-link ghost-link--icon mono site-github-link" href="https://github.com/30-Chen/open-shelf" target="_blank" rel="noopener noreferrer" title="打开本项目仓库" aria-label="打开本项目仓库"><i class="i-ico i-github" aria-hidden="true"></i></a>
@@ -71,72 +71,70 @@
       </div>
     </section>
 
-    <section class="lc-traits" aria-label="项目特点">
-      <div class="lc-trait lc-reveal">
-        <h4 class="mono">STATIC</h4>
-        <p>仓库本身就是页面，浏览器直接打开，无需服务端。数据留在自己的浏览器里，离线也能用。</p>
+    <section class="lc-section" id="features" aria-labelledby="lc-features-title">
+      <div class="lc-section-head lc-reveal">
+        <span class="lc-kicker mono">01 / FEATURES</span>
+        <h3 id="lc-features-title">功能特性</h3>
+        <span class="lc-hint">为个人收藏而设计</span>
       </div>
-      <div class="lc-trait lc-reveal">
-        <h4 class="mono">MODULAR</h4>
-        <p>每个功能独立成模块，存储与样式各自隔离。一个出问题，不会影响其它模块照常运行。</p>
-      </div>
-      <div class="lc-trait lc-reveal">
-        <h4 class="mono">NO BUILD</h4>
-        <p>零依赖、零构建，改完即上线，随处可托管。没有打包步骤，也没有需要维护的服务端。</p>
+      <p class="lc-section-intro lc-reveal">满足把东西长久收好、随时找回的一切需要——无需服务端，也不打断你的工作流。</p>
+      <div class="lc-feature-grid">
+        <article class="lc-feature lc-reveal">
+          <span class="lc-feature-icon"><i class="i-ico i-folder" aria-hidden="true"></i></span>
+          <h4>纯静态</h4>
+          <p>仓库本身就是页面，浏览器直接打开，数据留在自己的浏览器里，离线也能用。</p>
+        </article>
+        <article class="lc-feature lc-reveal">
+          <span class="lc-feature-icon"><i class="i-ico i-modules" aria-hidden="true"></i></span>
+          <h4>模块化</h4>
+          <p>每个功能独立成模块，存储与样式各自隔离，一个出问题也不影响其它模块。</p>
+        </article>
+        <article class="lc-feature lc-reveal">
+          <span class="lc-feature-icon"><i class="i-ico i-check" aria-hidden="true"></i></span>
+          <h4>零构建</h4>
+          <p>零依赖、零构建，改完即上线，随处可托管，没有打包步骤也没有服务端。</p>
+        </article>
       </div>
     </section>
 
-    <section class="lc-section" id="modules-intro" aria-labelledby="lc-modules-title">
+    <section class="lc-section" id="catalog-section" aria-labelledby="lc-modules-title">
       <div class="lc-section-head lc-reveal">
-        <span class="lc-kicker mono">01 / MODULES</span>
-        <h3 id="lc-modules-title">三个抽屉，各放各的东西。</h3>
-        <span class="lc-hint">具体模块都在收藏架里</span>
+        <span class="lc-kicker mono">02 / MODULES</span>
+        <h3 id="lc-modules-title">功能模块</h3>
+        <span class="lc-hint">点开即进，互不打扰</span>
       </div>
-      <p class="lc-section-intro lc-reveal">每个模块只做一件事，点开即进、互不打扰。分类目录、置顶卡片、标题直达阅读、实时体积提醒，都收在各自的抽屉里。</p>
-      <div class="lc-module-lines lc-reveal">
-        <div class="lc-module-line"><span class="lc-ml-num mono">01</span><strong>开源应用</strong><span>填一个 GitHub 仓库，自动带出介绍、Star 与最新 Release 的下载地址。</span></div>
-        <div class="lc-module-line"><span class="lc-ml-num mono">02</span><strong>笔记 / 博客</strong><span>用 Markdown 写作，图文视频、分类搜索、导入导出，全部存本地。</span></div>
-        <div class="lc-module-line"><span class="lc-ml-num mono">03</span><strong>One more thing</strong><span>留给下一个灵感的空位置，暂时不收集任何数据。</span></div>
-      </div>
-      <div class="lc-section-action lc-reveal">
-        <a class="lc-btn lc-btn--primary" href="shelf.html">进入收藏架 <i class="i-ico i-ext" aria-hidden="true"></i></a>
-      </div>
+      <p class="lc-section-intro lc-reveal">分类目录、置顶卡片、标题直达阅读、实时体积提醒——让每一件收进来的东西都找得到。</p>
+      <!-- 模块入口卡片由内核根据注册表自动生成；首页把预留模块位换成收藏架入口 -->
+      <main id="catalog" class="lc-catalog" data-home-catalog></main>
     </section>
 
     <section class="lc-section" id="how" aria-labelledby="lc-how-title">
       <div class="lc-section-head lc-reveal">
-        <span class="lc-kicker mono">02 / HOW IT WORKS</span>
-        <h3 id="lc-how-title">它是怎么工作的。</h3>
-        <span class="lc-hint">LOCAL FIRST, CLOUD OPTIONAL</span>
+        <span class="lc-kicker mono">03 / HOW IT WORKS</span>
+        <h3 id="lc-how-title">工作原理</h3>
+        <span class="lc-hint">本地优先，云端可选</span>
       </div>
+      <p class="lc-section-intro lc-reveal">无需配置，打开就能用。想在多台设备间保持一致时，连接一次自己的云端即可。</p>
       <div class="lc-flow">
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">01</span>
-          <div class="lc-step-body">
-            <h4><i class="i-ico i-edit" aria-hidden="true"></i>先写进本地</h4>
-            <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
-          </div>
+          <span class="lc-step-icon"><i class="i-ico i-edit" aria-hidden="true"></i></span>
+          <h4>先写进本地</h4>
+          <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">02</span>
-          <div class="lc-step-body">
-            <h4><i class="i-ico i-cloud" aria-hidden="true"></i>按需连接云端</h4>
-            <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
-          </div>
+          <span class="lc-step-icon"><i class="i-ico i-cloud" aria-hidden="true"></i></span>
+          <h4>按需连接云端</h4>
+          <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">03</span>
-          <div class="lc-step-body">
-            <h4><i class="i-ico i-refresh" aria-hidden="true"></i>逐条对账合并</h4>
-            <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
-          </div>
+          <span class="lc-step-icon"><i class="i-ico i-refresh" aria-hidden="true"></i></span>
+          <h4>逐条对账合并</h4>
+          <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-num mono">04</span>
-          <div class="lc-step-body">
-            <h4><i class="i-ico i-check" aria-hidden="true"></i>打开就是最新</h4>
-            <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
-          </div>
+          <span class="lc-step-icon"><i class="i-ico i-check" aria-hidden="true"></i></span>
+          <h4>打开就是最新</h4>
+          <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>
         </article>
       </div>
     </section>

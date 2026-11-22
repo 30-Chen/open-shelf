@@ -67,31 +67,23 @@
 }
 .lc-btn--primary:hover { color: #04130f; background: var(--accent); filter: brightness(1.08); }
 
-/* ---------- 项目特点：三段独立段落（非卡片） ---------- */
-.lc-traits {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0;
-  max-width: 940px; margin: 52px auto 0;
-  border-top: 1px solid var(--line-soft);
+/* ---------- 功能特性：图标 → 标题 → 描述 三层卡片（参考 localsend） ---------- */
+.lc-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.lc-feature {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 30px 24px 28px;
+  border: 1px solid var(--line-soft); border-radius: 18px;
+  background: var(--surface-2);
+  transition: border-color .22s, transform .22s;
 }
-.lc-trait { padding: 26px 26px 6px; border-left: 1px solid var(--line-soft); }
-.lc-trait:first-child { border-left: 0; }
-.lc-trait h4 {
-  margin: 0 0 10px; font: 600 12px var(--mono);
-  letter-spacing: 2px; color: var(--accent);
+.lc-feature:hover { border-color: var(--line-strong); transform: translateY(-3px); }
+.lc-feature-icon {
+  display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 18px;
+  border-radius: 13px; background: var(--accent-dim); color: var(--accent);
 }
-.lc-trait p { margin: 0; font-size: 13px; line-height: 1.85; color: var(--text-2); }
-
-/* ---------- 模块介绍：三行文字，只做介绍，不放具体入口 ---------- */
-.lc-module-lines { max-width: 760px; margin: 0 auto; text-align: left; }
-.lc-module-line {
-  display: grid; grid-template-columns: 40px 152px 1fr; gap: 12px; align-items: baseline;
-  padding: 16px 4px; border-bottom: 1px solid var(--line-soft);
-}
-.lc-module-line:last-child { border-bottom: 0; }
-.lc-ml-num { font-size: 11px; letter-spacing: 1px; color: var(--accent); }
-.lc-module-line strong { font-size: 14.5px; font-weight: 600; color: var(--text); }
-.lc-module-line > span:last-child { font-size: 13px; line-height: 1.8; color: var(--text-2); }
-.lc-section-action { display: flex; justify-content: center; margin-top: 30px; }
+.lc-feature-icon .i-ico { width: 22px; height: 22px; }
+.lc-feature h4 { margin: 0 0 9px; font-size: 16px; font-weight: 600; color: var(--text); }
+.lc-feature p { margin: 0; font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
 
 /* ---------- 通用区块标题（全部居中） ---------- */
 .lc-section { margin-top: 118px; }
@@ -156,25 +148,21 @@
   font-size: 13px; color: var(--muted);
 }
 
-/* ---------- 工作原理：紧凑行式步骤（序号 + 小图标 + 标题同行） ---------- */
-.lc-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+/* ---------- 工作原理：图标 → 标题 → 描述 三层卡片（无序号，参考 localsend） ---------- */
+.lc-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .lc-step {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 18px 16px;
-  border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 30px 20px 26px;
+  border: 1px solid var(--line-soft); border-radius: 18px; background: var(--surface);
   transition: border-color .22s, transform .22s;
 }
 .lc-step:hover { border-color: var(--line-strong); transform: translateY(-3px); }
-.lc-step-num {
-  flex: 0 0 auto; font: 600 11px var(--mono); letter-spacing: .5px;
-  color: var(--accent); padding-top: 3px;
+.lc-step-icon {
+  display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 18px;
+  border-radius: 13px; background: var(--accent-dim); color: var(--accent);
 }
-.lc-step-body { min-width: 0; }
-.lc-step h4 {
-  display: flex; align-items: center; gap: 8px;
-  margin: 0 0 8px; font-size: 14.5px; font-weight: 600; color: var(--text);
-}
-.lc-step h4 .i-ico { width: 16px; height: 16px; flex: 0 0 auto; color: var(--accent); }
+.lc-step-icon .i-ico { width: 22px; height: 22px; }
+.lc-step h4 { margin: 0 0 9px; font-size: 15px; font-weight: 600; color: var(--text); }
 .lc-step p { margin: 0; font-size: 12.5px; line-height: 1.8; color: var(--text-2); }
 
 /* ---------- 收尾：一行式，不再重复首屏大标题与说明 ---------- */
@@ -228,30 +216,20 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 900px) {
+  .lc-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lc-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .lc-traits { max-width: 620px; }
-  .lc-trait { padding: 22px 18px 4px; }
 }
 
 @media (max-width: 620px) {
   .lc-hero { padding: 62px 0 34px; }
   .lc-hero-glow { top: -60px; height: 320px; }
   .lc-hero h2 { margin-top: 24px; }
-  /* 特点：三段各自成行，去掉竖分隔、改为横向分隔 */
-  .lc-traits { grid-template-columns: 1fr; gap: 0; margin-top: 40px; }
-  .lc-trait { padding: 18px 2px; border-left: 0; border-bottom: 1px solid var(--line-soft); }
-  .lc-trait:first-child { padding-top: 4px; }
-  .lc-trait:last-child { border-bottom: 0; }
-  .lc-trait h4 { margin-bottom: 6px; }
-  /* 模块介绍行：编号 + 标题一行，说明另起一行 */
-  .lc-module-line { grid-template-columns: 32px 1fr; row-gap: 4px; padding: 14px 2px; }
-  .lc-ml-num { grid-row: 1; }
-  .lc-module-line strong { grid-column: 2; }
-  .lc-module-line > span:last-child { grid-column: 2; }
   .lc-section { margin-top: 72px; }
-  /* 工作原理：单列，保持紧凑，不再有高图标台 */
-  .lc-flow { grid-template-columns: 1fr; gap: 12px; }
-  .lc-step { padding: 15px 14px; }
+  /* 特性 / 原理卡片：移动端单列，图标与文字层次紧凑 */
+  .lc-feature-grid, .lc-flow { grid-template-columns: 1fr; gap: 12px; }
+  .lc-feature, .lc-step { padding: 22px 18px; }
+  .lc-feature-icon, .lc-step-icon { width: 42px; height: 42px; margin-bottom: 12px; }
+  .lc-feature-icon .i-ico, .lc-step-icon .i-ico { width: 19px; height: 19px; }
   .lc-card { min-height: 190px; padding: 22px; }
   .lc-cta { margin-top: 60px; padding: 34px 12px; gap: 14px; }
   .lc-shelf-head { margin: 30px 0 26px; }
@@ -264,5 +242,5 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-hero > .lc-lead,
   .lc-hero > .lc-actions { animation: none !important; }
   html.js-reveal .lc-reveal { opacity: 1; transform: none; transition: none; }
-  .lc-btn, .lc-card, .lc-trait, .lc-step { transition: none !important; }
+  .lc-btn, .lc-card, .lc-feature, .lc-step { transition: none !important; }
 }

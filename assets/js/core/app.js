@@ -1,8 +1,8 @@
 /* ============================================================
    core/app.js · 启动入口（最后加载）
    同一套脚本服务三种页面：
-     - 介绍首页：既无 #catalog 也无 #modules → 只做展示，模块在后台冷同步
-     - 收藏架页：存在 #catalog → 渲染模块入口卡片
+     - 介绍首页：存在 #catalog[data-home-catalog] → 渲染模块卡片，并把「预留模块」位换成收藏架入口
+     - 收藏架页：存在 #catalog（无 data-home-catalog）→ 原样渲染全部模块入口卡片
      - 模块页：存在 #modules + ?id=<moduleId> → 只启动该模块
    不带 id 时模块页启动全部模块（兼容旧入口）。
    ============================================================ */
@@ -26,12 +26,21 @@
 
     var catalog = document.getElementById('catalog');
     if (catalog) {
-      Portal.renderCatalog(catalog);
+      // 首页把「One more thing」预留位换成收藏架独立页入口；收藏架页保持原样。
+      var overrides = catalog.hasAttribute('data-home-catalog') ? {
+        'one-more-thing': {
+          title: '收藏架',
+          desc: '一个页面集中查看与打开全部模块，随时切换、快速回到这里。',
+          path: 'shelf.html',
+          badge: '',
+          foot: '打开收藏架'
+        }
+      } : null;
+      Portal.renderCatalog(catalog, { overrides: overrides });
       return;
     }
 
-    // 纯介绍首页：既无目录也无挂载点。模块脚本已注册、sync 自行冷同步，
-    // 这里不再尝试 boot，避免产生「找不到挂载点 #modules」的报错。
+    // 无目录也无挂载点：模块脚本已注册、sync 自行冷同步，不做任何挂载。
     var modulesRoot = document.getElementById('modules');
     if (!modulesRoot) return;
 

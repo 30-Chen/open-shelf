@@ -91,7 +91,9 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--line-soft);
 }
 
-.brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: 16px; min-width: 0; border-radius: 10px; transition: opacity .18s; }
+a.brand:hover { opacity: .82; }
+a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4px; }
 
 .brand-mark {
   flex: 0 0 auto;

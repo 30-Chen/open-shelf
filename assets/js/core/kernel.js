@@ -62,23 +62,33 @@
   }
 
   /* ---------- 引导页目录 ---------- */
-  /** 把已注册模块渲染成入口卡片，供首页引导使用。 */
-  Portal.renderCatalog = function (mountRoot) {
+  /**
+   * 把已注册模块渲染成入口卡片。
+   * @param mountRoot 挂载点
+   * @param options.overrides 可选：按模块 id 覆盖展示字段（title/desc/path/badge/foot/index），
+   *        仅影响卡片呈现，不改注册表本身——首页据此把「预留模块」位换成收藏架入口。
+   */
+  Portal.renderCatalog = function (mountRoot, options) {
     var root = mountRoot || document.getElementById('catalog');
     if (!root) return;
+    options = options || {};
+    var overrides = options.overrides || {};
 
     root.innerHTML = defs.map(function (def, i) {
-      var num = String(def.index || (i + 1)).padStart(2, '0');
-      var href = def.path || ('module.html?id=' + encodeURIComponent(def.id));
-      var soon = !!def.badge;
+      var extra = overrides[def.id];
+      var view = extra ? Object.assign({}, def, extra) : def;
+      var num = String(view.index || (i + 1)).padStart(2, '0');
+      var href = view.path || ('module.html?id=' + encodeURIComponent(def.id));
+      var soon = !!view.badge;
+      var foot = view.foot || (soon ? '预留位置' : '进入模块');
       return '' +
         '<a class="lc-card' + (soon ? ' lc-card--soon' : '') + '" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
           '<span class="lc-corner mono" aria-hidden="true"></span>' +
           '<span class="lc-index mono">' + esc(num) + ' / MODULE' +
-            (soon ? '<span class="lc-badge">' + esc(def.badge) + '</span>' : '') + '</span>' +
-          '<span class="lc-name">' + esc(def.title || def.id) + '</span>' +
-          '<span class="lc-desc">' + esc(def.desc || '') + '</span>' +
-          '<span class="lc-foot mono">' + (soon ? '预留位置' : '进入模块') +
+            (soon ? '<span class="lc-badge">' + esc(view.badge) + '</span>' : '') + '</span>' +
+          '<span class="lc-name">' + esc(view.title || def.id) + '</span>' +
+          '<span class="lc-desc">' + esc(view.desc || '') + '</span>' +
+          '<span class="lc-foot mono">' + esc(foot) +
             ' <i class="i-ico i-ext" aria-hidden="true"></i></span>' +
         '</a>';
     }).join('');
@@ -216,7 +226,7 @@
 
     if (only && !list.length) {
       root.innerHTML = '<div class="module-fatal">未找到模块「' +
-        String(only).replace(/[<>&]/g, '') + '」，请从<a href="index.html">首页</a>选择模块。</div>';
+        String(only).replace(/[<>&]/g, '') + '」，请从<a href="shelf.html">收藏架</a>选择模块。</div>';
       return;
     }
 
