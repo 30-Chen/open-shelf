@@ -24,7 +24,7 @@
           '<div class="omt-tags mono" aria-label="模块状态">' +
             '<span>NO DATA</span><span>NO SETTINGS</span><span>NO SYNC</span>' +
           '</div>' +
-          '<a class="omt-back" href="shelf.html"><i class="i-ico i-back" aria-hidden="true"></i> 回到收藏架</a>' +
+          '<a class="omt-back" href="shelf.html"><i class="i-ico i-back" aria-hidden="true"></i> 返回功能模块</a>' +
         '</div>';
     }
   });

@@ -179,33 +179,51 @@
 }
 
 /* ---------- 工作原理：编号步骤条（与居中特性卡明显区分）----------
-   四张并列卡片：右上角大号 01-04 数字水印 + 顶部强调线 + 默认尺寸图标，
-   强调从左到右的先后顺序；水印仅装饰、不拦截点击。 */
+   四张并列卡片：大号 01-04 数字水印 + 底部高亮条 + 默认尺寸图标。
+   数字在左、图标在上、标题与说明依次向下；底部高亮 hover 时由左至右铺开。 */
 .lc-flow {
   position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px;
 }
 .lc-step {
   position: relative; overflow: hidden;
-  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
-  padding: 26px 22px 24px;
-  border: 1px solid var(--line-soft); border-top: 2px solid var(--accent); border-radius: 16px;
+  display: grid; grid-template-columns: 42px 1fr; grid-template-rows: auto auto;
+  align-content: start; column-gap: 14px; row-gap: 0;
+  padding: 24px 22px 24px;
+  border: 1px solid var(--line-soft); border-radius: 16px;
   background: var(--surface);
-  transition: border-color .22s, transform .22s;
+  transition: border-color .26s, transform .26s, box-shadow .26s;
 }
-.lc-step:hover { border-color: var(--line-strong); transform: translateY(-3px); }
-/* 大号序号水印：右上角，低调不抢正文 */
+.lc-step:hover {
+  border-color: var(--line-strong); transform: translateY(-3px);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .18);
+}
+/* 底部高亮：默认一条淡底线，hover 时强调色由左至右铺满 */
+.lc-step::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+  background: var(--accent); transform: scaleX(0); transform-origin: left center;
+  transition: transform .42s cubic-bezier(.2, .7, .3, 1); pointer-events: none;
+}
+.lc-step:hover::after { transform: scaleX(1); }
+/* 大号序号水印：置于图标左上方，低调不抢正文 */
 .lc-step::before {
-  content: attr(data-step); position: absolute; top: 8px; right: 12px;
-  font: 600 38px/1 var(--mono); letter-spacing: -2px;
-  color: var(--accent); opacity: .14; pointer-events: none;
+  content: attr(data-step); position: absolute; top: 10px; right: 14px;
+  font: 600 40px/1 var(--mono); letter-spacing: -2px;
+  color: var(--accent); opacity: .12; pointer-events: none;
 }
 .lc-step-icon {
-  display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 18px;
+  grid-column: 1; grid-row: 1 / 3;
+  display: grid; place-items: center; width: 42px; height: 42px;
   border-radius: 11px; background: var(--accent-dim); color: var(--accent);
 }
-.lc-step-icon .i-ico { width: 20px; height: 20px; }
-.lc-step h4 { margin: 0 0 9px; font-size: var(--fs-title); font-weight: 600; color: var(--text); }
-.lc-step p { margin: 0; font-size: var(--fs-body-sm); line-height: 1.8; color: var(--text-2); }
+.lc-step-icon .i-ico { width: 21px; height: 21px; }
+.lc-step h4 {
+  grid-column: 2; grid-row: 1; align-self: end; margin: 0 0 8px;
+  font-size: var(--fs-title); font-weight: 600; color: var(--text);
+}
+.lc-step p {
+  grid-column: 2; grid-row: 2; align-self: start; margin: 0;
+  font-size: var(--fs-body-sm); line-height: 1.8; color: var(--text-2);
+}
 
 /* ---------- 收尾：一行式，不再重复首屏大标题与说明 ---------- */
 .lc-cta {
@@ -247,7 +265,7 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 .lc-crumb .lc-sep { color: var(--line-strong); }
 .lc-crumb .lc-current { color: var(--accent); }
 
-/* ---------- 收藏架页引导头 ---------- */
+/* ---------- 功能模块页引导头 ---------- */
 .lc-shelf-head { text-align: center; margin: 44px 0 34px; padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
 .lc-shelf-head h2 {
   margin: 16px 0 12px; font: 600 clamp(28px, 4vw, 42px)/1.2 var(--sans);
@@ -287,6 +305,8 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-hero > .lc-actions { animation: none !important; }
   html.js-reveal .lc-reveal { opacity: 1; transform: none; transition: none; }
   .lc-btn, .lc-card, .lc-feature, .lc-step { transition: none !important; }
+  /* 原理卡底部高亮：无障碍模式下不铺开动画，hover 仍可见但无位移过渡 */
+  .lc-step::after { transition: none !important; }
   /* 模块卡图标动效在无障碍模式下关闭 */
   .lc-card-bghicon, .lc-card-bghicon .i-ico { transform: none !important; transition: none !important; }
   .lc-card:hover .lc-foot .i-ico { transform: none !important; }

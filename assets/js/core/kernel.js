@@ -66,7 +66,7 @@
    * 把已注册模块渲染成入口卡片。
    * @param mountRoot 挂载点
    * @param options.overrides 可选：按模块 id 覆盖展示字段（title/desc/path/badge/foot/index），
-   *        仅影响卡片呈现，不改注册表本身——首页据此把「预留模块」位换成收藏架入口。
+   *        仅影响卡片呈现，不改注册表本身——首页据此把「预留模块」位换成「更多功能」入口。
    */
   Portal.renderCatalog = function (mountRoot, options) {
     var root = mountRoot || document.getElementById('catalog');
@@ -234,7 +234,7 @@
 
     if (only && !list.length) {
       root.innerHTML = '<div class="module-fatal">未找到模块「' +
-        String(only).replace(/[<>&]/g, '') + '」，请从<a href="shelf.html">收藏架</a>选择模块。</div>';
+        String(only).replace(/[<>&]/g, '') + '」，请从<a href="shelf.html">功能模块</a>选择模块。</div>';
       return;
     }
 
