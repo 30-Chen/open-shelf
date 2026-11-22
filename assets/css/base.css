@@ -131,8 +131,8 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
 
 .brand-mark {
   flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
+  width: 49px;
+  height: 49px;
   display: grid;
   place-items: center;
 }
