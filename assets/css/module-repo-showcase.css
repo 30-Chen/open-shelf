@@ -87,7 +87,7 @@
 
 
 .rs-suggest { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 24px; }
-.rs-hint { font-size: 11.5px; color: var(--accent); margin-left: auto; }
+.rs-hint { font-size: 11px; color: var(--accent); margin-left: auto; }
 .rs-hint--error { color: var(--danger); }
 .rs-hint--warn { color: var(--warn); }
 
@@ -114,10 +114,10 @@
 }
 .rs-group-mark { color: var(--accent); font-size: 13px; line-height: 1; }
 .rs-group-name { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .3px; }
-.rs-group-count { font-size: 9.5px; letter-spacing: 1px; color: var(--muted); }
+.rs-group-count { font-size: 10px; letter-spacing: 1px; color: var(--muted); }
 .rs-group-rule { flex: 1; min-width: 10px; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
 .rs-group-tag {
-  font-size: 9.5px; letter-spacing: .6px; color: var(--muted);
+  font-size: 10px; letter-spacing: .6px; color: var(--muted);
   padding: 2px 8px; border: 1px solid var(--line-soft); border-radius: 999px;
 }
 .rs-group-del {
@@ -167,7 +167,7 @@
 .rs-num { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
 .rs-path {
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11.5px; color: var(--text-2); letter-spacing: .2px;
+  font-size: 11px; color: var(--text-2); letter-spacing: .2px;
 }
 .rs-path span { color: var(--muted); }
 .rs-path:hover { color: var(--accent); }
@@ -209,7 +209,7 @@
 .rs-release > :first-child { margin-top: 0; }
 /* 空 Release 分支仍沿用旧头部（仅说明文案，无下载内容） */
 .rs-release-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.rs-kicker { font-size: 9.5px; letter-spacing: 1.3px; color: var(--muted); }
+.rs-kicker { font-size: 10px; letter-spacing: 1.3px; color: var(--muted); }
 .rs-tag {
   padding: 2px 9px; border: 1px solid var(--line-strong); border-radius: 6px;
   background: var(--accent-dim); color: var(--accent); font-size: 11px;
@@ -315,9 +315,9 @@
   background: rgba(255, 129, 151, .05);
 }
 .rs-error-title { font-size: 12.5px; color: var(--danger); font-weight: 600; }
-.rs-error p { margin: 6px 0; font-size: 11.5px; color: var(--text-2); }
+.rs-error p { margin: 6px 0; font-size: 11px; color: var(--text-2); }
 .rs-error-tip { color: var(--muted) !important; }
-.rs-error .btn { height: 30px; margin-top: 6px; font-size: 11.5px; }
+.rs-error .btn { height: 30px; margin-top: 6px; font-size: 11px; }
 
 .rs-stale {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -334,7 +334,7 @@
 .rs-empty-mark { font-size: 24px; color: var(--accent); opacity: .7; }
 .rs-empty h3 { margin: 12px 0 6px; font-size: 16px; font-weight: 600; }
 .rs-empty p { margin: 0; font-size: 12.5px; color: var(--muted); }
-.rs-empty code { font: 11.5px var(--mono); color: var(--accent); }
+.rs-empty code { font: 11px var(--mono); color: var(--accent); }
 
 @media (max-width: 900px) {
   .rs-grid { grid-template-columns: 1fr; }
@@ -350,7 +350,7 @@
   .rs-settings-panel { right: 0; left: auto; width: min(360px, calc(100vw - 32px)); }
   .rs-card { padding: 16px 14px 14px; }
   .rs-platform-bar { gap: 5px; }
-  .rs-plat { padding: 3px 8px; font-size: 9.5px; }
+  .rs-plat { padding: 3px 8px; font-size: 10px; }
   .rs-asset { grid-template-columns: 14px minmax(0, 1fr) auto; }
   .rs-asset-count { display: none; }
   /* 窄屏收紧版本信息间距，让「版本 + 更新日志」保持同一行 */

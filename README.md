@@ -150,7 +150,8 @@ git push -u origin main
 | 默认收藏的项目清单 | `assets/js/modules/repo-showcase/defaults.js` |
 | 默认目录名称 | `assets/js/modules/repo-showcase/index.js` 的 `DEFAULT_GROUP` |
 | 下载列表显示几行 | `assets/js/modules/repo-showcase/view.js` 的 `MAX` |
-| 配色 / 圆角 / 字体 | `assets/css/base.css` 顶部的 CSS 变量 |
+| 配色 / 圆角 / 字体字号阶梯 | `assets/css/base.css` 顶部的 CSS 变量（`--fs-*` 字号 11 级 / `--lh-*` 行高 / `--fw-*` 字重 / `--on-accent` 强调前景色） |
+| 引导页样式（含模块卡背景图标与图标动效） | `assets/css/landing.css`；卡片背景图标由注册表 `glyph`/`tone` 字段驱动，见 `core/kernel.js` 的 `renderCatalog` |
 | 引导页样式 | `assets/css/landing.css` |
 | 卡片样式 | `assets/css/module-repo-showcase.css` |
 | 内置示例笔记 / 默认分类 | `assets/js/modules/notes/defaults.js` 的 `NS.defaults` / `NS.defaultCategories` |

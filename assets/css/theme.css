@@ -141,6 +141,12 @@ html[data-theme="light"] .lc-card:hover {
   box-shadow: var(--th-shadow), 0 0 0 1px rgba(14, 156, 126, .12);
 }
 html[data-theme="light"] .lc-corner { background: radial-gradient(160px 120px at 100% 0%, rgba(14, 156, 126, .12), transparent 72%); }
+/* 模块卡主题色：亮色下加深以保证图标与文字层次可读 */
+html[data-theme="light"] .lc-card--code { --tone: #0e9c7e; --tone-rgb: 14, 156, 126; }
+html[data-theme="light"] .lc-card--note { --tone: #2f63c9; --tone-rgb: 47, 99, 201; }
+html[data-theme="light"] .lc-card--shelf { --tone: #7b5cd6; --tone-rgb: 123, 92, 214; }
+html[data-theme="light"] .lc-card-bghicon .i-ico { opacity: .10; }
+html[data-theme="light"] .lc-card:hover .lc-card-bghicon .i-ico { opacity: .18; }
 html[data-theme="light"] .lc-section-head,
 html[data-theme="light"] .lc-crumb,
 html[data-theme="light"] .rs-group-head { border-color: var(--line); }

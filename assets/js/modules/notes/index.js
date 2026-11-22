@@ -153,6 +153,7 @@
     title: '笔记 / 博客',
     desc: '用 Markdown 收藏教程与灵感，支持图文、代码和内嵌视频，按分类整理、搜索与导出。',
     path: 'module.html?id=notes',
+    glyph: 'i-doc', tone: 'note',    // 首页/收藏架卡片：融入背景的文档图标 + 专属配色
     sync: syncBridge,
     mount: function (ctx) {
       var store = ctx.store;              // 私有命名空间 portal:v1:notes:*

@@ -29,6 +29,40 @@
   --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", var(--cjk);
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", var(--cjk);
+
+  /* ---------- 字体排印规范（全站唯一来源）----------
+     字号阶梯：11 级，覆盖从微型角标到 Hero 大标题的所有层级。
+     语义：微标(9) / 角标(10) / 次标签(10.5) / 辅助(11) / 元信息(11.5) /
+           控件(12) / 正文密(12.5) / 正文(13) / 正文宽(13.5) / 引导(14) /
+           小标题(15) / 卡片标题(16) / 区块标题(20) / 主标题(22) / Hero(28+) */
+  --fs-micro: 9px;    /* 微型角标、圆点标签 */
+  --fs-tiny: 10px;    /* 编号、脚注 */
+  --fs-mini: 10.5px;  /* 小指示、kicker */
+  --fs-caption: 11px; /* 辅助说明、面包屑 */
+  --fs-aux: 11.5px;   /* 元信息、次要行 */
+  --fs-control: 12px; /* 按钮、输入框、标签 */
+  --fs-body-sm: 12.5px; /* 紧凑正文、卡片描述 */
+  --fs-body: 13px;    /* 标准正文 */
+  --fs-body-lg: 13.5px; /* 宽松正文、按钮 */
+  --fs-lead: 14px;    /* 引导语、区块引言 */
+  --fs-subtitle: 15px; /* 小标题、步骤标题 */
+  --fs-title: 16px;   /* 卡片标题 */
+  --fs-section: 20px; /* 区块大标题下沿 */
+  --fs-heading: 22px; /* 模块卡名称 */
+  --fs-display: 28px; /* 次级展示标题 */
+  /* 行高阶梯 */
+  --lh-tight: 1.2;    /* 大标题 */
+  --lh-snug: 1.45;    /* 卡片标题 */
+  --lh-base: 1.6;     /* 正文默认 */
+  --lh-relaxed: 1.75; /* 段落 */
+  --lh-loose: 1.9;    /* 引导长句 */
+  /* 字重阶梯 */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  /* 强调色实底按钮上的前景文字色（深底方案） */
+  --on-accent: #04130f;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -40,7 +74,7 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font: 15px/1.6 var(--sans);
+  font: 15px/var(--lh-base) var(--sans);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -181,6 +215,10 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
 .i-github { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000'%3E%3Cpath d='M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58v-2.23c-3.34.73-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.32.47-2.39 1.24-3.23-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.82 1.1.82 2.22v3.29c0 .32.22.7.83.58C20.56 22.29 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z'/%3E%3C/svg%3E"); }
 /* 下拉选择用图标：文件夹（分类）/ 箭头（下拉），mask + currentColor 跨主题一致 */
 .i-folder { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z'/%3E%3C/svg%3E"); }
+/* 文档图标：笔记卡背景（带折角与文字行的文件） */
+.i-doc { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z'/%3E%3Cpath d='M14 2v6h6M8 13h8M8 17h5'/%3E%3C/svg%3E"); }
+/* 代码图标：开源应用卡背景（尖括号 + 斜杠） */
+.i-code { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-4 16'/%3E%3C/svg%3E"); }
 .i-chev { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
 /* 状态图标：SYSTEM 用芯片（在线系统）/ MODULE 用四宫格（模块矩阵），mask + currentColor */
 .i-system { --i-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='5' width='14' height='14' rx='2'/%3E%3Crect x='9' y='9' width='6' height='6' rx='1'/%3E%3Cpath d='M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3'/%3E%3C/svg%3E"); }
@@ -394,7 +432,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   height: 26px; padding: 0 9px; margin-left: 2px;
   border: 1px solid var(--line); border-radius: 5px;
   background: transparent; color: var(--muted);
-  font: 11.5px var(--sans); letter-spacing: .2px; cursor: pointer;
+  font: 11px var(--sans); letter-spacing: .2px; cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
 }
 .sel-pill .sel-cancel:hover,
@@ -437,7 +475,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
 .field {
   width: 100%; height: 100%;
   border: 0; outline: 0; background: transparent; color: var(--text);
-  font-family: var(--mono); font-size: 13.5px;
+  font-family: var(--mono); font-size: 13px;
 }
 .field::placeholder { color: #5b6b83; }
 

@@ -33,7 +33,8 @@
           desc: '一个页面集中查看与打开全部模块，随时切换、快速回到这里。',
           path: 'shelf.html',
           badge: '',
-          foot: '打开收藏架'
+          foot: '打开收藏架',
+          glyph: 'i-modules', tone: 'shelf'   // 收藏架入口卡：层叠方块图标 + 中性配色
         }
       } : null;
       Portal.renderCatalog(catalog, { overrides: overrides });
