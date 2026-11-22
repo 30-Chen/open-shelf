@@ -18,7 +18,7 @@
 
   var API = 'https://api.github.com';
   var FILE = 'open-shelf.json';
-  var DESC = 'Open Shelf · 跨设备同步（自动生成，请勿手动修改）';
+  var DESC = 'SHELFBOX · 跨设备同步（自动生成，请勿手动修改）';
 
   // 调度参数
   var LOCAL_TICK = 1500;    // 本地哈希检测间隔
@@ -788,7 +788,7 @@
     c.getRandomValues(iv);
     var code = cfg.vaultCode || randomCode(6);
     if (!code) return Promise.resolve({ error: '无法生成短码：随机数不可用' });
-    var desc = VAULT_TAG + '-' + code + ' · Open Shelf 恢复保险箱（自动生成，请勿删除）';
+    var desc = VAULT_TAG + '-' + code + ' · SHELFBOX 恢复保险箱（自动生成，请勿删除）';
     return deriveKey(passphrase, salt).then(function (key) {
       return s.encrypt({ name: 'AES-GCM', iv: iv }, key, new global.TextEncoder().encode(JSON.stringify(payload)));
     }).then(function (buf) {

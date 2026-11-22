@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="一个纯静态的个人收藏夹：收集开源应用与灵感笔记，本地优先，支持跨设备自动同步。">
+  <meta name="description" content="SHELFBOX 是一个纯静态的私人数字收藏架：收集开源应用与灵感笔记，本地优先，支持跨设备自动同步。">
   <link rel="icon" type="image/svg+xml" href="assets/brand/logo.svg">
-  <title>OPEN / SHELF · 我的私人收藏夹</title>
+  <title>SHELFBOX · 我的私人数字收藏架</title>
 
   <link rel="preconnect" href="https://api.github.com">
   <!-- 主题脚本尽早执行，首屏前定好明暗，避免闪烁 -->
@@ -50,8 +50,8 @@
           <svg viewBox="0 0 96 96" width="100%" height="100%" role="img"><rect x="10" y="10" width="76" height="76" rx="18" fill="#1D9E75"/><path d="M29 37 L39 47 L29 57" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="49" y1="39" x2="67" y2="39" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/><line x1="49" y1="48" x2="63" y2="48" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.8"/><line x1="49" y1="57" x2="58" y2="57" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.6"/></svg>
         </span>
         <span class="brand-text">
-          <h1>OPEN<span>/</span>SHELF</h1>
-          <p>私人数字收藏夹 · 把值得的，收进一个架子</p>
+          <h1>SHELF<span>BOX</span></h1>
+          <p>私人数字收藏架 · 把值得的，收进一个盒子</p>
         </span>
       </a>
       <div class="header-meta">
@@ -62,9 +62,9 @@
 
     <section class="lc-hero" id="top">
       <span class="lc-hero-glow" aria-hidden="true"></span>
-      <span class="lc-eyebrow mono"><i aria-hidden="true"></i> PERSONAL DIGITAL SHELF</span>
-      <h2>散落的好东西，<br><em>收进自己的架子。</em></h2>
-      <p class="lc-lead">开源项目、随手记下的灵感、还没命名的下一次心动——分门别类收好，想找时一翻就到。不求大而全，只留真正想回头再看的。</p>
+      <span class="lc-eyebrow mono"><i aria-hidden="true"></i> OPEN-SOURCE · NOTES · LOCAL FIRST</span>
+      <h2>开源项目与灵感笔记，<br><em>收进你自己的收藏架。</em></h2>
+      <p class="lc-lead">SHELFBOX 把分类、置顶、搜索都装进一个纯静态页面。数据默认留在你的浏览器里，本地优先、离线可用；想跨设备同步时，连上自己的私有 Gist 即可——零构建，无需服务端。</p>
       <div class="lc-actions">
         <a class="lc-btn lc-btn--primary" href="shelf.html">现在开始收藏 <i class="i-ico i-ext" aria-hidden="true"></i></a>
         <a class="lc-btn" href="#how">看看它怎么工作 <i class="i-ico i-chev" aria-hidden="true"></i></a>
@@ -116,22 +116,22 @@
       </div>
       <p class="lc-section-intro lc-reveal">无需配置，打开就能用。想在多台设备间保持一致时，连接一次自己的云端即可。</p>
       <div class="lc-flow">
-        <article class="lc-step lc-reveal">
+        <article class="lc-step lc-reveal" data-step="01">
           <span class="lc-step-icon"><i class="i-ico i-edit" aria-hidden="true"></i></span>
           <h4>先写进本地</h4>
           <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
         </article>
-        <article class="lc-step lc-reveal">
+        <article class="lc-step lc-reveal" data-step="02">
           <span class="lc-step-icon"><i class="i-ico i-cloud-puff" aria-hidden="true"></i></span>
           <h4>按需连接云端</h4>
           <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
         </article>
-        <article class="lc-step lc-reveal">
+        <article class="lc-step lc-reveal" data-step="03">
           <span class="lc-step-icon"><i class="i-ico i-refresh" aria-hidden="true"></i></span>
           <h4>逐条对账合并</h4>
           <p>以共同祖先为基准做三方合并，两端同时改动也能各留各的，不静默覆盖。</p>
         </article>
-        <article class="lc-step lc-reveal">
+        <article class="lc-step lc-reveal" data-step="04">
           <span class="lc-step-icon"><i class="i-ico i-check" aria-hidden="true"></i></span>
           <h4>打开就是最新</h4>
           <p>其它设备打开页面时自动同步；没挂载的模块也能在后台接收云端改动。</p>

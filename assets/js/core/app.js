@@ -55,7 +55,7 @@
       if (t) t.textContent = def.title || def.id;
       if (s) s.textContent = def.desc || '';
       if (n) n.textContent = String(def.index || '01').padStart(2, '0') + ' / MODULE';
-      document.title = (def.title || def.id) + ' · OPEN / SHELF';
+      document.title = (def.title || def.id) + ' · SHELFBOX';
     }
     // 页头 MODULE 图标的二级菜单：按注册表自动生成入口
     if (Portal.mountModuleSwitch) Portal.mountModuleSwitch(null, null, id);
