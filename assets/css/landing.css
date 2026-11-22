@@ -16,6 +16,8 @@
   width: min(760px, 92vw); height: 460px;
   background: radial-gradient(ellipse at 50% 40%, var(--accent-dim), transparent 68%);
   filter: blur(8px);
+  /* 纯装饰光晕：窄屏向上溢出覆盖页头时绝不拦截按钮点击 */
+  pointer-events: none;
   animation: lc-float 14s ease-in-out infinite;
 }
 
@@ -247,111 +249,9 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 .lc-shelf-head p { max-width: 40em; margin: 0 auto; font-size: var(--fs-lead); line-height: 1.85; color: var(--text-2); }
 .lc-shelf-head + .lc-catalog { margin-top: 0; }
 
-/* ---------- 首页图标动效（仅 .pg-home，不影响模块页） ----------
-   约定：顶部四个图标（系统状态 / GitHub / 主题 / eyebrow 提示点）不做动画。
-   其余图标重新设计——悬停与点击(active)触发同一组效果，保持一致；
-   云端图标为常驻缓慢飘动的云，悬停/点击时加速飘动。 */
-
-/* 通用弹性位移：箭头、卡片脚注箭头共用 */
-@keyframes lc-icon-nudge {
-  0% { transform: translate(0, 0) scale(1); }
-  35% { transform: translate(4px, -4px) scale(1.22); }
-  60% { transform: translate(2px, -2px) scale(1.06); }
-  100% { transform: translate(3px, -3px) scale(1.12); }
-}
-/* 向下箭头：沿垂直方向轻点 */
-@keyframes lc-chev-bob {
-  0%, 100% { transform: translateY(0) scale(1); }
-  40% { transform: translateY(4px) scale(1.18); }
-  70% { transform: translateY(1px) scale(1.04); }
-}
-/* 弹性放大回弹：功能特性 / 工作原理普通图标共用 */
-@keyframes lc-icon-pop {
-  0% { transform: scale(1) rotate(0); }
-  40% { transform: scale(1.28) rotate(-9deg); }
-  70% { transform: scale(.96) rotate(3deg); }
-  100% { transform: scale(1.14) rotate(-4deg); }
-}
-/* 云朵常驻缓慢飘动 */
-@keyframes lc-cloud-float {
-  0% { transform: translate(0, 0); }
-  25% { transform: translate(2px, -2px); }
-  50% { transform: translate(0, -3px); }
-  75% { transform: translate(-2px, -1px); }
-  100% { transform: translate(0, 0); }
-}
-/* 云朵悬停/点击：加速加大幅度的一阵飘动 */
-@keyframes lc-cloud-gust {
-  0% { transform: translate(0, 0) scale(1); }
-  30% { transform: translate(5px, -4px) scale(1.12); }
-  60% { transform: translate(-4px, -6px) scale(1.06); }
-  100% { transform: translate(3px, -3px) scale(1.1); }
-}
-
-/* 按钮箭头：悬停与点击同一动效 */
-.pg-home .lc-btn:hover .i-ico,
-.pg-home .lc-btn:active .i-ico { animation: lc-icon-nudge .5s cubic-bezier(.2, .8, .3, 1) both; }
-/* 向下 chevron 走垂直点头，覆盖上面的通用外移动效 */
-.pg-home .lc-btn:not(.lc-btn--primary):hover .i-ico.i-chev,
-.pg-home .lc-btn:not(.lc-btn--primary):active .i-ico.i-chev { animation: lc-chev-bob .5s cubic-bezier(.2, .8, .3, 1) both; }
-/* 卡片脚注箭头 */
-.pg-home .lc-card:hover .lc-foot .i-ico,
-.pg-home .lc-card:active .lc-foot .i-ico { animation: lc-icon-nudge .5s cubic-bezier(.2, .8, .3, 1) both; }
-
-/* 功能特性 / 工作原理普通图标：悬停与点击同一弹性回弹 */
-.pg-home .lc-feature:hover .lc-feature-icon .i-ico,
-.pg-home .lc-feature:active .lc-feature-icon .i-ico,
-.pg-home .lc-step:hover .lc-step-icon .i-ico:not(.lc-cloud),
-.pg-home .lc-step:active .lc-step-icon .i-ico:not(.lc-cloud) {
-  animation: lc-icon-pop .52s cubic-bezier(.2, .8, .3, 1) both;
-}
-
-/* 云朵：常驻飘动；悬停/点击加速 */
-.pg-home .lc-cloud { animation: lc-cloud-float 4.5s ease-in-out infinite; }
-.pg-home .lc-step:hover .lc-cloud,
-.pg-home .lc-step:active .lc-cloud { animation: lc-cloud-gust .9s cubic-bezier(.2, .8, .3, 1) both; }
-
-/* 模块卡背景小图标：淡入节奏（放大由父级 hover 控制） */
-.pg-home .lc-card-bghicon .i-ico { transition: opacity .4s; }
-
-/* ---------- 系统状态图标点按气泡（仅首页） ---------- */
-.status--oracle { cursor: pointer; user-select: none; }
-.status--oracle:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 3px; }
-/* 点按时图标本身给一次轻按反馈（这是唯一的点按效果，非悬停动画） */
-.status--oracle:active { transform: scale(.9); }
-.status--oracle { transition: transform .15s ease; }
-
-.lc-oracle-tip {
-  position: absolute; z-index: 60; top: calc(100% + 10px); right: 0;
-  width: max-content; max-width: min(290px, calc(100vw - 40px));
-  padding: 11px 14px;
-  border: 1px solid var(--line-strong); border-radius: 11px;
-  background: var(--surface-2); color: var(--text);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
-  font: 12.5px/1.65 var(--sans); text-align: left;
-  pointer-events: none;
-  animation: lc-oracle-in .26s cubic-bezier(.2, .8, .3, 1) both;
-}
-.lc-oracle-tip::before {
-  content: ''; position: absolute; top: -5px; right: 13px;
-  width: 8px; height: 8px; transform: rotate(45deg);
-  border-left: 1px solid var(--line-strong); border-top: 1px solid var(--line-strong);
-  background: var(--surface-2);
-}
-.lc-oracle-tip .lc-oracle-kind {
-  display: block; margin-bottom: 3px;
-  font: 500 10px var(--mono); letter-spacing: 1px; color: var(--accent);
-}
-.lc-oracle-tip .lc-oracle-text { color: var(--text); }
-.lc-oracle-tip.is-out { animation: lc-oracle-out .3s ease both; }
-@keyframes lc-oracle-in {
-  from { opacity: 0; transform: translateY(-6px) scale(.96); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes lc-oracle-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(-5px) scale(.97); }
-}
+/* ---------- 图标动效约定 ----------
+   首页仅「功能模块卡片」的图标保留动效（背景大图标 hover 缩放提亮、脚注箭头位移），
+   见 .lc-card 相关规则；其余图标（按钮箭头、功能特性、工作原理含云端）一律静态。 */
 
 /* ---------- 响应式 ---------- */
 @media (max-width: 900px) {
@@ -382,16 +282,7 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   .lc-hero > .lc-actions { animation: none !important; }
   html.js-reveal .lc-reveal { opacity: 1; transform: none; transition: none; }
   .lc-btn, .lc-card, .lc-feature, .lc-step { transition: none !important; }
-  /* 图标动效在无障碍模式下全部关闭（含云朵常驻飘动） */
-  .pg-home .lc-btn:hover .i-ico,
-  .pg-home .lc-btn:active .i-ico,
-  .pg-home .lc-card:hover .lc-foot .i-ico,
-  .pg-home .lc-card:active .lc-foot .i-ico,
-  .pg-home .lc-feature:hover .lc-feature-icon .i-ico,
-  .pg-home .lc-feature:active .lc-feature-icon .i-ico,
-  .pg-home .lc-step:hover .lc-step-icon .i-ico,
-  .pg-home .lc-step:active .lc-step-icon .i-ico,
-  .pg-home .lc-cloud { animation: none !important; transform: none !important; }
-  .lc-oracle-tip, .lc-oracle-tip.is-out { animation: none !important; }
-  .status--oracle { transition: none !important; }
+  /* 模块卡图标动效在无障碍模式下关闭 */
+  .lc-card-bghicon, .lc-card-bghicon .i-ico { transform: none !important; transition: none !important; }
+  .lc-card:hover .lc-foot .i-ico { transform: none !important; }
 }

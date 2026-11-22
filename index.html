@@ -24,7 +24,6 @@
   <script defer src="assets/js/core/kernel.js"></script>
   <script defer src="assets/js/core/select.js"></script>
   <script defer src="assets/js/core/sync.js"></script>
-  <script defer src="assets/js/core/status-oracle.js"></script>
 
   <!-- 业务模块注册（首页渲染入口卡片，不挂载模块；仅让同步拿到冷数据桥） -->
   <script defer src="assets/js/modules/repo-showcase/defaults.js"></script>
@@ -56,7 +55,7 @@
         </span>
       </a>
       <div class="header-meta">
-        <span class="status status--icon status--oracle" id="status-oracle" role="button" tabindex="0" title="点击看看系统状态" aria-label="点击随机显示系统状态或名言"><i class="i-ico i-system" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></span>
+        <span class="status status--icon" title="系统在线" aria-label="系统在线"><i class="i-ico i-system" aria-hidden="true"></i><i class="dot" aria-hidden="true"></i></span>
         <a class="ghost-link ghost-link--icon mono site-github-link" href="https://github.com/30-Chen/open-shelf" target="_blank" rel="noopener noreferrer" title="打开本项目仓库" aria-label="打开本项目仓库"><i class="i-ico i-github" aria-hidden="true"></i></a>
       </div>
     </header>
@@ -64,8 +63,8 @@
     <section class="lc-hero" id="top">
       <span class="lc-hero-glow" aria-hidden="true"></span>
       <span class="lc-eyebrow mono"><i aria-hidden="true"></i> PERSONAL DIGITAL SHELF</span>
-      <h2>值得留下的，<br><em>总有地方安放。</em></h2>
-      <p class="lc-lead">开源项目、随手记下的灵感，还有尚未命名的下一次心动，都分门别类地收好。不求大而全，只留住真正想再翻出来的东西。</p>
+      <h2>散落的好东西，<br><em>收进自己的架子。</em></h2>
+      <p class="lc-lead">开源项目、随手记下的灵感、还没命名的下一次心动——分门别类收好，想找时一翻就到。不求大而全，只留真正想回头再看的。</p>
       <div class="lc-actions">
         <a class="lc-btn lc-btn--primary" href="shelf.html">现在开始收藏 <i class="i-ico i-ext" aria-hidden="true"></i></a>
         <a class="lc-btn" href="#how">看看它怎么工作 <i class="i-ico i-chev" aria-hidden="true"></i></a>
@@ -123,7 +122,7 @@
           <p>每次增删改都先落在浏览器自己的存储里，没有后端也能正常使用。</p>
         </article>
         <article class="lc-step lc-reveal">
-          <span class="lc-step-icon"><i class="i-ico i-cloud-puff lc-cloud" aria-hidden="true"></i></span>
+          <span class="lc-step-icon"><i class="i-ico i-cloud-puff" aria-hidden="true"></i></span>
           <h4>按需连接云端</h4>
           <p>填入一次 Token 并关联私有 Gist，内容才会开始在多台设备间流动。</p>
         </article>
