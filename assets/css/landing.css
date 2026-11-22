@@ -203,11 +203,12 @@
   transition: transform .42s cubic-bezier(.2, .7, .3, 1); pointer-events: none;
 }
 .lc-step:hover::after { transform: scaleX(1); }
-/* 大号序号水印：置于右上角，缩小并压低透明度，不与正文争夺注意力 */
+/* 大号序号水印：与左上图标垂直居中对齐、右缘与正文列对齐，
+   使编号与图标构成顶部一组，而不是游离在角上。 */
 .lc-step::before {
-  content: attr(data-step); position: absolute; top: 12px; right: 16px;
-  font: 600 32px/1 var(--mono); letter-spacing: -1.5px;
-  color: var(--accent); opacity: .10; pointer-events: none;
+  content: attr(data-step); position: absolute; top: 32px; right: 22px;
+  font: 600 30px/1 var(--mono); letter-spacing: -1.5px;
+  color: var(--accent); opacity: .14; pointer-events: none;
 }
 .lc-step-icon {
   display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 20px;
@@ -296,6 +297,8 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
   /* 特性 / 原理卡：移动端单列，默认尺寸图标 */
   .lc-feature-grid, .lc-flow { grid-template-columns: 1fr; gap: 12px; }
   .lc-feature, .lc-step { padding: 22px 18px; }
+  /* 原理卡编号：跟随移动端内边距，与图标垂直居中对齐 */
+  .lc-step::before { top: 28px; right: 18px; font-size: 26px; }
   .lc-card { min-height: 190px; padding: 22px; }
   /* 收尾区：文案与按钮上下分行 */
   .lc-cta { margin-top: 60px; padding: 34px 12px; gap: 16px; flex-direction: column; }
