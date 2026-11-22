@@ -267,9 +267,13 @@
         });
       }
 
+      /** 浏览器普遍能直接渲染的图片格式；其它格式（手机相册常见的 HEIC/HEIF、
+       *  AVIF/TIFF 等）必须转成 JPEG，否则存进媒体字典后渲染端只会显示 alt 文字。 */
+      var WIDELY_RENDERABLE = /^image\/(?:png|jpe?g|gif|webp|svg\+xml|bmp|x-icon|ico)$/i;
+
       /** 迭代压缩：优先降 JPEG 质量，再降尺寸，直到小于目标体积 */
       function compressImage(url, name) {
-        return new Promise(function (resolve) {
+        return new Promise(function (resolve, reject) {
           var img = new global.Image();
           img.onload = function () {
             try {
@@ -295,7 +299,10 @@
               attempt(6);
             } catch (e) { resolve({ url: url, name: name, shrunk: false }); }
           };
-          img.onerror = function () { resolve({ url: url, name: name, shrunk: false }); };
+          // 解码失败（如桌面浏览器无法识别 HEIC）时明确报错，不要静默存入无法渲染的图片
+          img.onerror = function () {
+            reject(new Error('图片「' + name + '」当前浏览器无法解码，请改用 JPG/PNG 格式'));
+          };
           img.src = url;
         });
       }
@@ -307,11 +314,12 @@
             return Promise.reject(new Error('图片「' + file.name + '」超过 8MB，请先压缩'));
           }
           return fileToDataUrl(file).then(function (url) {
-            // 已经在目标体积内的小图、以及需要保留动画/矢量的 GIF/SVG 原样保留
-            if (url.length <= IMAGE_TARGET ||
-                type === 'image/gif' || type === 'image/svg+xml') {
+            // 需要保留动画/矢量的 GIF/SVG 原样保留；已在目标体积内的常见格式小图也原样保留
+            if (type === 'image/gif' || type === 'image/svg+xml' ||
+                (url.length <= IMAGE_TARGET && WIDELY_RENDERABLE.test(type))) {
               return { url: url, name: file.name, shrunk: false };
             }
+            // 大图或 HEIC/HEIF/AVIF/TIFF 等非常见格式 → 统一转成 JPEG 再存
             return compressImage(url, file.name);
           });
         }
@@ -854,6 +862,14 @@
           return;
         }
       });
+
+      // 图片解码失败时（如旧数据里的 HEIC 在不支持的浏览器上）显示可读提示，
+      // 而不是留一个破图标让人以为图片丢了。
+      root.addEventListener('error', function (e) {
+        var t = e && e.target;
+        if (!t || t.tagName !== 'IMG' || !t.classList.contains('nt-img')) return;
+        t.classList.add('nt-img--broken');
+      }, true);
 
       root.addEventListener('input', function (e) {
         var t = e.target;

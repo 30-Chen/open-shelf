@@ -326,6 +326,13 @@
   display: block; max-width: 100%; height: auto; margin: 4px 0 1.1em;
   border: 1px solid var(--line); border-radius: 10px;
 }
+/* 浏览器无法解码的图片（如旧数据中的 HEIC）：显示占位提示而非破图标 */
+.nt-img--broken {
+  min-height: 72px; padding: 16px; box-sizing: border-box;
+  background: var(--accent-dim); border-style: dashed;
+  color: var(--muted); font: 12px/1.7 var(--mono);
+}
+.nt-img--broken::after { content: ' · 当前浏览器无法解码该图片，请改用 JPG/PNG'; }
 
 /* 视频 */
 .nt-video { margin: 6px 0 1.2em; }

@@ -24,12 +24,15 @@
     return null;
   }
 
-  /** 图片 URL：http(s) 或 base64 图片 data URI。 */
+  /** 图片 URL：http(s) 或 base64 图片 data URI。
+   *  媒体字典里的图片可能来自手机相册（HEIC/HEIF/AVIF/BMP/TIFF 等），
+   *  只要是被 normalizeMedia 校验过的 base64 图片数据，就交给 <img> 渲染，
+   *  不能只放行 png/jpg 等 5 种——否则这些图片会静默退化成 alt 文字。 */
   function safeImageUrl(urlEscaped) {
     var http = safeHttpUrl(urlEscaped);
     if (http) return http;
     var s = String(urlEscaped || '').trim();
-    if (/^data:image\/(?:png|jpe?g|gif|webp|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(s)) return s;
+    if (/^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i.test(s)) return s;
     return null;
   }
 
