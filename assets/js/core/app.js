@@ -34,7 +34,7 @@
           path: 'shelf.html',
           badge: '',
           foot: '打开收藏架',
-          glyph: 'i-modules', tone: 'shelf'   // 收藏架入口卡：层叠方块图标 + 中性配色
+          glyph: 'i-modules'   // 收藏架入口卡：层叠方块图标（配色全站统一）
         }
       } : null;
       Portal.renderCatalog(catalog, { overrides: overrides });

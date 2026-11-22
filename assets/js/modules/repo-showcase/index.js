@@ -139,7 +139,7 @@
     title: '开源应用',
     desc: '粘贴 GitHub 仓库地址，按分类目录整理，自动展示项目介绍与最新 Release 的下载地址。',
     path: 'module.html?id=repo-showcase',
-    glyph: 'i-code', tone: 'code',   // 首页/收藏架卡片：融入背景的代码图标 + 专属配色
+    glyph: 'i-code',   // 首页/收藏架卡片：融入背景的代码图标（配色全站统一）
     sync: syncBridge,
     mount: function (ctx) {
       var store = ctx.store;                              // 本模块私有存储

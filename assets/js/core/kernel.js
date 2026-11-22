@@ -81,15 +81,14 @@
       var href = view.path || ('module.html?id=' + encodeURIComponent(def.id));
       var soon = !!view.badge;
       var foot = view.foot || (soon ? '预留位置' : '进入模块');
-      // glyph: 融入卡片背景的大图标（i-ico 类名）；tone: 配色主题类名。
-      // 由注册表/首页 override 提供，缺省则不渲染——保持旧模块零改动可用。
+      // glyph: 融入卡片背景的大图标（i-ico 类名），由注册表/首页 override 提供；
+      // 缺省则不渲染，保持旧模块零改动可用。卡片配色全站统一，不按模块区分 tone。
       var glyph = view.glyph ? ' lc-card--glyph' : '';
-      var tone = view.tone ? ' lc-card--' + esc(view.tone) : '';
       var glyphMark = view.glyph
         ? '<span class="lc-card-bghicon" aria-hidden="true"><i class="i-ico ' + esc(view.glyph) + '"></i></span>'
         : '<span class="lc-corner" aria-hidden="true"></span>';
       return '' +
-        '<a class="lc-card' + tone + glyph + (soon ? ' lc-card--soon' : '') + '" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
+        '<a class="lc-card' + glyph + (soon ? ' lc-card--soon' : '') + '" href="' + safePath(href) + '" data-module="' + esc(def.id) + '">' +
           glyphMark +
           '<span class="lc-card-inner">' +
             '<span class="lc-index mono">' + esc(num) + ' / MODULE' +
