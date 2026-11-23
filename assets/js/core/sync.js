@@ -430,27 +430,100 @@
     try { return JSON.parse(file.content); } catch (e) { return null; }
   }
 
+  /** 读取单个 raw 文件的完整文本。
+   *  Gist raw URL 是「能力 URL」：私有 Gist 也无需 Authorization 即可读取，且响应带
+   *  Access-Control-Allow-Origin: *，因此浏览器可直接 fetch（简单 GET，不能带自定义
+   *  header，否则触发预检被 403 拒绝）。绝不能走 request()——它会加 Authorization
+   *  并打 api.github.com，既拿不到 raw 内容也会触发预检。 */
+  function fetchRaw(url) {
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error('读取图片失败（HTTP ' + res.status + '）');
+      return res.text();
+    });
+  }
+
+  /** 该文件的 content 是否完整。
+   *  GitHub Gist 详情接口 GET /gists/<id> 对「整个响应里所有文件的 content」有约
+   *  900KB 的总预算，按文件名顺序累加，超出后把后续文件的 content 截断甚至置空——
+   *  但 size 字段仍是原始 UTF-8 字节数。必须按字节数比较（主 JSON 含中文，一个中文
+   *  占 3 字节，字符数会远小于字节数），图片是纯 ASCII 两者相等。被截断的内容若直接
+   *  注入会导致图片损坏，且 hash 与本地不一致、每轮都误判「云端变化」而无法收敛。 */
+  function contentComplete(file) {
+    if (!file || typeof file.content !== 'string') return false;
+    var size = Number(file.size);
+    // 无 size 信息（罕见）时无法判定，按「有内容即完整」处理，避免无谓的 raw 请求
+    if (!isFinite(size) || size <= 0) return file.content.length > 0;
+    return utf8Len(file.content) === size;
+  }
+
+  // raw 完整内容缓存：文件名 → { size, text }。被截断的文件每轮详情都只有半截内容，
+  // 若 size 未变（内容没更新）就复用缓存，避免云端轮询每 15 秒重复下载所有大图。
+  // 只存内存不落盘（不占 localStorage 配额），刷新页面后最多补下载一次。
+  var rawCache = {};
+
   function readRemote() {
     if (!cfg.gistId) return Promise.resolve(null);
     return request('GET', '/gists/' + encodeURIComponent(cfg.gistId)).then(function (g) {
       var gistFiles = (g && g.files) || {};
-      // 云端图片清单以「实际读到的文件」为准：换设备、外部改动 Gist 后也不会误判。
-      // 差量写入与孤儿文件清理都依赖这份清单。
-      var seen = {};
-      Object.keys(gistFiles).forEach(function (name) {
-        if (name.indexOf(IMG_PREFIX) === 0 && typeof gistFiles[name].content === 'string') {
-          seen[name] = hash(gistFiles[name].content);
+
+      // 先把详情接口里被截断/置空的图片（含主 JSON）用 raw_url 补齐。
+      // 只补不完整的，完整的直接用 content，避免每次同步都重复下载所有图片。
+      var names = Object.keys(gistFiles);
+      var fixes = [];
+      var failed = {}; // 补齐失败的文件名：内容不可信，绝不能注入半截数据
+      names.forEach(function (name) {
+        var f = gistFiles[name];
+        if (contentComplete(f)) return;
+        var size = Number(f.size);
+        // 命中缓存：同一文件 size 未变（内容没更新），直接复用上轮补齐的完整文本
+        var cached = rawCache[name];
+        if (cached && cached.size === size && utf8Len(cached.text) === size) {
+          f.content = cached.text;
+          return;
         }
+        if (typeof f.raw_url !== 'string' || !f.raw_url) return;
+        fixes.push(fetchRaw(f.raw_url).then(function (text) {
+          // raw 偶发也会因网络只返回部分内容；长度不符视为失败，绝不注入半截数据。
+          if (utf8Len(text) !== size) {
+            throw new Error('raw 内容长度 ' + utf8Len(text) + ' 与声明 ' + size + ' 不符');
+          }
+          f.content = text; // 就地补齐；f 是 gistFiles 里的同一引用
+          rawCache[name] = { size: size, text: text }; // 缓存，供后续轮询复用
+        }).catch(function (e) {
+          // 补齐失败：清空被截断的 content，使 attachMedia 跳过注入、seen 不计入，
+          // 绝不用半截 data URI 覆盖本地完整图片（那会显示损坏图且 hash 永不收敛）。
+          failed[name] = true;
+          f.content = '';
+          console.error('[sync] raw 补齐失败 ' + name, e);
+        }));
       });
-      cfg.imageFiles = seen;
-      // Gist API 对单个文件只返回最多 1MB；被截断的 JSON 不能当作「云端无数据」，
-      // 否则会把本地内容误判为更新并静默覆盖云端。标记为 truncated，交给上层
-      // 走「用本地重建云端」的确认流程——既不静默覆盖，也不让同步彻底死锁。
-      var file = gistFiles[FILE];
-      if (file && file.truncated) return { gist: g, payload: null, truncated: true };
-      var payload = parseGist(g);
-      if (payload) attachMedia(payload, gistFiles); // 图片文件注入回 media[id].d
-      return { gist: g, payload: payload };
+
+      return Promise.all(fixes).then(function () {
+        // 云端图片清单以「实际读到的文件」为准：换设备、外部改动 Gist 后也不会误判。
+        // 差量写入与孤儿文件清理都依赖这份清单。
+        var seen = {};
+        Object.keys(gistFiles).forEach(function (name) {
+          if (name.indexOf(IMG_PREFIX) === 0 &&
+              typeof gistFiles[name].content === 'string' &&
+              contentComplete(gistFiles[name])) {
+            seen[name] = hash(gistFiles[name].content);
+          }
+        });
+        cfg.imageFiles = seen;
+        // Gist API 对单个文件只返回最多 1MB；被截断的 JSON 不能当作「云端无数据」，
+        // 否则会把本地内容误判为更新并静默覆盖云端。标记为 truncated，交给上层
+        // 走「用本地重建云端」的确认流程——既不静默覆盖，也不让同步彻底死锁。
+        var file = gistFiles[FILE];
+        // truncated 仅当「补齐后主 JSON 仍不完整」才成立：若已用 raw 成功补回完整内容，
+        // 就不能再当云端无数据处理（否则会误触发重建确认）。补齐失败的文件内容已被清空，
+        // 主 JSON 失败时必须走重建确认，绝不能当成云端无数据而用本地整包覆盖。
+        if (file && (failed[FILE] || (file.truncated && !contentComplete(file)))) {
+          return { gist: g, payload: null, truncated: true };
+        }
+        var payload = parseGist(g);
+        if (payload) attachMedia(payload, gistFiles); // 图片文件注入回 media[id].d
+        return { gist: g, payload: payload };
+      });
     });
   }
 
