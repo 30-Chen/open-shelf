@@ -264,7 +264,8 @@
 /* 实时同步体积监测：进度条 + 数值，三档颜色随状态切换 */
 .nt-size {
   display: flex; align-items: center; gap: 9px;
-  min-width: 168px; flex: 0 1 240px;
+  /* 宽度随内容自适应：窄容器下由父级 flex-wrap 换行，不再撑破溢出到按钮上 */
+  flex: 0 1 auto; min-width: 0; max-width: 100%;
   padding: 5px 9px; border: 1px solid var(--line); border-radius: var(--radius-sm);
   background: rgba(10, 17, 29, .45);
   transition: border-color .18s, background .18s;
@@ -279,8 +280,9 @@
   transition: width .18s ease, background .18s;
 }
 .nt-size-text {
-  flex: 0 0 auto; font-size: 10px; color: var(--text-2);
-  white-space: nowrap; font-variant-numeric: tabular-nums;
+  flex: 0 1 auto; min-width: 0; font-size: 10px; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 .nt-size[data-level="warn"] { border-color: rgba(255, 196, 107, .45); }
 .nt-size[data-level="warn"] .nt-size-fill { background: var(--warn); }

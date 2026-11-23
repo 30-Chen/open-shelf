@@ -780,13 +780,16 @@
         if (text) {
           var used = Math.round(est.bytes / 1024);
           var limit = Math.round(est.limit / 1024);
-          var pct = Math.round(est.ratio * 100);
           var imgN = est.images || 0;
           var imgKB = Math.round((est.imageBytes || 0) / 1024);
-          // 图片已拆成独立文件、不占正文配额；文案分两部分显示，避免误读为总体积超限。
-          text.textContent = level === 'over'
-            ? '正文 ' + used + ' KB · 超出 ' + limit + ' KB 上限，无法同步'
-            : '正文 ' + used + '/' + limit + ' KB（' + pct + '%）· 图片 ' + imgN + ' 张 ' + imgKB + ' KB（独立文件）';
+          // 文案保持精简，进度条已表达百分比；图片说明移到 title，避免撑破体积条。
+          if (level === 'over') {
+            text.textContent = '正文 ' + used + ' KB · 超出 ' + limit + ' KB，无法同步';
+            box.title = '正文体积超过单文件同步上限，请精简文字';
+          } else {
+            text.textContent = '正文 ' + used + '/' + limit + ' KB · 图片 ' + imgN + ' 张 ' + imgKB + ' KB';
+            box.title = '图片已拆成独立文件存储，不占用正文配额；进度条显示正文占比';
+          }
         }
         if (level === 'over' && !sizeWarned) {
           sizeWarned = true;
