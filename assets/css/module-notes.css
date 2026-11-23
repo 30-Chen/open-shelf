@@ -354,6 +354,17 @@
 .nt-video-cap { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .nt-video-fallback { padding: 12px 16px; border: 1px dashed var(--line); border-radius: 8px; color: var(--warn); font-size: 12px; }
 
+/* ---------- 编辑器上方的错误/警告提示（内联，默认收起避免占位） ---------- */
+.nt-editor-flash {
+  display: none; margin: -6px 0 18px; padding: 11px 14px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(255, 129, 151, .07); color: var(--danger);
+  font-size: 12px; line-height: 1.55; letter-spacing: .3px;
+}
+.nt-editor-flash.is-show { display: block; }
+.nt-editor-flash--warn { background: rgba(255, 196, 107, .08); color: var(--warn); border-color: rgba(255, 196, 107, .4); }
+.nt-editor-flash--error { border-color: rgba(255, 129, 151, .45); }
+
 /* ---------- 浮动提示 ---------- */
 .nt-flash {
   position: fixed; left: 50%; bottom: 28px; z-index: 80; transform: translate(-50%, 18px);

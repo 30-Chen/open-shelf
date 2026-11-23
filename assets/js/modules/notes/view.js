@@ -212,6 +212,7 @@
           '<button class="nt-back mono" data-act="back"><i class="i-ico i-back" aria-hidden="true"></i> 返回列表</button>' +
           '<span class="nt-editor-state mono">' + (isNew ? 'NEW NOTE' : 'EDITING') + '</span>' +
         '</div>' +
+        '<div class="nt-editor-flash mono" id="nt-editor-flash" role="status" aria-live="polite"></div>' +
         '<div class="nt-editor-form">' +
           '<label class="nt-field nt-field--title">' +
             '<span>标题</span>' +

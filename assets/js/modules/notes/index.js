@@ -237,7 +237,15 @@
       }
 
       function flash(text, kind) {
-        var el = root.querySelector('#nt-flash');
+        var toast = root.querySelector('#nt-flash');
+        var inline = root.querySelector('#nt-editor-flash');
+        // 编辑态的错误/警告固定显示在编辑器上方横幅，避免底部浮动被忽略；
+        // 其余提示仍用底部浮动 toast（列表/阅读态没有横幅，自然走 toast）。
+        var useInline = state.view === 'edit' && !!inline && (kind === 'error' || kind === 'warn');
+        // 复位另一处，保证同一时刻只有一条提示可见
+        if (useInline && toast) toast.className = 'nt-flash mono';
+        if (!useInline && inline) inline.className = 'nt-editor-flash mono';
+        var el = useInline ? inline : toast;
         if (!el) {
           el = document.createElement('div');
           el.id = 'nt-flash';
@@ -245,9 +253,12 @@
           root.appendChild(el);
         }
         el.textContent = text;
-        el.className = 'nt-flash mono is-show' + (kind ? ' nt-flash--' + kind : '');
+        el.className = (useInline ? 'nt-editor-flash mono is-show' : 'nt-flash mono is-show') +
+          (kind ? ' ' + (useInline ? 'nt-editor-flash--' : 'nt-flash--') + kind : '');
         global.clearTimeout(state.flashTimer);
-        state.flashTimer = global.setTimeout(function () { el.className = 'nt-flash mono'; }, 3200);
+        state.flashTimer = global.setTimeout(function () {
+          el.className = useInline ? 'nt-editor-flash mono' : 'nt-flash mono';
+        }, 3200);
       }
 
       /* ---------- 拖拽 / 选择上传媒体（自动压缩，每张图片独立同步） ---------- */
