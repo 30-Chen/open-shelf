@@ -265,8 +265,8 @@
               '<span class="nt-size-track"><i class="nt-size-fill" id="nt-size-fill"></i></span>' +
               '<span class="nt-size-text mono" id="nt-size-text">正文 0/950 KB · 图片 0 张 0 KB</span>' +
             '</div>' +
-            '<div>' +
-              '<button class="btn" data-act="cancel">取消</button> ' +
+            '<div class="nt-foot-actions">' +
+              '<button class="btn" data-act="cancel">取消</button>' +
               '<button class="btn btn--primary" data-act="save">保存笔记</button>' +
             '</div>' +
           '</div>' +

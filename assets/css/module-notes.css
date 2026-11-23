@@ -259,6 +259,7 @@
   padding-top: 14px; border-top: 1px solid var(--line-soft);
 }
 .nt-hint { font-size: 10px; color: var(--muted); letter-spacing: .3px; }
+.nt-foot-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .nt-editor-foot .btn { height: 38px; }
 
 /* 实时同步体积监测：进度条 + 数值，三档颜色随状态切换 */
@@ -379,7 +380,8 @@
   .nt-tools-panel { right: 0; left: auto; width: min(232px, calc(100vw - 32px)); }
   .nt-title { font-size: 21px; }
   .nt-grid { grid-template-columns: 1fr; }
+  /* 移动端底部依次三行：提示 → 体积条 → 按钮组，各自撑满、避免错位 */
+  .nt-size { flex: 1 1 100%; }
+  .nt-foot-actions { flex: 1 1 100%; }
   .nt-editor-foot .btn { flex: 1; }
-  /* 体积监测独占一行，避免与按钮、提示文字挤在同一行 */
-  .nt-size { flex: 1 1 100%; order: 3; }
 }
