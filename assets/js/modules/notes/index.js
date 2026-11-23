@@ -250,12 +250,12 @@
         state.flashTimer = global.setTimeout(function () { el.className = 'nt-flash mono'; }, 3200);
       }
 
-      /* ---------- 拖拽 / 选择上传媒体（自动压缩，受 Gist 单文件 1MB 限制约束） ---------- */
-      // GitHub Gist API 对单个文件只返回最多 1MB；超限会被截断导致同步数据损坏。
-      // 媒体以 data URI（比原始文件大约 1/3）存进同步文件，因此必须留出安全余量。
+      /* ---------- 拖拽 / 选择上传媒体（自动压缩，每张图片独立同步） ---------- */
+      // 图片已拆成 Gist 独立文件，每张各自受单文件 1MB（安全限 950KB）约束，
+      // 不再有「所有图片总量」上限——多张图片可正常累加，不挤占正文配额。
       var MAX_IMAGE_RAW = 8 * 1024 * 1024;    // 源图放宽到 8MB，上传后自动压到目标体积
       var IMAGE_TARGET = 260 * 1024;          // 每张图片压缩目标（data URI 字符数）
-      var MEDIA_TOTAL = 900 * 1024;           // 全部图片 data URI 总量上限（给其它数据留余量）
+      var MEDIA_PER = 950 * 1024;             // 单张图片 data URI 上限（与 sync.js 单文件安全限一致）
       var MAX_BODY = 200 * 1024;              // 正文只存短引用，实际远远用不到
 
       function fileToDataUrl(file) {
@@ -329,12 +329,6 @@
         return Promise.reject(new Error('只支持图片文件'));
       }
 
-      function mediaTotal() {
-        return Object.keys(state.media).reduce(function (sum, id) {
-          return sum + String(state.media[id].d || '').length;
-        }, 0);
-      }
-
       function insertSnippet(ta, snippet) {
         var start = ta.selectionStart, end = ta.selectionEnd;
         var lead = start > 0 && ta.value.charAt(start - 1) !== '\n' ? '\n' : '';
@@ -361,8 +355,10 @@
               if (ta.value.length + snippet.length > MAX_BODY) {
                 throw new Error('这篇笔记内容过长，无法再插入图片');
               }
-              if (mediaTotal() + media.url.length > MEDIA_TOTAL) {
-                throw new Error('本地图片总大小已达上限（约 900KB），请删除部分图片，或改用网络图片地址');
+              // 每张图片是独立文件，只校验单张大小；不再累加总量限制。
+              if (media.url.length > MEDIA_PER) {
+                throw new Error('单张图片约 ' + Math.round(media.url.length / 1024) +
+                  'KB，超过约 950KB 上限，请换一张更小的图片');
               }
               state.media[id] = { t: 'i', n: name, d: media.url };
               insertSnippet(ta, snippet);
