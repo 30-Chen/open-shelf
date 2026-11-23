@@ -952,16 +952,34 @@
           : null;
         if (!incoming) throw new Error('笔记数据缺少 notes 列表');
         state.demo = false; // 云端数据优先于示例
+        var newMedia = normalizeMedia(data.media);
+        migrateLegacyMedia(incoming, newMedia); // 兼容旧云端数据
+        var newCats = sanitizeCategories(data.categories, incoming);
+
+        // 编辑/阅读态：只更新「已保存的笔记库」，绝不打断用户当前操作。
+        // 否则上传图片触发自动同步落地时，会把 view 强制切回 list、丢弃草稿——
+        // 表现为「选图上传后自动退出编辑器」。
+        if (state.view === 'edit' || state.view === 'read') {
+          // 草稿里已上传但尚未保存的媒体要保住，否则同步后正文的 media: 引用会失效
+          state.draftMedia.forEach(function (id) {
+            if (state.media[id] && !newMedia[id]) newMedia[id] = state.media[id];
+          });
+          state.notes = incoming;
+          state.media = newMedia;
+          state.categories = newCats;
+          persist();
+          return; // 不 render、不改 view，保留草稿与光标位置
+        }
+
         state.notes = incoming;
-        state.media = normalizeMedia(data.media);
-        migrateLegacyMedia(state.notes, state.media); // 兼容旧云端数据
-        state.draftMedia = [];
-        state.categories = sanitizeCategories(data.categories, state.notes);
+        state.media = newMedia;
+        state.categories = newCats;
         state.category = ALL;
         state.query = '';
         state.view = 'list';
         state.currentId = null;
         state.draft = null;
+        state.draftMedia = [];
         persist();
         render();
       };
