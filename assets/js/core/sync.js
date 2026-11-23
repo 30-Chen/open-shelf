@@ -18,6 +18,9 @@
 
   var API = 'https://api.github.com';
   var FILE = 'open-shelf.json';
+  // 图片独立文件前缀：主 JSON 只留媒体映射，图片 data URI 拆到同 Gist 的独立文件，
+  // 突破单文件 1MB 限制。文件命名 osimg-<媒体ID>.<ext>，读取时再注入回 media[id].d。
+  var IMG_PREFIX = 'osimg-';
   var DESC = 'SHELF / ONLINE · 跨设备同步（自动生成，请勿手动修改）';
 
   // 调度参数
@@ -43,7 +46,10 @@
     detachedAt: Number(store.get('detachedAt', 0)) || 0,
     // 三方合并的共同祖先：上次同步成功后云端各模块的快照。
     // 有了它，双方同时改动时能按条目做三方合并，而不是整模块覆盖、静默丢数据。
-    baseSnapshot: store.get('baseSnapshot', null) || null
+    baseSnapshot: store.get('baseSnapshot', null) || null,
+    // 上次写入云端的图片文件清单：文件名 → data URI 哈希。
+    // 用于差量 PATCH（内容没变就不重复上传）与删除不再被引用的图片文件。
+    imageFiles: store.get('imageFiles', null) || {}
   };
 
   // 上次广播出去的 Token。模块1（repo-showcase）会在云同步 Token 变化时自动复用，
@@ -65,6 +71,7 @@
     store.set('detachedHashes', cfg.detachedHashes);
     store.set('detachedAt', cfg.detachedAt);
     store.set('baseSnapshot', cfg.baseSnapshot);
+    store.set('imageFiles', cfg.imageFiles);
     if (cfg.token !== lastNotifiedToken) {
       lastNotifiedToken = cfg.token;
       if (Portal.bus && Portal.bus.emit) Portal.bus.emit('sync:token-change', { token: cfg.token });
@@ -91,6 +98,11 @@
     return ('00000000' + h.toString(16)).slice(-8);
   }
   function hashModules(modules) { return hash(JSON.stringify(modules || {})); }
+  /** 深拷贝模块快照：避免 baseSnapshot 持有 collectLocal() 的引用后被后续编辑污染 */
+  function snapshotOf(modules) {
+    try { return JSON.parse(JSON.stringify(modules || {})); }
+    catch (e) { return modules || {}; }
+  }
   /** 逐模块哈希：断开时记下快照，恢复时才知道是哪些模块后来被改过 */
   function moduleHashes(modules) {
     var out = {};
@@ -327,6 +339,91 @@
     });
   }
 
+  /* ---------- 媒体拆分：本地全量 data URI ⇄ 云端主 JSON + 独立图片文件 ----------
+     设计原则：本地模块数据（localStorage / collectLocal / applyRemote / 三方合并 /
+     baseSnapshot）始终保持完整 data URI，不引入新格式；只在「写云端」与「读云端」
+     两个边界做转换。这样 notes 模块、合并算法、导出导入都无需改动。
+       · 写云端：detachMedia 把 media[id].d 抽成独立文件 osimg-<id>.<ext>，
+                 主 JSON 里该条目只保留 {t, n, f}（f=文件名）。
+       · 读云端：attachMedia 把每个条目的 f 从 gist.files 读回，填回 d。
+     旧 Gist 的条目含 d 无 f，读时原样保留；下次写入时自动迁移为新格式。 */
+  function mediaSlots(modules) {
+    var slots = [];
+    Object.keys(modules || {}).forEach(function (id) {
+      var m = modules[id];
+      if (m && typeof m === 'object' && !Array.isArray(m) &&
+          m.media && typeof m.media === 'object' && !Array.isArray(m.media)) {
+        slots.push({ id: id, dict: m.media });
+      }
+    });
+    return slots;
+  }
+
+  function mediaFileName(id, dataUri) {
+    var m = /^data:([^;,]+)/.exec(String(dataUri || ''));
+    var ext = 'bin';
+    if (m) {
+      var sub = String(m[1]).split('/')[1] || '';
+      ext = sub.replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 12) || 'bin';
+      if (ext === 'jpeg') ext = 'jpg';
+      if (ext === 'svgxml') ext = 'svg';
+    }
+    return IMG_PREFIX + id + '.' + ext;
+  }
+
+  /** 非破坏性：抽离所有媒体 data URI，返回瘦身模块与图片文件表 */
+  function detachMedia(modules) {
+    var files = {}, slim = {};
+    Object.keys(modules || {}).forEach(function (mid) {
+      var m = modules[mid];
+      if (!m || typeof m !== 'object' || Array.isArray(m)) { slim[mid] = m; return; }
+      var copy = {};
+      Object.keys(m).forEach(function (k) { copy[k] = m[k]; });
+      if (m.media && typeof m.media === 'object' && !Array.isArray(m.media)) {
+        var media = {};
+        Object.keys(m.media).forEach(function (id) {
+          var e = m.media[id];
+          if (!e || typeof e !== 'object') { media[id] = e; return; }
+          var d = e.d;
+          if (typeof d === 'string' && /^data:(?:image|video)\//i.test(d)) {
+            var fname = mediaFileName(id, d);
+            files[fname] = d;
+            var entry = {};
+            if (e.t !== undefined) entry.t = e.t;
+            if (e.n !== undefined) entry.n = e.n;
+            entry.f = fname;
+            media[id] = entry;
+          } else {
+            media[id] = e; // 无 data URI 的异常项或旧格式：原样保留
+          }
+        });
+        copy.media = media;
+      }
+      slim[mid] = copy;
+    });
+    return { modules: slim, files: files };
+  }
+
+  /** 把云端图片文件内容注入回瘦身模块，还原完整 data URI。
+   *  关键：注入后必须删掉 f，使云端读回的 media 条目 {t,n,d} 与本地、baseSnapshot
+   *  结构完全一致——否则三方合并的 sameVal 失效（删除被误判为冲突）、remoteHash
+   *  也永远对不上 syncedHash（每轮都误判云端有变化）。 */
+  function attachMedia(payload, gistFiles) {
+    if (!payload || !payload.modules) return payload;
+    mediaSlots(payload.modules).forEach(function (slot) {
+      Object.keys(slot.dict).forEach(function (id) {
+        var e = slot.dict[id];
+        if (!e || typeof e !== 'object' || !e.f || typeof e.d === 'string') return;
+        var file = gistFiles && gistFiles[e.f];
+        if (file && typeof file.content === 'string' && file.content) {
+          e.d = file.content;
+        }
+        delete e.f; // 无论图片是否成功注入，都不把云端映射字段带进合并域
+      });
+    });
+    return payload;
+  }
+
   function parseGist(gist) {
     var file = gist && gist.files && gist.files[FILE];
     if (!file || !file.content) return null;
@@ -336,12 +433,24 @@
   function readRemote() {
     if (!cfg.gistId) return Promise.resolve(null);
     return request('GET', '/gists/' + encodeURIComponent(cfg.gistId)).then(function (g) {
+      var gistFiles = (g && g.files) || {};
+      // 云端图片清单以「实际读到的文件」为准：换设备、外部改动 Gist 后也不会误判。
+      // 差量写入与孤儿文件清理都依赖这份清单。
+      var seen = {};
+      Object.keys(gistFiles).forEach(function (name) {
+        if (name.indexOf(IMG_PREFIX) === 0 && typeof gistFiles[name].content === 'string') {
+          seen[name] = hash(gistFiles[name].content);
+        }
+      });
+      cfg.imageFiles = seen;
       // Gist API 对单个文件只返回最多 1MB；被截断的 JSON 不能当作「云端无数据」，
       // 否则会把本地内容误判为更新并静默覆盖云端。标记为 truncated，交给上层
       // 走「用本地重建云端」的确认流程——既不静默覆盖，也不让同步彻底死锁。
-      var file = g && g.files && g.files[FILE];
+      var file = gistFiles[FILE];
       if (file && file.truncated) return { gist: g, payload: null, truncated: true };
-      return { gist: g, payload: parseGist(g) };
+      var payload = parseGist(g);
+      if (payload) attachMedia(payload, gistFiles); // 图片文件注入回 media[id].d
+      return { gist: g, payload: payload };
     });
   }
 
@@ -354,28 +463,57 @@
   /** Gist 单文件安全上限（UTF-8 字节），给 1MB 硬限留余量 */
   var SYNC_LIMIT = 950 * 1024;
 
-  /** 统一的同步文件序列化：写入与体积估算共用，保证阈值判断完全同源 */
+  /** 统一的主 JSON 序列化：写入与体积估算共用，保证阈值判断完全同源。
+   *  version 2：媒体 data URI 已拆到独立文件，modules.*.media 只留 {t,n,f} 映射。 */
   function serializeGist(merged) {
     return JSON.stringify({
-      app: 'open-shelf', version: 1, updatedAt: Date.now(), modules: merged
+      app: 'open-shelf', version: 2, updatedAt: Date.now(), modules: merged
     }, null, 2);
   }
 
-  /** 把模块数据写进 Gist（不存在则创建私有 Gist）
-   *  finalSnapshot：本次落地后的实际模块数据，作为下次三方合并的共同祖先；
-   *  省略时用 merged。 */
+  /** 构造图片文件变更集：POST 全量写入；PATCH 只写变化的文件、删除不再引用的孤儿文件 */
+  function imageChanges(desired, isPost) {
+    var body = {}, prev = cfg.imageFiles || {};
+    if (isPost) {
+      Object.keys(desired).forEach(function (n) { body[n] = { content: desired[n] }; });
+    } else {
+      Object.keys(desired).forEach(function (n) {
+        if (prev[n] !== hash(desired[n])) body[n] = { content: desired[n] };
+      });
+      Object.keys(prev).forEach(function (n) {
+        if (!desired[n]) body[n] = null; // null = 删除该 Gist 文件
+      });
+    }
+    return body;
+  }
+
+  /** 把模块数据写进 Gist：主 JSON（正文+映射）+ 每张图片一个独立文件。
+   *  finalSnapshot：本次落地后的实际模块数据（完整 data URI），作为下次三方合并的共同祖先。 */
   function writeGist(merged, localModules, mergedHash, finalSnapshot) {
     var myEpoch = epoch; // 写入请求期间若用户断开，结果作废，不再写回配置
-    var content = serializeGist(merged);
-    // 留出安全余量，避免写入后 Gist API 读取时被截断（1MB 上限，按 UTF-8 字节计）。
-    // 必须按真实字节数判断：中文 1 字符 UTF-16 length=1 但 UTF-8 占 3 字节，
-    // 用 .length 会把约 317KB 中文误判为安全，实际已达 950KB 而被云端截断。
+    var split = detachMedia(merged);
+    var content = serializeGist(split.modules);
+    // 主 JSON 留出安全余量，避免读取时被截断（Gist 单文件 1MB，按 UTF-8 字节计）。
+    // 图片已拆到独立文件，不再挤占这份配额；中文 1 字符 UTF-8 占 3 字节，
+    // 必须按真实字节数判断而非 .length。
     var bytes = utf8Len(content);
     if (bytes > SYNC_LIMIT) {
       return Promise.reject(new Error(
-        '本地数据 ' + Math.round(bytes / 1024) + 'KB 超过云同步单文件上限（约 950KB），' +
-        '请删除部分图片或改用网络图片地址'
+        '笔记正文 ' + Math.round(bytes / 1024) + 'KB 超过单文件上限（约 950KB），' +
+        '请精简文字内容'
       ));
+    }
+    // 每张图片也必须是独立文件里的完整内容，不能超单文件上限，否则读取时被截断。
+    var desired = split.files;
+    var names = Object.keys(desired);
+    for (var i = 0; i < names.length; i++) {
+      var ib = utf8Len(desired[names[i]]);
+      if (ib > SYNC_LIMIT) {
+        return Promise.reject(new Error(
+          '图片 ' + names[i] + ' 约 ' + Math.round(ib / 1024) + 'KB，超过单文件上限（约 950KB），' +
+          '请换一张更小的图片'
+        ));
+      }
     }
 
     function finish(g, rebuilt) {
@@ -383,13 +521,18 @@
       cfg.gistId = g.id;
       cfg.syncedHash = mergedHash;
       cfg.localHash = hashModules(localModules);
-      cfg.baseSnapshot = finalSnapshot || merged; // 记录共同祖先，供下次三方合并
+      // 深拷贝隔离：merged 可能就是 collectLocal() 返回的模块引用，若直接持有，
+      // 用户随后编辑 state.media 会连带污染 baseSnapshot，使三方合并失去共同祖先。
+      cfg.baseSnapshot = snapshotOf(finalSnapshot || merged);
+      var next = {};
+      names.forEach(function (n) { next[n] = hash(desired[n]); });
+      cfg.imageFiles = next;
       cfg.syncedAt = Date.now();
       clearDetached(); // 成功上传后，断开快照已过期，避免下次恢复误报「本地新增」
       saveCfg();
       return {
         ok: true, id: g.id, htmlUrl: g.html_url,
-        count: Object.keys(merged).length, rebuilt: !!rebuilt
+        count: Object.keys(merged).length, images: names.length, rebuilt: !!rebuilt
       };
     }
 
@@ -399,15 +542,19 @@
       ? { files: {} }
       : { description: DESC, public: false, files: {} };
     body.files[FILE] = { content: content };
+    var changes = imageChanges(desired, method === 'POST');
+    Object.keys(changes).forEach(function (n) { body.files[n] = changes[n]; });
     return request(method, path, body).then(function (g) {
       return finish(g, method === 'POST');
     }).catch(function (e) {
       // 自救：PATCH 一个已被删除或无权访问的 Gist 会返回 404。清空旧 ID 改用
-      // POST 新建，自动重建关联——否则「Gist 丢失后所有同步路径全部失败」死锁。
+      // POST 新建（全量写入所有图片），自动重建关联——否则「Gist 丢失后同步全失败」死锁。
       if (method === 'PATCH' && e && e.status === 404 && myEpoch === epoch) {
         cfg.gistId = '';
         var fresh = { description: DESC, public: false, files: {} };
         fresh.files[FILE] = { content: content };
+        var all = imageChanges(desired, true);
+        Object.keys(all).forEach(function (n) { fresh.files[n] = all[n]; });
         return request('POST', '/gists', fresh).then(function (g) {
           return finish(g, true);
         });
@@ -520,7 +667,7 @@
           // 合并结果与云端一致（可能另一台设备已写入相同内容），无需再写，直接收敛基线
           cfg.syncedHash = remoteHash;
           cfg.localHash = hashModules(landedModules);
-          cfg.baseSnapshot = mergedBoth;
+          cfg.baseSnapshot = snapshotOf(mergedBoth);
           cfg.syncedAt = remoteTs || Date.now();
           saveCfg();
           applyBoth.ok = true;
@@ -554,7 +701,7 @@
       var r = applyRemote(mergedRemote);
       cfg.syncedHash = remoteHash;
       cfg.localHash = hashModules(collectLocal());
-      cfg.baseSnapshot = mergedRemote;
+      cfg.baseSnapshot = snapshotOf(mergedRemote);
       cfg.syncedAt = remoteTs || Date.now();
       saveCfg();
       r.ok = true;
@@ -927,9 +1074,10 @@
     limitBytes: SYNC_LIMIT,
 
     /**
-     * 估算「当前数据若同步到云端」的字节数，与 writeGist 完全同源。
+     * 估算「当前数据若同步到云端」的体积，与 writeGist 完全同源。
+     * 图片已拆到独立文件，bytes 只统计主 JSON（正文+映射），另返回图片体积供参考。
      * @param {Object} [override] 覆盖某个模块的内存草稿，如 { notes: {notes,media,categories} }
-     * @returns {{ bytes:number, limit:number, ratio:number }}
+     * @returns {{ bytes:number, limit:number, ratio:number, imageBytes:number, images:number }}
      */
     estimate: function (override) {
       var modules = collectLocal();
@@ -938,8 +1086,14 @@
           if (override[id] && typeof override[id] === 'object') modules[id] = override[id];
         });
       }
-      var bytes = utf8Len(serializeGist(modules));
-      return { bytes: bytes, limit: SYNC_LIMIT, ratio: bytes / SYNC_LIMIT };
+      var split = detachMedia(modules);
+      var bytes = utf8Len(serializeGist(split.modules));
+      var names = Object.keys(split.files);
+      var imageBytes = names.reduce(function (n, k) { return n + utf8Len(split.files[k]); }, 0);
+      return {
+        bytes: bytes, limit: SYNC_LIMIT, ratio: bytes / SYNC_LIMIT,
+        imageBytes: imageBytes, images: names.length
+      };
     },
 
     setAuto: function (on) {
@@ -994,7 +1148,7 @@
         var r = applyRemote(remoteModules);
         cfg.syncedHash = remoteHash;
         cfg.localHash = hashModules(collectLocal());
-        cfg.baseSnapshot = opts.force ? remoteModules : threeWayMergeModules(cfg.baseSnapshot || {}, collectLocal(), remoteModules);
+        cfg.baseSnapshot = snapshotOf(opts.force ? remoteModules : threeWayMergeModules(cfg.baseSnapshot || {}, collectLocal(), remoteModules));
         cfg.syncedAt = Date.parse(remote.gist.updated_at) || Date.now();
         saveCfg();
         r.ok = true;

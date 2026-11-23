@@ -781,13 +781,16 @@
           var used = Math.round(est.bytes / 1024);
           var limit = Math.round(est.limit / 1024);
           var pct = Math.round(est.ratio * 100);
+          var imgN = est.images || 0;
+          var imgKB = Math.round((est.imageBytes || 0) / 1024);
+          // 图片已拆成独立文件、不占正文配额；文案分两部分显示，避免误读为总体积超限。
           text.textContent = level === 'over'
-            ? '同步体积 ' + used + ' KB · 已超出 ' + limit + ' KB 上限，无法同步'
-            : '同步体积 ' + used + ' / ' + limit + ' KB（' + pct + '%）';
+            ? '正文 ' + used + ' KB · 超出 ' + limit + ' KB 上限，无法同步'
+            : '正文 ' + used + '/' + limit + ' KB（' + pct + '%）· 图片 ' + imgN + ' 张 ' + imgKB + ' KB（独立文件）';
         }
         if (level === 'over' && !sizeWarned) {
           sizeWarned = true;
-          flash('体积已超同步上限，请删除部分图片或改用网络图片地址，否则无法同步到云端', 'error');
+          flash('正文体积已超单文件上限，请精简文字；图片已拆分独立存储，不受此限', 'error');
         } else if (level !== 'over' && sizeWarned) {
           sizeWarned = false;
         }
