@@ -5,30 +5,37 @@
    ============================================================ */
 
 :root {
-  --bg:            #070b13;
-  --surface:       rgba(15, 23, 38, 0.78);
-  --surface-2:     rgba(21, 31, 49, 0.82);
-  --line:          rgba(130, 165, 205, 0.16);
-  --line-soft:     rgba(130, 165, 205, 0.08);
-  --line-strong:   rgba(85, 227, 194, 0.42);
-  --text:          #e8eef8;
-  --text-2:        #aab9cf;
-  --muted:         #71829d;
-  --accent:        #55e3c2;
-  --accent-dim:    rgba(85, 227, 194, 0.10);
-  --accent-2:      #7aa2f7;
-  --blue:          #6d9cff;
+  /* ============================================================
+     MongoDB 设计系统 · 森林黑 × 霓虹绿（LeafyGreen / Forest Dark）
+     全部模块沿用原有语义变量名，此处只替换取值，保证改造零侵入。
+     ============================================================ */
+  --bg:            #001e2b;                       /* Forest Black · 森林黑，非纯黑 */
+  --surface:       rgba(28, 45, 56, 0.78);        /* Deep Teal · 深青表面 */
+  --surface-2:     rgba(29, 47, 58, 0.82);        /* Deep Teal · 次级表面 */
+  --line:          rgba(184, 196, 194, 0.16);     /* Silver Teal · 描边 */
+  --line-soft:     rgba(184, 196, 194, 0.08);
+  --line-strong:   rgba(0, 237, 100, 0.42);       /* MongoDB Green · 强描边 */
+  --text:          #f2f7f5;                       /* 冷白（近白，带极轻青调） */
+  --text-2:        #b8c4c2;                       /* Silver Teal · 次级文字 */
+  --muted:         #7f9297;                       /* Cool Gray · 弱化文字 */
+  --accent:        #00ed64;                       /* MongoDB Green · 霓虹绿强调 */
+  --accent-dim:    rgba(0, 237, 100, 0.10);
+  --accent-2:      #1eaedb;                       /* Teal Active · 活性青 */
+  --blue:          #6cb8ff;                       /* Link Blue · 链接蓝（深底提亮变体） */
   --warn:          #ffc46b;
   --danger:        #ff8197;
-  --radius:        14px;
-  --radius-sm:     9px;
+  --radius:        16px;                          /* MongoDB 标准卡片圆角 */
+  --radius-sm:     8px;
   /* 所有悬浮面板共用的边框色，保证菜单/设置/更多/同步面板视觉统一 */
-  --pop-border:    rgba(85, 227, 194, .30);
-  /* 两套字体体系：--sans 用于中文/正文，--mono 用于数字/代码/英文标识。
-     --mono 末尾补入与 --sans 相同的中文无衬线回退，避免中文落到各平台默认衬线体导致混排不协调。 */
+  --pop-border:    rgba(0, 237, 100, .32);
+  /* 三字体体系全部使用国内系统自带字体，零网络依赖、无 CDN 加载失败风险：
+     --serif 衬线（宋体 / 思源宋体）用于 Hero 大标题的编辑权威感，
+     --sans 无衬线（苹方 / 微软雅黑）用于正文与 UI，
+     --mono 系统等宽用于代码与大写技术标签。 */
   --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", var(--cjk);
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", var(--cjk);
+  --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", SimSun, Georgia, "Times New Roman", serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", var(--cjk);
+  --sans: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", sans-serif;
 
   /* ---------- 字体排印规范（全站唯一来源）----------
      字号阶梯：11 级，覆盖从微型角标到 Hero 大标题的所有层级。
@@ -61,8 +68,13 @@
   --fw-medium: 500;
   --fw-semibold: 600;
   --fw-bold: 700;
-  /* 强调色实底按钮上的前景文字色（深底方案） */
-  --on-accent: #04130f;
+  /* 强调色实底按钮上的前景文字色：霓虹绿底 → 森林黑字 */
+  --on-accent: #001e2b;
+  /* MongoDB 青色调阴影：即便在浅色表面，阴影也带森林青，而非中性黑 */
+  --shadow-card:    0 12px 30px rgba(0, 30, 43, .34);
+  --shadow-panel:   0 18px 44px rgba(0, 30, 43, .55);
+  --shadow-forest:  0 26px 44px rgba(0, 30, 43, .32), 0 7px 13px rgba(0, 0, 0, .20);
+  --glow-accent:    0 0 12px rgba(0, 237, 100, .35);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -83,9 +95,20 @@ a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 img { max-width: 100%; }
-::selection { background: rgba(85, 227, 194, 0.28); color: #fff; }
+::selection { background: rgba(0, 237, 100, 0.28); color: #fff; }
 
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* MongoDB 技术标签：系统等宽字体大写 + 宽字距（数据库字段标签质感） */
+.mono-label {
+  font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: 2px; font-weight: 500;
+}
+/* MongoDB 签名装饰：霓虹绿强调下划线（2px） */
+.accent-underline {
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 2px;
+}
 
 /* ---------- 背景：细网格 + 顶部光晕 ---------- */
 .grid-bg,
@@ -102,8 +125,8 @@ img { max-width: 100%; }
 
 .glow {
   background:
-    radial-gradient(circle 520px at 18% -8%, rgba(109, 156, 255, 0.13), transparent 70%),
-    radial-gradient(circle 620px at 82% 2%, rgba(85, 227, 194, 0.11), transparent 70%);
+    radial-gradient(circle 520px at 18% -8%, rgba(0, 140, 249, 0.13), transparent 70%),
+    radial-gradient(circle 620px at 82% 2%, rgba(0, 237, 100, 0.11), transparent 70%);
 }
 
 /* ---------- 页面骨架 ---------- */
@@ -178,7 +201,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  border: 1px solid #0c1320;
+  border: 1px solid #122630;
   box-shadow: 0 0 8px var(--accent);
 }
 
@@ -246,8 +269,8 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   position: absolute; top: calc(100% + 8px); right: 0; z-index: 55;
   width: min(300px, calc(100vw - 32px)); padding: 12px;
   border: 1px solid var(--pop-border); border-radius: var(--radius-sm);
-  background: #121d30;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
+  background: #1c2d38;
+  box-shadow: 0 18px 44px rgba(0, 30, 43, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
   animation: sel-pop .14s ease both;
 }
 .cat-manager[hidden] { display: none; }
@@ -356,11 +379,11 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 .btn--primary {
-  border-color: transparent; color: #04130f; font-weight: 600;
-  background: linear-gradient(120deg, #67ecd0, #4fd8c0);
-  box-shadow: 0 4px 22px rgba(85, 227, 194, .18);
+  border-color: transparent; color: var(--on-accent); font-weight: 700;
+  background: linear-gradient(120deg, #00ed64, #00c853);
+  box-shadow: 0 4px 22px rgba(0, 237, 100, .22);
 }
-.btn--primary:hover { color: #04130f; background: linear-gradient(120deg, #7bf3da, #56e2c7); border-color: transparent; }
+.btn--primary:hover { color: var(--on-accent); background: linear-gradient(120deg, #2bff85, #00d65a); border-color: transparent; }
 
 /* ---------- 按钮式下拉胶囊（自定义下拉，跨主题/跨平台一致） ----------
    触发器与 .btn（设置 / 更多）同规格；选项浮层由 DOM 渲染，不再用原生
@@ -401,8 +424,8 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   width: 100%; min-width: 100%; max-height: 280px; overflow-y: auto;
   margin: 0; padding: 6px; list-style: none;
   border: 1px solid var(--pop-border); border-radius: var(--radius-sm);
-  background: #121d30;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
+  background: #1c2d38;
+  box-shadow: 0 18px 44px rgba(0, 30, 43, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
   animation: sel-pop .14s ease both;
 }
 .sel-menu[hidden] { display: none; }
@@ -418,7 +441,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
 .sel-option .i-ico { width: 13px; height: 13px; color: var(--accent); flex: 0 0 auto; }
 .sel-option.is-active .i-ico::after { content: ''; }
 .sel-option--new { color: var(--blue); border-top: 1px solid var(--line-soft); border-radius: 0 0 6px 6px; margin-top: 4px; padding-top: 10px; }
-.sel-option--new:hover { color: var(--blue); background: rgba(109, 156, 255, .1); }
+.sel-option--new:hover { color: var(--blue); background: rgba(0, 140, 249, .1); }
 .sel-option--new .i-ico { color: var(--blue); }
 /* 输入新分类：新建态隐藏触发器与箭头，让输入框独占胶囊 */
 .sel-pill.is-new .sel-trigger { display: none; }
@@ -427,7 +450,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   border: 0; outline: 0; background: transparent; color: var(--text);
   font: 12.5px var(--sans);
 }
-.sel-pill input.sel-new::placeholder { color: #5b6b83; }
+.sel-pill input.sel-new::placeholder { color: #6b7f86; }
 /* 新建态的取消按钮：退出新建、回到进入前的原选择，不必被迫创建 */
 .sel-pill .sel-cancel {
   flex: 0 0 auto; display: inline-flex; align-items: center;
@@ -451,8 +474,8 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   width: max-content; min-width: 232px; max-width: min(340px, calc(100vw - 32px));
   margin: 0; padding: 6px; list-style: none;
   border: 1px solid var(--pop-border); border-radius: var(--radius-sm);
-  background: #121d30;
-  box-shadow: 0 18px 44px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
+  background: #1c2d38;
+  box-shadow: 0 18px 44px rgba(0, 30, 43, .5), inset 0 1px 0 rgba(255, 255, 255, .04);
   animation: sel-pop .14s ease both;
 }
 .msw-menu[hidden] { display: none; }
@@ -479,7 +502,7 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   border: 0; outline: 0; background: transparent; color: var(--text);
   font-family: var(--mono); font-size: 13px;
 }
-.field::placeholder { color: #5b6b83; }
+.field::placeholder { color: #6b7f86; }
 
 .chip {
   padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px;

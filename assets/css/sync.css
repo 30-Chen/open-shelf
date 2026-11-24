@@ -25,10 +25,10 @@
 }
 .sy-trigger:hover {
   color: var(--accent); border-color: var(--line-strong);
-  background: var(--accent-dim); box-shadow: 0 0 18px rgba(85, 227, 194, .12);
+  background: var(--accent-dim); box-shadow: 0 0 18px rgba(0, 237, 100, .12);
 }
 .sy-trigger[aria-expanded="true"] {
-  color: var(--accent); border-color: rgba(85, 227, 194, .45); background: rgba(85, 227, 194, .08);
+  color: var(--accent); border-color: rgba(0, 237, 100, .45); background: rgba(0, 237, 100, .08);
 }
 /* 云图标：用 i-cloud 的 SVG mask，放大到与文字高度相当且更醒目 */
 .sy-trigger-ico {
@@ -44,7 +44,7 @@
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--muted);
-  border: 1px solid #0c1320;
+  border: 1px solid #122630;
 }
 .sy-trigger-dot.is-synced { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 .sy-trigger-dot.is-dirty { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
@@ -64,7 +64,7 @@
   border: 1px solid var(--pop-border);
   border-radius: 16px;
   background: linear-gradient(160deg, rgba(18, 27, 44, .98), rgba(9, 14, 24, .98));
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .03);
+  box-shadow: 0 20px 60px rgba(0, 30, 43, .6), inset 0 1px 0 rgba(255, 255, 255, .03);
   backdrop-filter: blur(14px);
   animation: sy-in .22s cubic-bezier(.2, .7, .3, 1) both;
 }
@@ -94,7 +94,7 @@
 .sy-status-pill:active { transform: scale(.96); }
 .sy-status-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sy-status-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: currentColor; }
-.sy-status-pill.is-synced { color: var(--accent); border-color: rgba(85, 227, 194, .32); background: var(--accent-dim); }
+.sy-status-pill.is-synced { color: var(--accent); border-color: rgba(0, 237, 100, .32); background: var(--accent-dim); }
 .sy-status-pill.is-dirty { color: var(--warn); border-color: rgba(255, 196, 107, .34); }
 .sy-status-pill.is-error { color: var(--danger); border-color: rgba(216, 56, 90, .38); }
 /* 箭头默认不显示：只在同步进行中出现，尺寸与 10px 胶囊文字等高 */
@@ -108,7 +108,7 @@
 .sy-status-pill.is-on.is-synced .sy-status-dot { animation: sy-breathe 2.6s ease-in-out infinite; }
 .sy-status-pill.is-dirty .sy-status-dot { animation: sy-breathe 1.4s ease-in-out infinite; }
 /* 同步进行中：箭头淡入并匀速旋转，整体光圈 + 圆点脉冲；完成后随 is-busy 移除而隐藏 */
-.sy-status-pill.is-busy { box-shadow: 0 0 0 2px rgba(85, 227, 194, .10); }
+.sy-status-pill.is-busy { box-shadow: 0 0 0 2px rgba(0, 237, 100, .10); }
 .sy-status-pill.is-busy .sy-auto-ico {
   display: inline-block;
   animation: sy-spin 3.4s linear infinite, sy-ico-in .18s ease-out both;
@@ -137,8 +137,8 @@
   font: 12.5px var(--mono); outline: 0;
   transition: border-color .18s, box-shadow .18s;
 }
-.sy-input:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(85, 227, 194, .08); }
-.sy-input::placeholder { color: #5b6b83; }
+.sy-input:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(0, 237, 100, .08); }
+.sy-input::placeholder { color: #6b7f86; }
 
 .sy-actions { display: flex; gap: 10px; margin-top: 12px; }
 .sy-actions--sub { margin-top: 8px; justify-content: space-between; }
@@ -189,8 +189,8 @@
 .sy-step-no {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; flex: 0 0 auto;
-  border: 1px solid rgba(85, 227, 194, .4); border-radius: 6px;
-  background: rgba(85, 227, 194, .08); color: var(--accent);
+  border: 1px solid rgba(0, 237, 100, .4); border-radius: 6px;
+  background: rgba(0, 237, 100, .08); color: var(--accent);
   font-size: 11px; font-weight: 600;
 }
 .sy-step-desc { margin: -2px 0 12px; font-size: 11px; line-height: 1.6; color: var(--muted); }
@@ -213,7 +213,7 @@
 .sy-vtabs {
   display: flex; gap: 4px; margin: 0 0 12px; padding: 3px;
   border: 1px solid var(--line); border-radius: 9px;
-  background: rgba(122, 162, 247, .04);
+  background: rgba(30, 174, 219, .04);
 }
 .sy-vtab {
   flex: 1; height: 30px; padding: 0 6px;
@@ -223,7 +223,7 @@
 }
 .sy-vtab:hover { color: var(--text); }
 .sy-vtab.is-active {
-  background: var(--accent-dim, rgba(122, 162, 247, .14));
+  background: var(--accent-dim, rgba(30, 174, 219, .14));
   color: var(--accent); font-weight: 600;
 }
 .sy-vpanel[hidden] { display: none; }
@@ -234,8 +234,8 @@
 /* 凭证卡：生成后醒目展示「用户名 / 短码」 */
 .sy-vault-seal {
   margin: 12px 0 2px; padding: 14px 12px;
-  border: 1px solid rgba(85, 227, 194, .32); border-radius: 10px;
-  background: rgba(85, 227, 194, .06);
+  border: 1px solid rgba(0, 237, 100, .32); border-radius: 10px;
+  background: rgba(0, 237, 100, .06);
   text-align: center;
 }
 .sy-vault-seal[hidden] { display: none; }
@@ -243,7 +243,7 @@
 .sy-vault-seal-code {
   display: block; margin: 9px 0 11px;
   font-size: 22px; font-weight: 600; letter-spacing: 3px; line-height: 1.3;
-  color: var(--text); text-shadow: 0 0 18px rgba(85, 227, 194, .25);
+  color: var(--text); text-shadow: 0 0 18px rgba(0, 237, 100, .25);
   word-break: break-word;
 }
 .sy-seal-links { display: flex; align-items: center; justify-content: center; gap: 16px; }

@@ -28,7 +28,7 @@
   position: absolute; right: 0; top: calc(100% + 8px); z-index: 20;
   width: 232px; padding: 8px;
   border: 1px solid var(--pop-border); border-radius: var(--radius-sm);
-  background: #0e1727; box-shadow: 0 18px 44px rgba(0, 0, 0, .45);
+  background: #10242f; box-shadow: 0 18px 44px rgba(0, 30, 43, .45);
 }
 .nt-menu-item {
   display: block; width: 100%; text-align: left; padding: 9px 11px;
@@ -58,7 +58,7 @@
 .nt-filter:hover { border-color: var(--line-strong); color: var(--text); }
 .nt-filter.is-active {
   color: #04130f; font-weight: 600; border-color: transparent;
-  background: linear-gradient(120deg, #67ecd0, #4fd8c0);
+  background: linear-gradient(120deg, #00ed64, #00c853);
 }
 .nt-filter.is-active span { color: rgba(4, 19, 15, .7); }
 
@@ -94,17 +94,17 @@
   transition: border-color .2s, transform .2s, box-shadow .2s;
 }
 /* 置顶卡片：强调描边 + 右上角标 */
-.nt-card--pinned { border-color: var(--line-strong); box-shadow: 0 0 0 1px rgba(85, 227, 194, .14); }
+.nt-card--pinned { border-color: var(--line-strong); box-shadow: 0 0 0 1px rgba(0, 237, 100, .14); }
 .nt-pin-badge {
   position: absolute; top: 8px; right: 8px; z-index: 2;
   font-size: 9px; letter-spacing: .4px; color: var(--accent);
-  padding: 3px 8px; border: 1px solid rgba(85, 227, 194, .4); border-radius: 999px;
+  padding: 3px 8px; border: 1px solid rgba(0, 237, 100, .4); border-radius: 999px;
   background: rgba(8, 16, 28, .82); backdrop-filter: blur(2px);
 }
 .nt-pin-btn.is-pinned { color: var(--accent); }
 .nt-card:hover {
   transform: translateY(-3px); border-color: var(--line-strong);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .34);
+  box-shadow: 0 16px 40px rgba(0, 30, 43, .34);
 }
 .nt-card-cover {
   aspect-ratio: 2.6 / 1; overflow: hidden; background: #0b1422;
@@ -114,7 +114,7 @@
 .nt-card-cover--ph {
   display: grid; place-items: center;
   background:
-    linear-gradient(135deg, rgba(109, 156, 255, .07), rgba(85, 227, 194, .05)),
+    linear-gradient(135deg, rgba(0, 140, 249, .07), rgba(0, 237, 100, .05)),
     repeating-linear-gradient(45deg, transparent 0 12px, rgba(130, 165, 205, .04) 12px 13px);
 }
 .nt-card-cover--ph span { font-size: 11px; letter-spacing: 2px; color: var(--muted); }
@@ -126,7 +126,7 @@
 }
 .nt-cat-pill {
   padding: 2px 8px; border-radius: 999px; color: var(--blue);
-  background: rgba(109, 156, 255, .1); border: 1px solid rgba(109, 156, 255, .22);
+  background: rgba(0, 140, 249, .1); border: 1px solid rgba(0, 140, 249, .22);
   font-family: var(--sans);   /* 分类名多为中文，避免继承 .nt-card-meta 的等宽字体 */
 }
 .nt-card-title {
@@ -207,8 +207,8 @@
   border: 1px solid var(--line); border-radius: var(--radius-sm);
   background: rgba(10, 17, 29, .75); color: var(--text); font: 13px var(--sans); outline: 0;
 }
-.nt-input::placeholder { color: #5b6b83; }
-.nt-input:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(85, 227, 194, .07); }
+.nt-input::placeholder { color: #6b7f86; }
+.nt-input:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(0, 237, 100, .07); }
 .nt-field--title .nt-input { font-size: 17px; height: 46px; }
 /* 分类下拉：复用 .sel-pill（与「设置 / 更多」同一套按钮胶囊），占满表单列宽 */
 .nt-cat-wrap { width: 100%; }
@@ -236,7 +236,7 @@
   padding: 16px; border: 0; outline: 0; background: transparent;
   color: var(--text); font: 13px/1.75 var(--mono); tab-size: 2;
 }
-.nt-textarea::placeholder { color: #5b6b83; }
+.nt-textarea::placeholder { color: #6b7f86; }
 
 /* 拖拽上传：整个左侧编辑区都是投放入口 */
 .nt-edit-pane { position: relative; }
@@ -301,11 +301,11 @@
 .nt-h3 { font-size: 18px; }
 .nt-h4, .nt-h5, .nt-h6 { font-size: 15px; }
 .nt-p { margin: 0 0 1.05em; }
-.nt-link { color: var(--accent); border-bottom: 1px solid rgba(85, 227, 194, .35); }
+.nt-link { color: var(--accent); border-bottom: 1px solid rgba(0, 237, 100, .35); }
 .nt-link:hover { border-bottom-color: var(--accent); }
 .nt-code {
   padding: 2px 6px; border-radius: 5px; font: 12.5px var(--mono);
-  color: #8fe9d4; background: rgba(85, 227, 194, .08); border: 1px solid rgba(85, 227, 194, .12);
+  color: #8fe9d4; background: rgba(0, 237, 100, .08); border: 1px solid rgba(0, 237, 100, .12);
 }
 .nt-pre {
   position: relative; margin: 0 0 1.2em; padding: 16px 18px; overflow-x: auto;
@@ -350,7 +350,7 @@
   border: 1px solid var(--line-strong); border-radius: 8px; background: var(--accent-dim);
   color: var(--accent); font: 12px var(--mono);
 }
-.nt-video-link:hover { background: rgba(85, 227, 194, .16); }
+.nt-video-link:hover { background: rgba(0, 237, 100, .16); }
 .nt-video-cap { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .nt-video-fallback { padding: 12px 16px; border: 1px dashed var(--line); border-radius: 8px; color: var(--warn); font-size: 12px; }
 
@@ -369,8 +369,8 @@
 .nt-flash {
   position: fixed; left: 50%; bottom: 28px; z-index: 80; transform: translate(-50%, 18px);
   padding: 10px 18px; border: 1px solid var(--line-strong); border-radius: 999px;
-  background: #0f1b2b; color: var(--text); font-size: 12px; letter-spacing: .3px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .45);
+  background: #001e2b; color: var(--text); font-size: 12px; letter-spacing: .3px;
+  box-shadow: 0 12px 34px rgba(0, 30, 43, .45);
   opacity: 0; pointer-events: none; transition: opacity .22s, transform .22s;
 }
 .nt-flash.is-show { opacity: 1; transform: translate(-50%, 0); }

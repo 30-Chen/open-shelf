@@ -34,12 +34,13 @@
 
 .lc-hero h2 {
   margin: 30px auto 22px;
-  font: 600 clamp(42px, 7.2vw, 78px)/1.06 var(--sans);
-  letter-spacing: -.045em; color: var(--text);
+  /* 宋体衬线大标题（国内系统字体），编辑权威感 */
+  font: 500 clamp(46px, 7.6vw, 84px)/1.14 var(--serif);
+  letter-spacing: -.02em; color: var(--text);
 }
 .lc-hero h2 em {
   font-style: normal;
-  background: linear-gradient(100deg, #7cf2d8, #6d9cff);
+  background: linear-gradient(100deg, #00ed64, #6cb8ff);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -62,7 +63,7 @@
 .lc-btn .i-ico { width: 15px; height: 15px; }
 .lc-btn:hover {
   color: var(--accent); border-color: var(--line-strong);
-  transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0, 0, 0, .14);
+  transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0, 30, 43, .14);
 }
 .lc-btn--primary {
   border-color: var(--accent); background: var(--accent); color: var(--on-accent); font-weight: 600;
@@ -92,13 +93,20 @@
 .lc-section { margin-top: 118px; }
 .lc-section-head {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px;
-  margin: 0 auto 26px; padding-bottom: 22px; border-bottom: 1px solid var(--line-soft);
-  max-width: 720px;
+  margin: 0 auto 26px; padding-bottom: 22px; max-width: 720px;
+  /* MongoDB 签名强调下划线：居中霓虹绿短线 */
+  border-bottom: 1px solid var(--line-soft);
+  position: relative;
+}
+.lc-section-head::after {
+  content: ''; position: absolute; left: 50%; bottom: -1px; transform: translateX(-50%);
+  width: 72px; height: 2px; background: var(--accent); border-radius: 2px;
+  box-shadow: var(--glow-accent);
 }
 .lc-kicker { font: var(--fs-mini) var(--mono); letter-spacing: 2.2px; color: var(--accent); }
 .lc-section-head h3 {
-  margin: 0; font: 600 clamp(25px, 3.6vw, 40px)/1.18 var(--sans);
-  letter-spacing: -.025em; color: var(--text);
+  margin: 0; font: 500 clamp(27px, 3.8vw, 44px)/1.2 var(--serif);
+  letter-spacing: -.015em; color: var(--text);
 }
 .lc-section-head .lc-hint {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -147,14 +155,14 @@
 /* 边框颜色全卡统一：hover 只走通用 line-strong，不随各卡主题色变化 */
 .lc-card:hover {
   border-color: var(--line-strong); transform: translateY(-4px);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, .22);
+  box-shadow: 0 20px 48px rgba(0, 30, 43, .22);
 }
 .lc-card--soon { border-style: dashed; }
 .lc-card--soon .lc-name { color: var(--text-2); }
 /* 无背景图标的兼容卡：保留原柔和高光 */
 .lc-corner {
   position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(190px 140px at 100% 0%, rgba(85, 227, 194, .11), transparent 72%);
+  background: radial-gradient(190px 140px at 100% 0%, rgba(0, 237, 100, .11), transparent 72%);
 }
 .lc-index { display: flex; align-items: center; gap: 8px; font-size: var(--fs-tiny); letter-spacing: 1.5px; color: var(--accent); }
 .lc-badge {
@@ -194,7 +202,7 @@
 }
 .lc-step:hover {
   border-color: var(--line-strong); transform: translateY(-3px);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, .18);
+  box-shadow: 0 16px 38px rgba(0, 30, 43, .18);
 }
 /* 底部高亮：默认一条淡底线，hover 时强调色由左至右铺满 */
 .lc-step::after {
@@ -265,8 +273,8 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 /* ---------- 功能模块页引导头 ---------- */
 .lc-shelf-head { text-align: center; margin: 44px 0 34px; padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
 .lc-shelf-head h2 {
-  margin: 16px 0 12px; font: 600 clamp(28px, 4vw, 42px)/1.2 var(--sans);
-  letter-spacing: -.025em; color: var(--text);
+  margin: 16px 0 12px; font: 500 clamp(30px, 4.2vw, 46px)/1.2 var(--serif);
+  letter-spacing: -.015em; color: var(--text);
 }
 .lc-shelf-head p { max-width: 40em; margin: 0 auto; font-size: var(--fs-lead); line-height: 1.85; color: var(--text-2); }
 .lc-shelf-head + .lc-catalog { margin-top: 0; }
