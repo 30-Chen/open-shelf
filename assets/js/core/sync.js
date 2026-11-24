@@ -28,6 +28,30 @@
   var CLOUD_TICK = 15000;   // 云端轮询间隔
   var DEBOUNCE = 2500;      // 本地改动后等待上传的防抖
   var SKEW = 1500;          // 时间戳裁决容差，避免双方同时认为「我更新」
+  var REQ_TIMEOUT = 30000;  // 单次请求超时：半开连接/断流时 abort，避免 syncing 永久卡死
+
+  /** 带超时的 fetch：AbortController 到点中断，超时用一个带 code 的 Error 抛出，
+   *  让上层 catch 能区分「超时」与「HTTP 错误」，并能正常收尾复位 syncing。 */
+  function fetchTimeout(url, init) {
+    if (typeof AbortController === 'undefined') return fetch(url, init); // 老浏览器降级
+    var ctrl = new AbortController();
+    var opts = {};
+    if (init) Object.keys(init).forEach(function (k) { opts[k] = init[k]; });
+    opts.signal = ctrl.signal;
+    var timer = global.setTimeout(function () { ctrl.abort(); }, REQ_TIMEOUT);
+    return fetch(url, opts).then(function (res) {
+      global.clearTimeout(timer);
+      return res;
+    }, function (e) {
+      global.clearTimeout(timer);
+      if (e && e.name === 'AbortError') {
+        var t = new Error('请求超时（' + Math.round(REQ_TIMEOUT / 1000) + ' 秒），网络可能已断流，请重试');
+        t.code = 'ETIMEDOUT';
+        throw t;
+      }
+      throw e;
+    });
+  }
 
   var cfg = {
     token: store.get('token', '') || '',
@@ -306,6 +330,7 @@
     if (status === 403) return 'Token 缺少 gist 权限，或 API 额度用尽（403）';
     if (status === 404) return '找不到该 Gist（404），可能已被删除或 Token 无权访问';
     if (status === 422) return '数据格式被 GitHub 拒绝（422）';
+    if (err && err.code === 'ETIMEDOUT') return msg; // 超时提示已在 fetchTimeout 里写清楚
     if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return '无法连接 GitHub API（网络不通或被拦截）';
     return msg;
   }
@@ -321,7 +346,7 @@
       headers['Content-Type'] = 'application/json';
       init.body = JSON.stringify(body);
     }
-    return fetch(API + path, init).then(function (res) {
+    return fetchTimeout(API + path, init).then(function (res) {
       return res.text().then(function (text) {
         var data = null;
         try { data = text ? JSON.parse(text) : null; } catch (e) { /* 非 JSON 响应 */ }
@@ -436,7 +461,7 @@
    *  header，否则触发预检被 403 拒绝）。绝不能走 request()——它会加 Authorization
    *  并打 api.github.com，既拿不到 raw 内容也会触发预检。 */
   function fetchRaw(url) {
-    return fetch(url).then(function (res) {
+    return fetchTimeout(url).then(function (res) {
       if (!res.ok) throw new Error('读取图片失败（HTTP ' + res.status + '）');
       return res.text();
     });
@@ -1605,8 +1630,12 @@
       // 状态点在触发按钮内（不是 panel 内）——必须用全局查找并做空值保护，
       // 否则 panel.querySelector 返回 null，dot.className 抛错会中断整个 refresh。
       var dot = document.getElementById('sy-dot');
-      if (dot) dot.className = 'sy-trigger-dot' +
+      // 幂等赋值：Windows 的 Chromium 对「写入相同 className」也会重启元素上的
+      // CSS animation，自动同步每次 progress/auto 事件都刷新时会让呼吸/旋转图标
+      // 反复从头播放，表现为频率异常变快。类名未变时绝不写 DOM。
+      var dotCls = 'sy-trigger-dot' +
         (!ready || !cfg.auto ? '' : (hasError ? ' is-error' : (dirty ? ' is-dirty' : ' is-synced')));
+      if (dot && dot.className !== dotCls) dot.className = dotCls;
 
       // 自动开关与状态是同一颗胶囊：颜色/圆点表达状态，点击切换自动同步
       var kind = !ready || !cfg.auto ? 'is-off' : (hasError ? 'is-error' : (dirty ? 'is-dirty' : 'is-synced'));
@@ -1615,8 +1644,9 @@
           : '自动 · ' + (hasError ? '同步出错' : (dirty ? '有改动' : '已同步')));
       var detail = (cfg.syncedAt ? '上次同步：' + fmtTime(cfg.syncedAt) + ' · ' : '尚未同步 · ') + autoText() +
         (cfg.gistId ? ' · Gist ' + cfg.gistId.slice(0, 10) + '…' : '');
-      autoBtn.className = 'sy-status-pill sy-combo ' + kind + (cfg.auto ? ' is-on' : ' is-off') +
+      var btnCls = 'sy-status-pill sy-combo ' + kind + (cfg.auto ? ' is-on' : ' is-off') +
         (busy ? ' is-busy' : '') + (popping ? ' is-pop' : '');
+      if (autoBtn.className !== btnCls) autoBtn.className = btnCls;
       autoBtn.setAttribute('aria-checked', cfg.auto ? 'true' : 'false');
       autoBtn.title = (cfg.auto ? '自动同步已开启 · 点击暂停' : '自动同步已暂停 · 点击开启') + '\n' + detail;
       statusEl.textContent = text;

@@ -28,10 +28,10 @@
   --radius-sm:     8px;
   /* 所有悬浮面板共用的边框色，保证菜单/设置/更多/同步面板视觉统一 */
   --pop-border:    rgba(0, 237, 100, .32);
-  /* 三字体体系全部使用国内系统自带字体，零网络依赖、无 CDN 加载失败风险：
-     --serif 衬线（宋体 / 思源宋体）用于 Hero 大标题的编辑权威感，
-     --sans 无衬线（苹方 / 微软雅黑）用于正文与 UI，
-     --mono 系统等宽用于代码与大写技术标签。 */
+  /* 字体令牌全部使用国内系统自带字体，零网络依赖、无 CDN 加载失败风险：
+     --sans 无衬线（苹方 / 微软雅黑）用于 Hero / 大标题 / 正文 / UI 全部层级，
+     --mono 系统等宽用于代码与大写技术标签，
+     --serif 衬线（宋体 / 思源宋体）仅作备用令牌保留，当前无可见元素使用。 */
   --cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   --serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", SimSun, Georgia, "Times New Roman", serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "Courier New", var(--cjk);
@@ -526,5 +526,12 @@ details > summary::-webkit-details-marker { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  /* 只缩短时长不够：infinite 动画（同步呼吸 / 旋转）在 .01ms 下会变成高频闪烁，
+     Windows 开启「减少动画」时表现为图标狂闪。同时把迭代次数限为 1，让它们直接静止。 */
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

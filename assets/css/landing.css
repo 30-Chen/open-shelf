@@ -34,8 +34,8 @@
 
 .lc-hero h2 {
   margin: 30px auto 22px;
-  /* 宋体衬线大标题（国内系统字体），编辑权威感 */
-  font: 500 clamp(46px, 7.6vw, 84px)/1.14 var(--serif);
+  /* 无衬线大标题（--sans，国内系统字体），干净利落 */
+  font: 500 clamp(46px, 7.6vw, 84px)/1.14 var(--sans);
   letter-spacing: -.02em; color: var(--text);
 }
 .lc-hero h2 em {
@@ -105,7 +105,7 @@
 }
 .lc-kicker { font: var(--fs-mini) var(--mono); letter-spacing: 2.2px; color: var(--accent); }
 .lc-section-head h3 {
-  margin: 0; font: 500 clamp(27px, 3.8vw, 44px)/1.2 var(--serif);
+  margin: 0; font: 500 clamp(27px, 3.8vw, 44px)/1.2 var(--sans);
   letter-spacing: -.015em; color: var(--text);
 }
 .lc-section-head .lc-hint {
@@ -273,7 +273,7 @@ html.js-reveal .lc-reveal.is-in { opacity: 1; transform: none; }
 /* ---------- 功能模块页引导头 ---------- */
 .lc-shelf-head { text-align: center; margin: 44px 0 34px; padding-bottom: 26px; border-bottom: 1px solid var(--line-soft); }
 .lc-shelf-head h2 {
-  margin: 16px 0 12px; font: 500 clamp(30px, 4.2vw, 46px)/1.2 var(--serif);
+  margin: 16px 0 12px; font: 500 clamp(30px, 4.2vw, 46px)/1.2 var(--sans);
   letter-spacing: -.015em; color: var(--text);
 }
 .lc-shelf-head p { max-width: 40em; margin: 0 auto; font-size: var(--fs-lead); line-height: 1.85; color: var(--text-2); }

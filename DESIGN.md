@@ -13,9 +13,9 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 霓虹绿 `#00ed64` 作为唯一品牌强调色点缀：亮到有电击感，又保留有机的生命力。这不是冷峻的赛博朋克霓虹，
 而是黑暗中正在生长的生物的萤光。
 
-字体体系是三级架构，全部使用**国内系统自带字体**、零网络依赖：衬线 **宋体 / 思源宋体**（`Songti SC / Noto Serif CJK SC`）承担 Hero 与大标题的编辑权威感；
-无衬线 **苹方 / 微软雅黑**（`PingFang SC / Microsoft YaHei`）承担正文与 UI；系统等宽字体（`ui-monospace / SF Mono / Consolas`）承担代码与大写技术标签，
-字距放宽到 1–3px，形成「数据库字段标签」般系统化、结构化的技术标识感。不引入任何 Web Font CDN，国内网络下首屏无字体加载失败风险。
+字体体系以**国内系统自带字体**为主、零网络依赖：无衬线 **苹方 / 微软雅黑**（`PingFang SC / Microsoft YaHei`）承担 Hero、区块大标题、正文与 UI 的全部层级；
+系统等宽字体（`ui-monospace / SF Mono / Consolas`）承担代码与大写技术标签，字距放宽到 1–3px，形成「数据库字段标签」般系统化、结构化的技术标识感。
+衬线 `--serif`（宋体 / 思源宋体）作为令牌保留备用，但当前 Hero 与大标题统一走 `--sans`，保证跨设备字重与字距一致。不引入任何 Web Font CDN，国内网络下首屏无字体加载失败风险。
 
 系统采用**双模式双主题**：暗色主题（森林黑 + 霓虹绿）对应 MongoDB 的 dark hero 世界；
 亮色主题（白底 + 青灰边框 + 深绿功能色）对应 light content 世界。两者都可随时切换，且各自遵循 MongoDB 配色语言。
@@ -24,8 +24,8 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 **Key Characteristics:**
 - 森林黑底 `#001e2b`，不用纯黑
 - 霓虹绿 `#00ed64` 为唯一强调色，克制使用（每段最多一处高光）
-- 宋体衬线只用于 Hero / 区块大标题，绝不用于正文
-- 苹方 / 微软雅黑无衬线承载正文与 UI
+- Hero / 区块大标题 / 正文统一用苹方 / 微软雅黑无衬线（`--sans`）
+- 衬线 `--serif` 仅作令牌备用，当前不用于任何可见文字
 - 系统等宽字体大写标签，宽字距 1–3px
 - 零 Web Font 依赖，只用国内系统自带字体
 - 青色调阴影，禁止中性灰黑投影
@@ -78,18 +78,18 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 ## 3. Typography（字体排印）
 
 ### 字体族（国内系统自带字体，零网络依赖）
-- **Display Serif**：宋体 / 思源宋体（`--serif`）— Hero / 区块大标题；栈为 `Songti SC, STSong, Noto Serif CJK SC, Source Han Serif SC, SimSun, Georgia, serif`
-- **Body / UI**：苹方 / 微软雅黑（`--sans`）— 无衬线正文与 UI；栈为 `PingFang SC, Microsoft YaHei, -apple-system, Segoe UI, Noto Sans CJK SC, sans-serif`
+- **Display / Body / UI**：苹方 / 微软雅黑（`--sans`）— Hero、区块大标题、正文与 UI 全部层级；栈为 `PingFang SC, Microsoft YaHei, -apple-system, Segoe UI, Noto Sans CJK SC, sans-serif`
 - **Code / Labels**：系统等宽字体（`--mono`）— 代码与大写技术标签；栈为 `ui-monospace, SF Mono, Menlo, Consolas, Courier New` + CJK
+- **Serif（备用令牌）**：`--serif` = `Songti SC, STSong, Noto Serif CJK SC, Source Han Serif SC, SimSun, Georgia, serif`；当前无可见元素使用
 
 三级字体全部取自操作系统，不加载任何外部字体文件，国内网络与离线环境下均正常显示。
 
 ### 层级
 | Role | Font | Size | Weight | Line-height | Letter-spacing |
 |------|------|------|--------|-------------|----------------|
-| Hero | 宋体 / 思源宋体 | `clamp(46px,7.6vw,84px)` | 500 | 1.14 | -.02em |
-| Section Heading | 宋体 / 思源宋体 | `clamp(27px,3.8vw,44px)` | 500 | 1.2 | -.015em |
-| Shelf Heading | 宋体 / 思源宋体 | `clamp(30px,4.2vw,46px)` | 500 | 1.2 | -.015em |
+| Hero | 苹方 / 微软雅黑（--sans） | `clamp(46px,7.6vw,84px)` | 500 | 1.14 | -.02em |
+| Section Heading | 苹方 / 微软雅黑（--sans） | `clamp(27px,3.8vw,44px)` | 500 | 1.2 | -.015em |
+| Shelf Heading | 苹方 / 微软雅黑（--sans） | `clamp(30px,4.2vw,46px)` | 500 | 1.2 | -.015em |
 | Lead | 苹方 / 微软雅黑 | `clamp(14.5px,1.5vw,17px)` | 400 | 1.95 | normal |
 | Body | 苹方 / 微软雅黑 | `--fs-body: 13px` | 400 | `--lh-base: 1.6` | normal |
 | Tech Label | 系统等宽字体 | `--fs-caption / --fs-mini` | 500 | normal | 1.2–2.2px 大写 |
@@ -99,9 +99,9 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 新增样式一律引用变量，不写死 px。
 
 ### 原则
-- 衬线只做 Display：宋体 / 思源宋体只出现在 Hero 与区块标题，正文绝不用衬线
+- 大字也用无衬线：Hero 与区块标题统一 `--sans`，全站不使用衬线字面
 - 大写宽字距是身份：`--mono` + `text-transform: uppercase` + 1–3px 字距 = 数据库字段标签质感
-- 四级字重：400 正文 / 500 UI 与衬线标题 / 600 强调 / 700 CTA
+- 四级字重：400 正文 / 500 UI 与大标题 / 600 强调 / 700 CTA
 
 ---
 
@@ -173,7 +173,7 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 ### Do
 - 用 `#001e2b` 森林黑做深底，不用纯黑
 - 霓虹绿 `#00ed64` 每段只用一次，追求最大电击感
-- 宋体 / 思源宋体只做 Hero / Display 标题，苹方 / 微软雅黑做其余
+- Hero / Display 标题与正文统一用苹方 / 微软雅黑（`--sans`）
 - 系统等宽字体大写 + 1–3px 宽字距做技术标签
 - 阴影一律青调 `rgba(0,30,43,...)`
 - 按钮用药丸圆角，浅底强调用深绿 `#00684a`
@@ -182,7 +182,7 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 - 不用纯黑 `#000000` 做背景 —— 一律森林黑 `#001e2b`
 - 不把霓虹绿铺成大面积背景 —— 它只做文字、下划线、小高光
 - 不用中性灰投影 —— 一律青调
-- 不给正文套衬线字体
+- 全站不套衬线字体，大字小字一律 `--sans`
 - 不缩小技术标签字距 —— 宽字距就是身份
 
 ---
@@ -196,7 +196,7 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 | Tablet | 768–900px | 双列网格开始 |
 | Desktop | >900px | 标准布局 |
 
-- 衬线 Hero 随宽度缩放 `clamp()`，始终保持衬线质感
+- Hero 随宽度缩放 `clamp()`，始终保持无衬线质感与统一字距
 - 药丸按钮保留充裕触控 padding
 - 明暗模式在所有尺寸下保持各自配色，不混用
 
@@ -212,8 +212,8 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 - 青调阴影：`rgba(0,30,43,.34)`
 
 ### Example Component Prompts
-- "Hero on forest-black `#001e2b`: Songti/Source Han Serif headline `clamp(46px,7.6vw,84px)` weight 500, white text with keyword in `#00ed64→#6cb8ff` gradient. PingFang/Microsoft YaHei subtitle 17px. Neon-green pill CTA `#00ed64→#00c853`."
-- "Card on white: `1px solid rgba(28,46,43,.16)`, 16px radius, shadow `0 12px 30px rgba(0,30,43,.34)`. System-mono uppercase label 2px tracking above a Songti 36px title."
+- "Hero on forest-black `#001e2b`: PingFang/Microsoft YaHei (`--sans`) headline `clamp(46px,7.6vw,84px)` weight 500, white text with keyword in `#00ed64→#6cb8ff` gradient. Same sans subtitle 17px. Neon-green pill CTA `#00ed64→#00c853`."
+- "Card on white: `1px solid rgba(28,46,43,.16)`, 16px radius, shadow `0 12px 30px rgba(0,30,43,.34)`. System-mono uppercase label 2px tracking above a PingFang/Microsoft YaHei 36px title."
 - "Tech label: system mono, uppercase, letter-spacing 2px, weight 500, `#00ed64` on dark."
 - "Pill button: neon-green gradient, forest-black text, 999px radius. Hover brightens."
 
@@ -232,6 +232,6 @@ SHELF / ONLINE 是「森林黑 × 霓虹绿」的深林终端体验——底色�
 ### Iteration Guide
 1. 先定模式：深底 `#001e2b` 还是浅底白
 2. 霓虹绿每段只用一次，克制才有电击感
-3. 衬线只给标题，正文永远无衬线（苹方 / 微软雅黑）
+3. 全站统一无衬线（苹方 / 微软雅黑），不用衬线字面
 4. 技术标签大写宽字距，数据库字段质感
 5. 阴影一律青调，让深度也属于森林世界
