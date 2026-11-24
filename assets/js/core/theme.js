@@ -35,11 +35,20 @@
     return (h >= SUNRISE && h < SUNSET) ? 'light' : 'dark';
   }
 
+  // favicon 是独立加载的 SVG，读不到页面主题变量；随有效主题在两套配色间切换。
+  function paintFavicon(effective) {
+    var icon = doc.querySelector('link[rel~="icon"]');
+    if (!icon) return;
+    var want = effective === 'light' ? 'assets/brand/logo-light.svg' : 'assets/brand/logo.svg';
+    if (icon.getAttribute('href') !== want) icon.setAttribute('href', want);
+  }
+
   function apply(mode) {
     var effective = resolve(mode);
     doc.documentElement.setAttribute('data-theme', effective);
     var meta = doc.querySelector('meta[name="color-scheme"]');
     if (meta) meta.setAttribute('content', effective);
+    paintFavicon(effective);
     return effective;
   }
 

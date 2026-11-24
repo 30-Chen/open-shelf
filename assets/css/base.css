@@ -21,6 +21,10 @@
   --accent:        #00ed64;                       /* MongoDB Green · 霓虹绿强调 */
   --accent-dim:    rgba(0, 237, 100, 0.10);
   --accent-2:      #1eaedb;                       /* Teal Active · 活性青 */
+  /* Logo 品牌标记：背景复用 --accent（随主题自动在霓虹绿/深绿间切换），
+     前景取反色保证对比度——暗底霓虹绿配森林黑，亮底深绿配纯白。 */
+  --logo-bg:       var(--accent);
+  --logo-ink:      #001e2b;                       /* Forest Black · 霓虹绿底上的图形色 */
   --blue:          #6cb8ff;                       /* Link Blue · 链接蓝（深底提亮变体） */
   --warn:          #ffc46b;
   --danger:        #ff8197;
@@ -160,6 +164,10 @@ a.brand:focus-visible { outline: 2px solid var(--line-strong); outline-offset: 4
   place-items: center;
 }
 .brand-mark svg { display: block; width: 100%; height: 100%; }
+/* logo 背景与图形走令牌，随明暗主题切换（--logo-bg 复用 --accent） */
+.brand-mark rect { fill: var(--logo-bg); transition: fill .25s ease; }
+.brand-mark path,
+.brand-mark line { stroke: var(--logo-ink); transition: stroke .25s ease; }
 
 .brand-text h1 {
   margin: 0;

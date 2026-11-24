@@ -38,6 +38,8 @@ html[data-theme="light"] {
   --accent: var(--th-accent);
   --accent-dim: rgba(0, 104, 74, .10);
   --accent-2: var(--th-accent-2);
+  /* logo 背景由 --logo-bg(=--accent) 自动变深绿，图形改纯白保证对比度 */
+  --logo-ink: #ffffff;
   --blue: var(--th-blue);
   --warn: var(--th-warn);
   --danger: var(--th-danger);
