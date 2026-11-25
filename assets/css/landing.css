@@ -90,7 +90,8 @@
 .lc-feature p { margin: 0; font-size: var(--fs-body-sm); line-height: 1.8; color: var(--text-2); }
 
 /* ---------- 通用区块标题（全部居中） ---------- */
-.lc-section { margin-top: 118px; }
+/* 页内锚点滚动落点上方留白，避免标题紧贴浏览器顶边 */
+.lc-section { margin-top: 118px; scroll-margin-top: 24px; }
 .lc-section-head {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 11px;
   margin: 0 auto 26px; padding-bottom: 22px; max-width: 720px;
